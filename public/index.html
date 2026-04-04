@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Claw AI OS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              glass: 'rgba(255, 255, 255, 0.05)',
+              glassBorder: 'rgba(255, 255, 255, 0.1)',
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- MarkedJS for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- DOMPurify for XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <!-- Highlight.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#090909] text-white font-['Inter'] h-screen flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-72 bg-[#050509] border-r border-white/5 flex flex-col z-30">
+      <div class="p-6 flex flex-col gap-1">
+          <div class="flex items-center gap-2 mb-1">
+              <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+              <h1 class="text-sm font-bold tracking-tight text-white/90">Gravity Claw</h1>
+          </div>
+          <p class="text-[10px] text-white/20 uppercase tracking-widest font-medium">Elite Agentic OS</p>
+      </div>
+
+      <div class="px-4 mb-8">
+          <button id="new-chat-btn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-full transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/10">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              New Chat
+          </button>
+      </div>
+
+      <nav class="flex-1 px-4 overflow-y-auto no-scrollbar">
+          <h3 class="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-4 px-2">Recent Intelligence</h3>
+          <ul id="history-list" class="space-y-1">
+              <!-- History items will be injected here -->
+              <li class="group flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l4-4V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10Z"/></svg>
+                  <span class="text-xs font-medium text-white/80 truncate">Design Systems</span>
+              </li>
+              <li class="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-opacity="0.2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span class="text-xs font-medium text-white/40 truncate">AI Strategy</span>
+              </li>
+              <li class="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-opacity="0.2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  <span class="text-xs font-medium text-white/40 truncate">Creative North Star</span>
+              </li>
+          </ul>
+      </nav>
+
+      <div class="p-6 border-t border-white/5 space-y-4">
+          <div class="flex items-center gap-3 text-white/40 hover:text-white transition-colors cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="text-xs font-medium">Profile</span>
+          </div>
+          <div class="flex items-center gap-3 text-white/40 hover:text-white transition-colors cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              <span class="text-xs font-medium">Archived</span>
+          </div>
+      </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col relative bg-[#090B11]">
+      <!-- Top Bar -->
+      <header class="h-16 px-8 flex items-center justify-between z-20">
+          <div class="flex items-center gap-3">
+              <div class="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-opacity="0.8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+              <h1 class="text-xs font-bold tracking-widest text-white/80 uppercase">Gravity Claw</h1>
+          </div>
+          <div class="flex items-center gap-8">
+              <div class="hidden md:flex items-center gap-6">
+                  <a href="#" class="text-xs font-medium text-white/40 hover:text-white transition-colors">Workspace</a>
+                  <a href="#" class="text-xs font-medium text-white/40 hover:text-white transition-colors">Analytics</a>
+                  <a href="#" class="text-xs font-medium text-white/40 hover:text-white transition-colors">Templates</a>
+              </div>
+              <div class="flex items-center gap-4">
+                  <button title="Settings" class="text-white/40 hover:text-white transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/5 shadow-inner">
+                      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Spandyy" alt="User" class="w-full h-full object-cover">
+                  </div>
+              </div>
+          </div>
+      </header>
+          <div class="flex items-center gap-4">
+              <span id="conn-indicator" class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              <button title="Settings" class="text-white/40 hover:text-white transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+              <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/5">
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Spandyy" alt="User" class="w-full h-full object-cover">
+              </div>
+          </div>
+      </header>
+
+      <!-- Chat Container -->
+      <main id="chat-container" class="flex-1 overflow-y-auto px-8 md:px-32 py-12 flex flex-col gap-8 no-scrollbar scroll-smooth">
+          <!-- Messages will be injected here -->
+      </main>
+
+      <!-- Typing Indicator -->
+      <div id="typing-indicator" class="hidden px-32 pb-4 text-[10px] text-white/20 uppercase tracking-widest italic animate-pulse">
+          Gravity Claw is thinking<span class="typing-dots"></span>
+      </div>
+
+      <!-- Input Area -->
+      <footer class="px-8 md:px-32 pb-6 flex flex-col items-center">
+          <div class="w-full max-w-4xl relative group">
+              <input type="file" id="file-input" class="hidden" multiple title="Upload sources" aria-label="Upload sources">
+              <form id="chat-form" class="w-full flex items-end gap-3 bg-[#13171F] border border-white/5 rounded-[32px] p-2 pl-6 focus-within:border-indigo-500/30 transition-all shadow-2xl">
+                  <button type="button" id="add-source-btn" title="Add source" class="mb-2 p-1 text-white/30 hover:text-white transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                  </button>
+                  <textarea 
+                      id="message-input" 
+                      rows="1"
+                      placeholder="Curate your next thought..." 
+                      class="flex-1 bg-transparent resize-none outline-none py-3 text-base placeholder-white/20 text-white/90 max-h-48"
+                  ></textarea>
+                  <div class="flex items-center gap-1 mb-1 pr-1">
+                      <button type="button" id="mic-btn" title="Record voice" class="mic-button p-2 text-white/30 hover:text-indigo-400 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                      </button>
+                      <button type="submit" title="Send message" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                      </button>
+                  </div>
+              </form>
+          </div>
+          <p class="mt-4 text-[10px] text-white/10 uppercase tracking-[0.25em] font-semibold">Press Shift + Enter for new line • Powered by Ethereal Consciousness</p>
+      </footer>
+      
+      <!-- Help Button -->
+      <button title="Get help" class="absolute bottom-10 right-10 w-10 h-10 rounded-xl bg-[#141414] border border-white/5 flex items-center justify-center text-yellow-500/50 hover:text-yellow-500 transition-colors shadow-xl">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12" y1="17" y2="17"/></svg>
+      </button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
