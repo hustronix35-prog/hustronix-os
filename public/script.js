@@ -120,7 +120,7 @@ function appendBotMessage(markdownText, animate) {
         </div>
         <div class="message-content">
             <div class="message-bubble bot-bubble">${cleanHtml}</div>
-            <div class="message-meta">GRAVITY CLAW • ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            <div class="message-meta">HUSTRONIX OS • ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
     `;
 
@@ -189,7 +189,7 @@ function showToast(message, type = 'info') {
 const newChatBtn = document.getElementById('new-chat-btn');
 newChatBtn.addEventListener('click', () => {
     chatContainer.innerHTML = '';
-    appendBotMessage("Conversation reset. Gravity Claw is ready for your next directive.", true);
+    appendBotMessage("Conversation reset. Hustronix OS is ready for your next directive.", true);
     showToast("New Chat Started");
     messageInput.focus();
 });
@@ -231,7 +231,7 @@ document.querySelectorAll('header a, aside .p-6:last-child div').forEach(link =>
 // Header Settings & Profile
 document.querySelector('button[title="Settings"]')?.addEventListener('click', () => {
     appendBotMessage(`
-### ⚙️ System Status: Gravity Claw 1.0.4
+### ⚙️ System Status: Hustronix OS 1.0.4
 - **Core Engine**: Failover Cascade Active (Gemini/Groq/OpenAI)
 - **Memory Layers**: SQLite (Working) + Pinecone (Semantic)
 - **Voice Intelligence**: Whisper-1 + OpenAI Nova

@@ -1,4 +1,4 @@
-import { getCoreMemoryBlock, updateCoreMemoryBlock } from "../memory.js";
+import { db } from "../database.js";
 
 export const definition = {
   name: "remember_fact",
@@ -21,20 +21,20 @@ export const definition = {
 };
 
 export async function handler(input: Record<string, unknown>): Promise<string> {
-  const { fact, block } = input as { fact: string; block: string };
+  const { fact, block, userId } = input as { fact: string; block: string; userId: string };
   
-  if (!fact || !block) {
+  if (!fact || !block || !userId) {
     return "Error: Missing required parameters.";
   }
 
-  const currentContent = getCoreMemoryBlock(block);
+  const currentContent = db.getCoreMemory(userId, block);
   
   // Append as a new bullet point
   const newContent = currentContent 
     ? `${currentContent}\n- ${fact}`
     : `- ${fact}`;
 
-  updateCoreMemoryBlock(block, newContent);
+  db.updateCoreMemory(userId, block, newContent);
 
   return `Core memory updated. Stored fact in [${block}]: "${fact}"`;
 }

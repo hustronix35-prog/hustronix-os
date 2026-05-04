@@ -3,3 +3,25 @@ dist/
 .env
 *.db
 *.db-journal
+
+# Retention: dev scratch, probes, large reference skill packs (not product runtime)
+scratch/
+tmp/
+skills/pm_pack/
+
+# Logs and local SQLite sidecars
+*.log
+backend_stdout.log
+backend_stderr.log
+graph_memory.db-shm
+graph_memory.db-wal
+workspace/logs/
+
+# Generated audit screenshots (keep directory; ignore blobs)
+public/audits/*.png
+
+# Root-level strategy/planning drafts (optional local copies; tracked product notes live in docs/)
+/Hustronix_Alignment_Strategy.md
+/Marketing_Plan.md
+/PRD.md
+/System_Architecture.md

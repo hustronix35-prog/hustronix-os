@@ -10,3 +10,18 @@ Timestamp,CompanyName,Website,FounderName,FounderLinkedIn,CompanyLinkedIn,Locati
 2026-04-02T00:35:07.000Z,"Lasso Security",https://www.lasso.security/,"Elad Schulman","https://www.linkedin.com/in/elad-schulman/","https://www.linkedin.com/company/lasso-security/","Tel Aviv, Israel",Seed,N/A,9,"Cybersecurity focused aesthetic","Announcement banner button styling mismatch",new
 2026-04-02T00:35:08.000Z,"WitnessAI",https://witness.ai/,"Shiv Bajaj","https://www.linkedin.com/in/shiv-bajaj/","https://www.linkedin.com/company/witness-ai/","Mountain View, CA",Early,N/A,9,"Modern AI aesthetic","Video thumb overlaps header on some resolutions",new
 2026-04-02T00:35:09.000Z,"Aim Security",https://www.aim.security/,"Matan Getzler","https://www.linkedin.com/in/matangetzler/","https://www.linkedin.com/company/aim-security/","Tel Aviv, Israel",Acquired,N/A,7,"Corporate integrated","Direct redirect to Cato Networks lacks context",new
+2026-04-15T08:13:31.948Z,"Example Company",https://example.com,"",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:14:39.221Z,"Hustronix",https://www.hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:14:47.226Z,"Hustronix",https://www.hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:27:02.460Z,"Example Inc.",https://example.com,"John",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:27:10.000Z,"Example Inc.",https://example.com,"John",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:27:16.865Z,"Example Inc.",https://example.com,"John",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:27:22.027Z,"Example Inc.",https://example.com,"John",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-15T08:27:35.132Z,"Example Inc.",https://example.com,"John",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-18T07:49:55.258Z,"Hustronix",https://hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-23T18:01:32.334Z,"Hustronix",hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-23T18:02:31.848Z,"Hustronix",hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-23T18:02:35.929Z,"Hustronix",hustronix.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-30T06:51:33.362Z,"Example Company",https://example.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-30T07:32:32.704Z,"Example Company",https://examplecompany.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new
+2026-04-30T10:22:51.508Z,"Example Inc.",https://example.com,"John Doe",N/A,N/A,"N/A",N/A,N/A,N/A,"N/A","N/A",new

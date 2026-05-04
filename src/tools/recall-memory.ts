@@ -1,4 +1,4 @@
-import { searchSemanticMemory } from "../semantic.js";
+import { db } from "../database.js";
 
 export const definition = {
   name: "recall_memory",
@@ -16,20 +16,28 @@ export const definition = {
 };
 
 export async function handler(input: Record<string, unknown>): Promise<string> {
-  const { query } = input as { query: string };
+  const { query, userId } = input as { query: string; userId: string };
   
-  if (!query) {
-    return "Error: Missing required parameter 'query'.";
+  if (!query || !userId) {
+    return "Error: Missing required parameters.";
   }
 
   try {
-    const results = await searchSemanticMemory(query, 5);
+    // Basic keyword search in archival messages scoped to user segment
+    const results = db.rawGet(`
+      SELECT role, content, timestamp 
+      FROM messages 
+      WHERE user_id = ? AND content LIKE ? 
+      ORDER BY timestamp DESC 
+      LIMIT 10
+    `, [userId, `%${query}%`]);
     
     if (results.length === 0) {
       return "No matching memories found in the archive.";
     }
 
-    return `Retrieved from archival memory:\n\n${results.join("\n\n---\n\n")}`;
+    const formatted = results.map((r: any) => `[${r.timestamp}] ${r.role.toUpperCase()}: ${r.content}`).join("\n---\n");
+    return `Retrieved from archival memory:\n\n${formatted}`;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return `Failed to search memory: ${msg}`;

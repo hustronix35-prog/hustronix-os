@@ -7,9 +7,10 @@ export const definition = {
   parameters: {
     type: "object" as const,
     properties: {
-      query: { type: "string", description: "The search query to look up." }
+      query: { type: "string", description: "The search query to look up." },
+      queries: { type: "array", items: { type: "string" }, description: "Alternative: a list of queries. If provided, the total context will be searched." }
     },
-    required: ["query"]
+    required: []
   }
 };
 
@@ -49,11 +50,17 @@ async function fallbackGoogleSearch(query: string): Promise<string> {
   }
 }
 
-export async function handler(args: { query: string }): Promise<string> {
-  console.log(`  🌐 Searching web for: "${args.query}"`);
+export async function handler(args: { query?: string; queries?: string[] }): Promise<string> {
+  const query = args.query || (args.queries && args.queries.length > 0 ? args.queries[0] : "");
+  
+  if (!query) {
+    return "Error: No search query provided.";
+  }
+
+  console.log(`  🌐 Searching web for: "${query}"`);
   
   try {
-    const results = await search(args.query, {
+    const results = await search(query, {
       safeSearch: SafeSearchType.MODERATE
     });
     
@@ -64,7 +71,7 @@ export async function handler(args: { query: string }): Promise<string> {
     }
 
     // If DDG returns empty, it might be blocking us or just no results
-    return await fallbackGoogleSearch(args.query);
+    return await fallbackGoogleSearch(query);
 
   } catch (err: any) {
     const msg = String(err.message || err);
@@ -72,7 +79,7 @@ export async function handler(args: { query: string }): Promise<string> {
     
     // Anomaly, rate limit, or technical error — try Puppeteer fallback
     if (msg.includes("anomaly") || msg.includes("quickly") || msg.includes("403") || msg.includes("Many Requests") || msg.includes("status 429")) {
-      return await fallbackGoogleSearch(args.query);
+      return await fallbackGoogleSearch(query);
     }
 
     return `Search completely failed: ${msg}`;
