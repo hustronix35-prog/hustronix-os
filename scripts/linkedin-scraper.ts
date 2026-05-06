@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 config();
 
-const CACHE_PATH = path.join(__dirname, '../mission-control/public/linkedin-cache.json');
+const CACHE_PATH = path.join(__dirname, 'cache', 'linkedin-cache.json');
 const COOKIE_VALUE = process.env.LINKEDIN_LI_AT_COOKIE;
 
 interface ScrapedPost {
@@ -44,6 +44,7 @@ const FALLBACK_POSTS: ScrapedPost[] = [
 
 async function runScraper() {
   console.log("🚀 Initializing Hustronix OS Headless Scraper...");
+  fs.mkdirSync(path.dirname(CACHE_PATH), { recursive: true });
 
   if (!COOKIE_VALUE) {
     console.warn("⚠️ WARNING: No LINKEDIN_LI_AT_COOKIE found in .env.");

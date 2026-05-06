@@ -46,10 +46,6 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 
 - `**src/mcp.ts`** — loads `**mcp_config.json**` and attaches **stdio MCP servers** as external tools. Optional; unrelated to Slack ingestion unless you configure it.
 
-### Legacy / other tree
-
-- `**mission-control/`** (older Prisma app) is a **separate** surface; the production path for this repo is the **SQLite** API + `**hustronix-ui`**.
-
 ---
 
 ## Part 2 — Slack conversations → signals
