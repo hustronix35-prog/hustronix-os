@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import type { AuditorWriteContext } from "./auditor-context.js";
+import { attachEpistemicDerivation, type EpistemicOrgContext } from "./epistemic-engine.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -199,10 +200,614 @@ export class HustronixDB {
       );
     `);
     this.ensureDecisionLedgerColumns();
+    this.ensureDecisionReasoningColumn();
     this.ensureTenantColumns();
     this.ensureOwnerReputationColumns();
     this.ensureOAuthTables();
     this.ensureSocialAuthTables();
+    this.ensureEmailOtpTables();
+    this.ensureIntelligenceSchema();
+  }
+
+  /**
+   * Schema for the intelligence layer (signal-detector + auto-linker + hybrid retrieval).
+   * Additive: enrichment columns on `external_signals`, three FTS5 virtual tables,
+   * an embeddings BLOB store. SQLite-only — no pgvector. See `src/intelligence/`.
+   */
+  private ensureIntelligenceSchema() {
+    try {
+      const sigCols = this.db.prepare("PRAGMA table_info(external_signals)").all() as { name: string }[];
+      const haveCol = (n: string) => sigCols.some((c) => c.name === n);
+      if (!haveCol("intent")) this.db.exec("ALTER TABLE external_signals ADD COLUMN intent TEXT");
+      if (!haveCol("risk")) this.db.exec("ALTER TABLE external_signals ADD COLUMN risk TEXT");
+      if (!haveCol("intent_confidence"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN intent_confidence REAL");
+      if (!haveCol("related_decision_id"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN related_decision_id TEXT");
+      if (!haveCol("intent_extracted_at"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN intent_extracted_at DATETIME");
+      if (!haveCol("intelligence_error"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN intelligence_error TEXT");
+      if (!haveCol("urgency"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN urgency TEXT");
+      if (!haveCol("affected_systems"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN affected_systems TEXT");
+      if (!haveCol("op_classification"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN op_classification TEXT");
+      if (!haveCol("source_subtype"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN source_subtype TEXT");
+      if (!haveCol("external_id"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN external_id TEXT");
+      if (!haveCol("ingest_meta"))
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN ingest_meta TEXT");
+      this.db.exec(
+        `CREATE INDEX IF NOT EXISTS idx_signals_external_id ON external_signals(source, external_id)`,
+      );
+    } catch (e) {
+      console.warn("[DB] ensureIntelligenceSchema columns:", e);
+    }
+
+    try {
+      this.db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS signals_fts USING fts5(
+          signal_id UNINDEXED,
+          content,
+          owner,
+          source UNINDEXED,
+          user_id UNINDEXED,
+          tokenize = 'porter unicode61'
+        );
+        CREATE VIRTUAL TABLE IF NOT EXISTS executions_fts USING fts5(
+          task_id UNINDEXED,
+          success_condition,
+          failure_condition,
+          decision_id UNINDEXED,
+          user_id UNINDEXED,
+          tokenize = 'porter unicode61'
+        );
+        CREATE VIRTUAL TABLE IF NOT EXISTS decisions_fts USING fts5(
+          decision_id UNINDEXED,
+          vow,
+          expected_outcomes,
+          constraints,
+          user_id UNINDEXED,
+          tokenize = 'porter unicode61'
+        );
+        CREATE TABLE IF NOT EXISTS entity_embeddings (
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          vector BLOB NOT NULL,
+          dim INTEGER NOT NULL,
+          text_hash TEXT NOT NULL,
+          embedded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (entity_type, entity_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_emb_user_type ON entity_embeddings(user_id, entity_type);
+
+        /** Generalises slack_event_receipts for GitHub/Jira/CRM/Meeting webhooks. */
+        CREATE TABLE IF NOT EXISTS external_event_dedup (
+          source TEXT NOT NULL,
+          external_id TEXT NOT NULL,
+          tenant_key TEXT NOT NULL DEFAULT '',
+          received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (source, external_id, tenant_key)
+        );
+
+        /** One row per ingested meeting; child signals carry meeting_ingestion_id in ingest_meta. */
+        CREATE TABLE IF NOT EXISTS meeting_ingestions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          source_subtype TEXT,
+          title TEXT,
+          attendees TEXT,
+          occurred_at DATETIME,
+          transcript_hash TEXT,
+          extraction_method TEXT,
+          decisions_count INTEGER DEFAULT 0,
+          commitments_count INTEGER DEFAULT 0,
+          constraints_count INTEGER DEFAULT 0,
+          blockers_count INTEGER DEFAULT 0,
+          disagreements_count INTEGER DEFAULT 0,
+          signal_ids TEXT,
+          error TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_meeting_user_time ON meeting_ingestions(user_id, occurred_at);
+      `);
+    } catch (e) {
+      console.warn("[DB] ensureIntelligenceSchema FTS/embeddings:", e);
+    }
+  }
+
+  // --- Intelligence: signal enrichment ---
+
+  /**
+   * Persist signal-detector + enricher output. Idempotent — overwrites previous extraction.
+   * `urgency`, `affected_systems` (JSON-stringified array), `op_classification` are written
+   * from the same LLM round-trip as detector fields (see `intelligence/enrich.ts`).
+   * Pass `undefined` to leave a column unchanged; pass `null` to clear it.
+   */
+  enrichSignal(
+    signalId: string,
+    fields: {
+      intent?: string | null;
+      risk?: "low" | "medium" | "high" | null;
+      confidence?: number | null;
+      relatedDecisionId?: string | null;
+      error?: string | null;
+      urgency?: "immediate" | "soon" | "scheduled" | "informational" | null;
+      affectedSystems?: string[] | null;
+      opClassification?:
+        | "incident"
+        | "change"
+        | "inquiry"
+        | "status"
+        | "ambient"
+        | "commitment"
+        | "blocker"
+        | "constraint"
+        | "decision_signal"
+        | "disagreement"
+        | null;
+    },
+  ) {
+    const sets: string[] = ["intent_extracted_at = CURRENT_TIMESTAMP"];
+    const params: unknown[] = [];
+    const push = (col: string, val: unknown) => {
+      sets.push(`${col} = ?`);
+      params.push(val);
+    };
+    if (fields.intent !== undefined) push("intent", fields.intent);
+    if (fields.risk !== undefined) push("risk", fields.risk);
+    if (fields.confidence !== undefined) push("intent_confidence", fields.confidence);
+    if (fields.relatedDecisionId !== undefined) push("related_decision_id", fields.relatedDecisionId);
+    if (fields.error !== undefined) push("intelligence_error", fields.error);
+    if (fields.urgency !== undefined) push("urgency", fields.urgency);
+    if (fields.affectedSystems !== undefined) {
+      push("affected_systems", fields.affectedSystems == null ? null : JSON.stringify(fields.affectedSystems));
+    }
+    if (fields.opClassification !== undefined) push("op_classification", fields.opClassification);
+
+    params.push(signalId);
+    this.db.prepare(`UPDATE external_signals SET ${sets.join(", ")} WHERE id = ?`).run(...params);
+  }
+
+  /**
+   * Generic webhook idempotency. Returns true if this is a new event (inserted),
+   * false if it was already processed. Use for GitHub/Jira/CRM/Meeting webhooks.
+   * `tenantKey` partitions namespaces (e.g. team_id, repo) so two tenants can
+   * legitimately deliver the same external_id without colliding.
+   */
+  tryInsertExternalEventId(source: string, externalId: string, tenantKey = ""): boolean {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO external_event_dedup (source, external_id, tenant_key) VALUES (?, ?, ?)`,
+        )
+        .run(source.toUpperCase(), String(externalId), tenantKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getSignalById(signalId: string) {
+    return this.db
+      .prepare(`SELECT * FROM external_signals WHERE id = ?`)
+      .get(signalId) as
+      | {
+          id: string;
+          user_id: string;
+          source: string;
+          content: string;
+          owner: string;
+          detected_at: string;
+          state: string;
+          linked_execution_id: string | null;
+          intent: string | null;
+          risk: string | null;
+          intent_confidence: number | null;
+          related_decision_id: string | null;
+          urgency: string | null;
+          affected_systems: string | null;
+          op_classification: string | null;
+          source_subtype: string | null;
+          external_id: string | null;
+          ingest_meta: string | null;
+        }
+      | undefined;
+  }
+
+  /** Persist a meeting ingestion audit row. */
+  recordMeetingIngestion(row: {
+    id: string;
+    userId: string;
+    sourceSubtype: string;
+    title: string | null;
+    attendees: string[] | null;
+    occurredAt: string | null;
+    transcriptHash: string;
+    extractionMethod: "llm" | "heuristic";
+    counts: {
+      decisions: number;
+      commitments: number;
+      constraints: number;
+      blockers: number;
+      disagreements: number;
+    };
+    signalIds: string[];
+    error?: string | null;
+  }) {
+    this.db
+      .prepare(
+        `INSERT INTO meeting_ingestions
+           (id, user_id, source_subtype, title, attendees, occurred_at,
+            transcript_hash, extraction_method,
+            decisions_count, commitments_count, constraints_count,
+            blockers_count, disagreements_count, signal_ids, error)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        row.id,
+        row.userId,
+        row.sourceSubtype,
+        row.title,
+        row.attendees == null ? null : JSON.stringify(row.attendees),
+        row.occurredAt,
+        row.transcriptHash,
+        row.extractionMethod,
+        row.counts.decisions,
+        row.counts.commitments,
+        row.counts.constraints,
+        row.counts.blockers,
+        row.counts.disagreements,
+        JSON.stringify(row.signalIds),
+        row.error ?? null,
+      );
+  }
+
+  /** Idempotency check for meetings — same transcript should not double-fan-out. */
+  meetingAlreadyIngested(userId: string, transcriptHash: string): boolean {
+    const r = this.db
+      .prepare(`SELECT 1 FROM meeting_ingestions WHERE user_id = ? AND transcript_hash = ? LIMIT 1`)
+      .get(userId, transcriptHash);
+    return !!r;
+  }
+
+  // --- Intelligence: context engine reads ---
+
+  /** Single ACTIVE decision per user (deterministic conflict rule). null if none. */
+  getActiveDecision(userId: string) {
+    return this.db
+      .prepare(
+        `SELECT id, vow, expected_outcomes, constraints, reversal_conditions, confidence, status, created_at
+           FROM decision_ledger WHERE user_id = ? AND status = 'ACTIVE' LIMIT 1`,
+      )
+      .get(userId) as
+      | {
+          id: string;
+          vow: string;
+          expected_outcomes: string;
+          constraints: string;
+          reversal_conditions: string | null;
+          confidence: number;
+          status: string;
+          created_at: string;
+        }
+      | undefined;
+  }
+
+  getActiveExecutions(userId: string, limit = 50) {
+    return this.db
+      .prepare(
+        `SELECT e.task_id, e.decision_id, e.owner, e.type, e.weight, e.status,
+                e.success_condition, e.failure_condition, e.last_update,
+                d.vow as decision_vow
+           FROM execution_ledger e
+           INNER JOIN decision_ledger d ON e.decision_id = d.id
+           WHERE d.user_id = ? AND e.status IN ('PENDING', 'ACTIVE', 'BLOCKED')
+           ORDER BY CASE e.status WHEN 'ACTIVE' THEN 0 WHEN 'BLOCKED' THEN 1 ELSE 2 END,
+                    e.last_update DESC
+           LIMIT ?`,
+      )
+      .all(userId, limit) as {
+      task_id: string;
+      decision_id: string;
+      owner: string;
+      type: string;
+      weight: number;
+      status: string;
+      success_condition: string | null;
+      failure_condition: string | null;
+      last_update: string;
+      decision_vow: string;
+    }[];
+  }
+
+  /** Includes enrichment columns. Tenant-scoped (system sees all). */
+  getRecentSignals(userId: string, limit = 20) {
+    const cols = `id, user_id, source, source_subtype, content, owner, detected_at, state,
+                  intent, risk, intent_confidence, related_decision_id, linked_execution_id,
+                  urgency, affected_systems, op_classification`;
+    if (userId === "system") {
+      return this.db
+        .prepare(`SELECT ${cols} FROM external_signals ORDER BY detected_at DESC LIMIT ?`)
+        .all(limit) as Record<string, unknown>[];
+    }
+    return this.db
+      .prepare(
+        `SELECT ${cols} FROM external_signals WHERE user_id = ? ORDER BY detected_at DESC LIMIT ?`,
+      )
+      .all(userId, limit) as Record<string, unknown>[];
+  }
+
+  // --- Intelligence: FTS5 mirror writes ---
+
+  upsertSignalFts(row: {
+    signalId: string;
+    content: string;
+    owner: string;
+    source: string;
+    userId: string;
+  }) {
+    try {
+      this.db.prepare(`DELETE FROM signals_fts WHERE signal_id = ?`).run(row.signalId);
+      this.db
+        .prepare(
+          `INSERT INTO signals_fts (signal_id, content, owner, source, user_id) VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(row.signalId, row.content, row.owner, row.source, row.userId);
+    } catch (e) {
+      console.warn("[DB] upsertSignalFts:", e);
+    }
+  }
+
+  upsertExecutionFts(row: {
+    taskId: string;
+    successCondition: string | null;
+    failureCondition: string | null;
+    decisionId: string;
+    userId: string;
+  }) {
+    try {
+      this.db.prepare(`DELETE FROM executions_fts WHERE task_id = ?`).run(row.taskId);
+      this.db
+        .prepare(
+          `INSERT INTO executions_fts (task_id, success_condition, failure_condition, decision_id, user_id)
+             VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(
+          row.taskId,
+          row.successCondition || "",
+          row.failureCondition || "",
+          row.decisionId,
+          row.userId,
+        );
+    } catch (e) {
+      console.warn("[DB] upsertExecutionFts:", e);
+    }
+  }
+
+  upsertDecisionFts(row: {
+    decisionId: string;
+    vow: string;
+    expectedOutcomes: string;
+    constraints: string;
+    userId: string;
+  }) {
+    try {
+      this.db.prepare(`DELETE FROM decisions_fts WHERE decision_id = ?`).run(row.decisionId);
+      this.db
+        .prepare(
+          `INSERT INTO decisions_fts (decision_id, vow, expected_outcomes, constraints, user_id)
+             VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(row.decisionId, row.vow, row.expectedOutcomes, row.constraints, row.userId);
+    } catch (e) {
+      console.warn("[DB] upsertDecisionFts:", e);
+    }
+  }
+
+  /** One-shot backfill — safe to call on startup. */
+  rebuildFtsFromLedger() {
+    try {
+      this.db.exec("DELETE FROM signals_fts; DELETE FROM executions_fts; DELETE FROM decisions_fts;");
+      const sigs = this.db
+        .prepare(
+          `SELECT id, user_id, source, content, owner FROM external_signals WHERE content IS NOT NULL`,
+        )
+        .all() as { id: string; user_id: string; source: string; content: string; owner: string }[];
+      for (const s of sigs) {
+        this.upsertSignalFts({
+          signalId: s.id,
+          content: s.content || "",
+          owner: s.owner || "",
+          source: s.source || "",
+          userId: s.user_id || "system",
+        });
+      }
+      const execs = this.db
+        .prepare(
+          `SELECT e.task_id, e.success_condition, e.failure_condition, e.decision_id, d.user_id
+             FROM execution_ledger e INNER JOIN decision_ledger d ON e.decision_id = d.id`,
+        )
+        .all() as {
+        task_id: string;
+        success_condition: string | null;
+        failure_condition: string | null;
+        decision_id: string;
+        user_id: string;
+      }[];
+      for (const e of execs) {
+        this.upsertExecutionFts({
+          taskId: e.task_id,
+          successCondition: e.success_condition,
+          failureCondition: e.failure_condition,
+          decisionId: e.decision_id,
+          userId: e.user_id || "system",
+        });
+      }
+      const decs = this.db
+        .prepare(
+          `SELECT id, user_id, vow, expected_outcomes, constraints FROM decision_ledger`,
+        )
+        .all() as {
+        id: string;
+        user_id: string;
+        vow: string;
+        expected_outcomes: string;
+        constraints: string;
+      }[];
+      for (const d of decs) {
+        this.upsertDecisionFts({
+          decisionId: d.id,
+          vow: d.vow || "",
+          expectedOutcomes: d.expected_outcomes || "",
+          constraints: d.constraints || "",
+          userId: d.user_id || "system",
+        });
+      }
+    } catch (e) {
+      console.warn("[DB] rebuildFtsFromLedger:", e);
+    }
+  }
+
+  // --- Intelligence: hybrid retrieval reads ---
+
+  /**
+   * BM25-ranked FTS5 query against signals. Returns row + bm25 score (lower = more relevant in FTS5).
+   * Tenant-scoped. The caller may flip the score sign before fusion.
+   */
+  searchSignalsFts(userId: string, query: string, limit = 20) {
+    const sanitized = sanitizeFtsQuery(query);
+    if (!sanitized) return [];
+    const params: unknown[] = [sanitized];
+    let sql = `SELECT signal_id, content, owner, source, user_id, bm25(signals_fts) as score
+                 FROM signals_fts WHERE signals_fts MATCH ?`;
+    if (userId !== "system") {
+      sql += ` AND user_id = ?`;
+      params.push(userId);
+    }
+    sql += ` ORDER BY score ASC LIMIT ?`;
+    params.push(limit);
+    return this.db.prepare(sql).all(...params) as {
+      signal_id: string;
+      content: string;
+      owner: string;
+      source: string;
+      user_id: string;
+      score: number;
+    }[];
+  }
+
+  searchExecutionsFts(userId: string, query: string, limit = 20) {
+    const sanitized = sanitizeFtsQuery(query);
+    if (!sanitized) return [];
+    const params: unknown[] = [sanitized];
+    let sql = `SELECT task_id, success_condition, failure_condition, decision_id, user_id, bm25(executions_fts) as score
+                 FROM executions_fts WHERE executions_fts MATCH ?`;
+    if (userId !== "system") {
+      sql += ` AND user_id = ?`;
+      params.push(userId);
+    }
+    sql += ` ORDER BY score ASC LIMIT ?`;
+    params.push(limit);
+    return this.db.prepare(sql).all(...params) as {
+      task_id: string;
+      success_condition: string;
+      failure_condition: string;
+      decision_id: string;
+      user_id: string;
+      score: number;
+    }[];
+  }
+
+  searchDecisionsFts(userId: string, query: string, limit = 20) {
+    const sanitized = sanitizeFtsQuery(query);
+    if (!sanitized) return [];
+    const params: unknown[] = [sanitized];
+    let sql = `SELECT decision_id, vow, expected_outcomes, constraints, user_id, bm25(decisions_fts) as score
+                 FROM decisions_fts WHERE decisions_fts MATCH ?`;
+    if (userId !== "system") {
+      sql += ` AND user_id = ?`;
+      params.push(userId);
+    }
+    sql += ` ORDER BY score ASC LIMIT ?`;
+    params.push(limit);
+    return this.db.prepare(sql).all(...params) as {
+      decision_id: string;
+      vow: string;
+      expected_outcomes: string;
+      constraints: string;
+      user_id: string;
+      score: number;
+    }[];
+  }
+
+  // --- Intelligence: embeddings ---
+
+  upsertEmbedding(row: {
+    entityType: "signal" | "execution" | "decision";
+    entityId: string;
+    userId: string;
+    vector: Float32Array;
+    textHash: string;
+  }) {
+    const buf = Buffer.from(row.vector.buffer, row.vector.byteOffset, row.vector.byteLength);
+    this.db
+      .prepare(
+        `INSERT INTO entity_embeddings (entity_type, entity_id, user_id, vector, dim, text_hash, embedded_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(entity_type, entity_id) DO UPDATE SET
+             user_id = excluded.user_id,
+             vector = excluded.vector,
+             dim = excluded.dim,
+             text_hash = excluded.text_hash,
+             embedded_at = CURRENT_TIMESTAMP`,
+      )
+      .run(row.entityType, row.entityId, row.userId, buf, row.vector.length, row.textHash);
+  }
+
+  getEmbeddingTextHash(entityType: string, entityId: string): string | null {
+    const row = this.db
+      .prepare(`SELECT text_hash FROM entity_embeddings WHERE entity_type = ? AND entity_id = ?`)
+      .get(entityType, entityId) as { text_hash: string } | undefined;
+    return row?.text_hash ?? null;
+  }
+
+  /**
+   * Caller does cosine in JS — N stays in the thousands. Tenant-scoped.
+   * Returns vector buffers as Float32Array for direct math.
+   */
+  listEmbeddingsForUser(
+    userId: string,
+    entityType?: "signal" | "execution" | "decision",
+  ): { entityType: string; entityId: string; vector: Float32Array }[] {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (userId !== "system") {
+      where.push("user_id = ?");
+      params.push(userId);
+    }
+    if (entityType) {
+      where.push("entity_type = ?");
+      params.push(entityType);
+    }
+    const sql = `SELECT entity_type, entity_id, vector, dim FROM entity_embeddings ${
+      where.length ? `WHERE ${where.join(" AND ")}` : ""
+    }`;
+    const rows = this.db.prepare(sql).all(...params) as {
+      entity_type: string;
+      entity_id: string;
+      vector: Buffer;
+      dim: number;
+    }[];
+    return rows.map((r) => ({
+      entityType: r.entity_type,
+      entityId: r.entity_id,
+      vector: new Float32Array(r.vector.buffer, r.vector.byteOffset, r.dim),
+    }));
   }
 
   /** Older DBs may have owner_reputation without behavioral columns (CREATE TABLE IF NOT EXISTS skips upgrades). */
@@ -243,6 +848,92 @@ export class HustronixDB {
         PRIMARY KEY (provider, provider_user_id)
       );
     `);
+  }
+
+  private ensureEmailOtpTables() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS email_otp_challenges (
+        challenge_token TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        purpose TEXT NOT NULL CHECK(purpose IN ('signup','login')),
+        user_id TEXT,
+        code_hash TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        consumed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_email_otp_user_login ON email_otp_challenges(user_id, purpose);
+    `);
+  }
+
+  deleteExpiredEmailOtpChallenges() {
+    this.db.prepare(`DELETE FROM email_otp_challenges WHERE expires_at < datetime('now')`).run();
+  }
+
+  deleteOpenLoginOtpForUser(userId: string) {
+    this.db
+      .prepare(
+        `DELETE FROM email_otp_challenges WHERE user_id = ? AND purpose = 'login' AND consumed_at IS NULL`,
+      )
+      .run(userId);
+  }
+
+  insertEmailOtpChallenge(params: {
+    challengeToken: string;
+    username: string;
+    purpose: "signup" | "login";
+    userId: string | null;
+    codeHash: string;
+    expiresAtIso: string;
+  }) {
+    this.db
+      .prepare(
+        `INSERT INTO email_otp_challenges (challenge_token, username, purpose, user_id, code_hash, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        params.challengeToken,
+        params.username,
+        params.purpose,
+        params.userId,
+        params.codeHash,
+        params.expiresAtIso,
+      );
+  }
+
+  getEmailOtpChallenge(challengeToken: string) {
+    return this.db
+      .prepare(
+        `SELECT challenge_token, username, purpose, user_id, code_hash, expires_at, attempts, consumed_at
+         FROM email_otp_challenges WHERE challenge_token = ?`,
+      )
+      .get(challengeToken) as
+      | {
+          challenge_token: string;
+          username: string;
+          purpose: string;
+          user_id: string | null;
+          code_hash: string;
+          expires_at: string;
+          attempts: number;
+          consumed_at: string | null;
+        }
+      | undefined;
+  }
+
+  incrementEmailOtpAttempts(challengeToken: string) {
+    this.db
+      .prepare(`UPDATE email_otp_challenges SET attempts = attempts + 1 WHERE challenge_token = ?`)
+      .run(challengeToken);
+  }
+
+  consumeEmailOtpChallenge(challengeToken: string) {
+    this.db
+      .prepare(
+        `UPDATE email_otp_challenges SET consumed_at = datetime('now') WHERE challenge_token = ? AND consumed_at IS NULL`,
+      )
+      .run(challengeToken);
   }
 
   createOAuthLoginState(state: string, provider: string, ttlMinutes: number) {
@@ -469,22 +1160,39 @@ export class HustronixDB {
     owner: string;
     /** Optional ISO or SQLite datetime; default `CURRENT_TIMESTAMP`. */
     detectedAt?: string;
+    /** Provider-specific subtype: meeting / crm.hubspot / github.issues / etc. */
+    sourceSubtype?: string;
+    /** Idempotency key from the upstream provider (e.g. github delivery id). */
+    externalId?: string;
+    /** Free-form JSON-stringified context (channel, repo, attendees…). */
+    ingestMeta?: string;
   }) {
-    if (row.detectedAt) {
-      this.db
-        .prepare(
-          `INSERT INTO external_signals (id, user_id, source, content, owner, detected_at, state)
-           VALUES (?, ?, ?, ?, ?, ?, 'UNVERIFIED')`,
-        )
-        .run(row.id, row.userId, row.source, row.content, row.owner, row.detectedAt);
-    } else {
-      this.db
-        .prepare(
-          `INSERT INTO external_signals (id, user_id, source, content, owner, detected_at, state)
-           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'UNVERIFIED')`,
-        )
-        .run(row.id, row.userId, row.source, row.content, row.owner);
-    }
+    const detectedAt = row.detectedAt ?? null;
+    this.db
+      .prepare(
+        `INSERT INTO external_signals
+            (id, user_id, source, content, owner, detected_at, state,
+             source_subtype, external_id, ingest_meta)
+         VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), 'UNVERIFIED', ?, ?, ?)`,
+      )
+      .run(
+        row.id,
+        row.userId,
+        row.source,
+        row.content,
+        row.owner,
+        detectedAt,
+        row.sourceSubtype ?? null,
+        row.externalId ?? null,
+        row.ingestMeta ?? null,
+      );
+    this.upsertSignalFts({
+      signalId: row.id,
+      content: row.content,
+      owner: row.owner,
+      source: row.source,
+      userId: row.userId,
+    });
     this.invokeLedgerAuditor({ type: "signal", signalId: row.id });
   }
 
@@ -512,6 +1220,25 @@ export class HustronixDB {
         "UPDATE decision_ledger SET last_update = CURRENT_TIMESTAMP WHERE last_update IS NULL",
       );
     }
+  }
+
+  /** JSON blob: epistemic memo, causal validation gate, second-order effects, decision economics (see institutional-reasoning.ts). */
+  private ensureDecisionReasoningColumn() {
+    try {
+      const cols = this.db.prepare("PRAGMA table_info(decision_ledger)").all() as { name: string }[];
+      if (!cols.some((c) => c.name === "decision_reasoning")) {
+        this.db.exec("ALTER TABLE decision_ledger ADD COLUMN decision_reasoning TEXT");
+      }
+    } catch (e) {
+      console.warn("[DB] ensureDecisionReasoningColumn:", e);
+    }
+  }
+
+  /** Full decision row (includes decision_reasoning when migrated). */
+  getDecisionLedgerRow(decisionId: string) {
+    return this.db.prepare(`SELECT * FROM decision_ledger WHERE id = ?`).get(decisionId) as
+      | Record<string, unknown>
+      | undefined;
   }
 
   /** SQLite migrations for multi-tenant signals + SaaS tables on older files. */
@@ -613,11 +1340,44 @@ export class HustronixDB {
     `).run(action, reason, entityId);
   }
 
+  /** Organizational memory hook for derived confidence (completed decisions + learning_log). */
+  getEpistemicOrgContext(userId: string): EpistemicOrgContext {
+    const uid = userId || "system";
+    const completedRow = this.db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM decision_ledger WHERE user_id = ? AND status IN ('COMPLETED', 'REVERSED')`,
+      )
+      .get(uid) as { c: number };
+    const learningRow = this.db
+      .prepare(`SELECT COUNT(*) AS c FROM learning_log WHERE user_id = ?`)
+      .get(uid) as { c: number };
+    const completed_decisions = completedRow?.c ?? 0;
+    const learning_log_entries = learningRow?.c ?? 0;
+    const memory_confidence_boost_0_1 = Math.min(
+      0.04,
+      0.005 * Math.min(completed_decisions, 8) + 0.002 * Math.min(learning_log_entries, 10),
+    );
+    const memory_note =
+      completed_decisions === 0 && learning_log_entries === 0
+        ? "No prior completed decisions or learning_log rows for this principal."
+        : `${completed_decisions} completed/reversed decisions; ${learning_log_entries} learning_log entr${learning_log_entries === 1 ? "y" : "ies"} — bounded memory uplift applied to structural confidence.`;
+    return {
+      completed_decisions,
+      learning_log_entries,
+      memory_confidence_boost_0_1,
+      memory_note,
+    };
+  }
+
   // --- Decision Management ---
   saveDecisionEvent(userId: string, data: any) {
     const id = uuidv4();
-    // Semantic Fingerprint: Vow + Expected Outcomes
-    const fingerprintStr = (data.vow || "") + JSON.stringify(data.expected_outcomes || {});
+    const ir = data.institutional_reasoning;
+    // Semantic Fingerprint: Vow + Expected Outcomes + reasoning payload (before server-only epistemic_derivation).
+    const fingerprintStr =
+      (data.vow || "") +
+      JSON.stringify(data.expected_outcomes || {}) +
+      (ir ? JSON.stringify(ir) : "");
     const fingerprint = crypto.createHash('sha256').update(fingerprintStr).digest('hex');
 
     // DEDUPLICATION Check
@@ -627,21 +1387,46 @@ export class HustronixDB {
         return existing.id;
     }
 
+    if (ir && typeof ir === "object" && Number(ir.institutional_version) >= 3) {
+      attachEpistemicDerivation(ir, this.getEpistemicOrgContext(userId));
+    }
+
+    const reasoningJson = ir != null ? JSON.stringify(ir) : null;
+
+    let confidence = 0.8;
+    if (ir && typeof ir === "object" && Number(ir.institutional_version) >= 3) {
+      const computed = ir.epistemic_derivation?.computed_confidence_0_1;
+      if (typeof computed === "number") confidence = computed;
+      else if (typeof ir.confidence_0_1 === "number") confidence = ir.confidence_0_1;
+    } else if (typeof data.confidence === "number") {
+      confidence = data.confidence;
+    } else if (ir && typeof ir.confidence_0_1 === "number") {
+      confidence = ir.confidence_0_1;
+    }
+
     this.db.prepare(`
       INSERT INTO decision_ledger (
-        id, user_id, fingerprint, vow, expected_outcomes, constraints, reversal_conditions, confidence, status
+        id, user_id, fingerprint, vow, expected_outcomes, constraints, reversal_conditions, confidence, status, decision_reasoning
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT')
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)
     `).run(
       id, userId, fingerprint, data.vow || "Unspecified Vow",
       JSON.stringify(data.expected_outcomes || []),
       JSON.stringify(data.constraints || []),
       data.reversal_conditions || null,
-      data.confidence || 0.8
+      confidence,
+      reasoningJson,
     );
 
     this.logAudit('DECISION_CREATED', 'Initial decision capture', id);
-    
+    this.upsertDecisionFts({
+      decisionId: id,
+      vow: data.vow || "Unspecified Vow",
+      expectedOutcomes: JSON.stringify(data.expected_outcomes || []),
+      constraints: JSON.stringify(data.constraints || []),
+      userId,
+    });
+
     // EXECUTION OBJECT CREATION
     if (data.tasks && Array.isArray(data.tasks)) {
       for (const t of data.tasks) {
@@ -705,6 +1490,18 @@ export class HustronixDB {
       data.success_condition || null, data.failure_condition || null
     );
     this.logAudit('TASK_SPAWNED', `Type: ${data.type || 'ACTION'}`, taskId);
+    {
+      const tenantRow = this.db
+        .prepare(`SELECT user_id FROM decision_ledger WHERE id = ?`)
+        .get(data.decision_id) as { user_id: string } | undefined;
+      this.upsertExecutionFts({
+        taskId,
+        successCondition: data.success_condition || null,
+        failureCondition: data.failure_condition || null,
+        decisionId: data.decision_id,
+        userId: tenantRow?.user_id || "system",
+      });
+    }
     if (!skipAuditorHook) {
       this.invokeLedgerAuditor({ type: "execution", taskId });
     }
@@ -1005,6 +1802,22 @@ export class HustronixDB {
       | undefined;
     return row?.user_id;
   }
+}
+
+/**
+ * FTS5 query strings must avoid bare unsafe punctuation. We tokenize on whitespace,
+ * strip non-word chars, and quote every term so reserved words (AND/OR/NEAR/...) cannot
+ * blow up the parser. Empty result means "do not run this query".
+ */
+function sanitizeFtsQuery(raw: string): string {
+  const cleaned = String(raw || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s_-]/g, " ")
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2 && t.length <= 64);
+  if (cleaned.length === 0) return "";
+  return cleaned.map((t) => `"${t}"`).join(" OR ");
 }
 
 export const db = new HustronixDB();

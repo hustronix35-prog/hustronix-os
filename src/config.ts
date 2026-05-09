@@ -43,6 +43,13 @@ function parsePositiveInt(envVal: string | undefined, defaultVal: number, max?: 
   return n;
 }
 
+const llmCostSaver =
+  process.env.LLM_COST_SAVER === "1" || process.env.LLM_COST_SAVER?.trim().toLowerCase() === "true";
+
+/** Premium Anthropic model (coordinator + tools). Env: ANTHROPIC_MODEL_PREMIUM or legacy ANTHROPIC_MODEL. */
+const anthropicPremiumModel =
+  process.env.ANTHROPIC_MODEL_PREMIUM?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-6";
+
 export const config = {
   server: {
     port: parseInt(process.env.PORT || "3005"),
@@ -52,17 +59,14 @@ export const config = {
     /** Where to send the browser after Slack OAuth completes (Next.js URL). */
     appOrigin: (process.env.APP_ORIGIN || "http://localhost:3000").replace(/\/$/, ""),
   },
-  telegram: {
-    token: process.env.TELEGRAM_BOT_TOKEN || "",
-    whitelist: (process.env.ALLOWED_USER_IDS || "7947808911")
-      .split(",")
-      .map(id => id.trim())
-      .filter(id => id.length > 0),
-  },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
-    /** Env overrides SQLite `anthropicModel`. Use Haiku for cheaper chat: `claude-3-5-haiku-20241022`. */
-    primaryModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-6",
+    /** Cheap tier: sub-agents, signal/link/heuristic LLM paths (env: ANTHROPIC_MODEL_FAST). */
+    fastModel: process.env.ANTHROPIC_MODEL_FAST?.trim() || "claude-3-5-haiku-20241022",
+    /** Premium tier: main coordinator with tools (env: ANTHROPIC_MODEL_PREMIUM or ANTHROPIC_MODEL). */
+    premiumModel: anthropicPremiumModel,
+    /** Same as premiumModel — bootstrap/logging compatibility. */
+    primaryModel: anthropicPremiumModel,
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || "",
@@ -73,13 +77,13 @@ export const config = {
     dbPath: "./data/hustronix.db",
   },
   agent: {
-    /** Tool/LLM rounds per user message — lower = faster (env: MAX_ITERATIONS). */
-    maxIterations: parsePositiveInt(process.env.MAX_ITERATIONS, 6, 20),
-    /** Recent messages loaded into context — lower = faster prompts (env: CHAT_HISTORY_MESSAGES). */
-    historyMessages: parsePositiveInt(process.env.CHAT_HISTORY_MESSAGES, 25, 80),
+    /** Tool/LLM rounds per user message — lower = cheaper (env: MAX_ITERATIONS). LLM_COST_SAVER tightens defaults. */
+    maxIterations: parsePositiveInt(process.env.MAX_ITERATIONS, llmCostSaver ? 3 : 4, 20),
+    /** Recent messages loaded into context — lower = cheaper prompts (env: CHAT_HISTORY_MESSAGES). */
+    historyMessages: parsePositiveInt(process.env.CHAT_HISTORY_MESSAGES, llmCostSaver ? 8 : 12, 80),
     debug: true,
     activeProvider: (process.env.ACTIVE_PROVIDER as "anthropic" | "openai") || "anthropic",
-    systemPrompt: "You are Hustronix OS, a high-precision AI agent. \n\nCRITICAL RULE: When copying any identifier (email, ID, key, token) from user input to a tool, you MUST perform a character-by-character validation. Any normalization or correction of perceived typos (e.g., removing an 'e' from 'doeshog...') is a CRITICAL FAILURE. Copy every character EXACTLY as the user wrote it.",
+    systemPrompt: "You are Hustronix OS, a high-precision AI agent. \n\nCRITICAL RULE: When copying any identifier (email, ID, key, token) from user input to a tool, you MUST perform a character-by-character validation. Any normalization or correction of perceived typos (e.g., removing an 'e' from 'doeshog...') is a CRITICAL FAILURE. Copy every character EXACTLY as the user wrote it.\n\nOUTPUT DISCIPLINE: Prefer calibrated claims over bravado. State confidence when inferring causality; separate supporting evidence from missing validation and from unverified assumptions; list at least two alternative hypotheses with what would disconfirm each; never label a causal read \"confirmed\" or \"ROOT CAUSE\" without proof. Note second-order tradeoffs and post-recovery equilibrium (adoption, monetization, learning, experimentation). Earn the ask before you make it—progressive commitment over theatrical urgency. Keep tone neutral (operations memo, not marketing hype). Do not use emoji or self-narrating theatrics in substantive answers.",
     /**
      * Wall-clock cap for full coordinator loop (LLM + tools, multiple iterations).
      * Must exceed one stream’s LLM_STREAM_MAX_MS or multi-step turns abort early (env: AGENT_GLOBAL_TIMEOUT_MS).
@@ -96,18 +100,29 @@ export const config = {
     streamIdleTimeoutMs: parsePositiveInt(process.env.LLM_STREAM_IDLE_MS, 90_000, 300_000),
     /** Hard cap for one streamed completion — cost + hang guard (env: LLM_STREAM_MAX_MS). */
     streamMaxMs: parsePositiveInt(process.env.LLM_STREAM_MAX_MS, 240_000, 900_000),
-    /** Lower = cheaper / faster replies (env: LLM_MAX_OUTPUT_TOKENS). */
-    maxOutputTokens: parsePositiveInt(process.env.LLM_MAX_OUTPUT_TOKENS, 1536, 8192),
+    /** Lower = cheaper replies (env: LLM_MAX_OUTPUT_TOKENS). LLM_COST_SAVER tightens defaults. */
+    maxOutputTokens: parsePositiveInt(process.env.LLM_MAX_OUTPUT_TOKENS, llmCostSaver ? 512 : 768, 8192),
   },
+  /**
+   * SMTP for transactional mail (e.g. login/signup OTP).
+   * Uses EMAIL_ADDRESS / EMAIL_PASSWORD by default; override user/pass with EMAIL_SMTP_USER / EMAIL_SMTP_PASSWORD if needed.
+   */
   email: {
-    enabled: true,
-    address: process.env.EMAIL_ADDRESS || "",
-    password: process.env.EMAIL_PASSWORD || "",
-    smtpHost: process.env.EMAIL_SMTP_HOST || "smtp.gmail.com",
-    smtpPort: parseInt(process.env.EMAIL_SMTP_PORT || "465"),
-    imapHost: process.env.EMAIL_IMAP_HOST || "imap.gmail.com",
-    imapPort: parseInt(process.env.EMAIL_IMAP_PORT || "993"),
-  }
+    smtpHost: (process.env.EMAIL_SMTP_HOST || "smtp.gmail.com").trim(),
+    smtpPort: parsePositiveInt(process.env.EMAIL_SMTP_PORT, 465, 65535),
+    /** Implicit TLS (465). For 587 use EMAIL_SMTP_SECURE=false. */
+    smtpSecure: (() => {
+      const raw = process.env.EMAIL_SMTP_SECURE?.trim().toLowerCase();
+      if (raw === "true") return true;
+      if (raw === "false") return false;
+      return parsePositiveInt(process.env.EMAIL_SMTP_PORT, 465, 65535) === 465;
+    })(),
+    smtpUser: (process.env.EMAIL_SMTP_USER || process.env.EMAIL_ADDRESS || "").trim(),
+    smtpPass: (process.env.EMAIL_SMTP_PASSWORD || process.env.EMAIL_PASSWORD || "").trim(),
+    fromAddress: (process.env.EMAIL_FROM || process.env.EMAIL_ADDRESS || "").trim(),
+    otpTtlMinutes: parsePositiveInt(process.env.EMAIL_OTP_TTL_MINUTES, 10, 60),
+    otpMaxAttempts: parsePositiveInt(process.env.EMAIL_OTP_MAX_ATTEMPTS, 5, 20),
+  },
 };
 
 if (config.llm.streamMaxMs > config.agent.globalTimeoutMs) {
@@ -116,7 +131,8 @@ if (config.llm.streamMaxMs > config.agent.globalTimeoutMs) {
   );
 }
 
-// Validate critical secrets
-if (!config.telegram.token) console.error("❌ CRITICAL: TELEGRAM_BOT_TOKEN missing in .env");
+// Validate critical secrets (avoid duplicate noise when only one provider is used)
 if (!config.anthropic.apiKey) console.warn("⚠️ Warning: ANTHROPIC_API_KEY missing. Please add it to your .env.");
-if (!config.openai.apiKey) console.warn("⚠️ Warning: OPENAI_API_KEY missing. Please add it to your .env.");
+if (!config.openai.apiKey && config.agent.activeProvider === "openai") {
+  console.warn("⚠️ Warning: OPENAI_API_KEY missing (ACTIVE_PROVIDER=openai). Please add it to your .env.");
+}

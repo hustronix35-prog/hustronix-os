@@ -18,8 +18,36 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "./auth/password.js";
 import { hashOpaqueToken, randomHex, newApiAccessTokenPlain } from "./auth/tokens.js";
+import { randomOtpDigits, hashEmailOtpCode, verifyEmailOtpCode } from "./auth/emailOtp.js";
+import { smtpConfigured, sendOtpEmail } from "./auth/smtp.js";
 import { handleSlackEventsRequest } from "./integrations/slackEvents.js";
 import { auditor } from "./auditor.js";
+import { requireCausalValidationForActivation } from "./institutional-reasoning.js";
+import {
+  fetchDecisionContext,
+  hybridSearch,
+  processSignal,
+  warmEmbeddingsForActiveLedger,
+  findDriftSignals,
+  findOverloadedOwners,
+  findConflictingExecutions,
+  findSignalsRelatedToTask,
+  operationalSearch,
+  weeklyDriftReport,
+  operationalHealth,
+  formatWeeklyDriftMarkdown,
+  formatHealthMarkdown,
+  ingestMeeting,
+} from "./intelligence/index.js";
+import { ingestExternal, ingestExternalBatch, IngestError } from "./integrations/ingestRouter.js";
+import {
+  verifyGithubSignature,
+  verifyJiraBearer,
+  verifyCrmBearer,
+  transformGithubWebhook,
+  transformJiraWebhook,
+  transformCrmWebhook,
+} from "./integrations/webhookTransforms.js";
 
 const LEGACY_UID_COOKIE = "hustronix_uid";
 const SESSION_COOKIE = "hustronix_session";
@@ -65,6 +93,10 @@ function commitDecisionActive(userId: string, decisionId: string, justification?
   if (userId !== "system" && tenant !== userId) {
     throw new Error("Forbidden: decision belongs to another account.");
   }
+  const row = db.getDecisionLedgerRow(decisionId);
+  if (row?.decision_reasoning != null && String(row.decision_reasoning).trim() !== "") {
+    requireCausalValidationForActivation(row.decision_reasoning);
+  }
   db.transitionDecisionState(decisionId, "ACTIVE", justification || "Committed via Hustronix");
 }
 
@@ -108,6 +140,135 @@ app.post(
   express.raw({ type: "application/json" }),
   handleSlackEventsRequest,
 );
+
+/**
+ * GitHub webhooks. Mounted BEFORE express.json() because HMAC-SHA256
+ * verification needs the unmodified raw body. Tenant resolution: the URL
+ * carries the tenant id (`/api/ingest/github/:tenant`) — caller must own
+ * the GitHub App configuration that signs payloads with the matching secret.
+ *
+ * Express 5 / path-to-regexp does not accept optional `:tenant?`; register
+ * `/api/ingest/github` and `/api/ingest/github/:tenant` separately.
+ */
+function handleGithubIngest(req: express.Request, res: express.Response) {
+  const secret = process.env.GITHUB_WEBHOOK_SECRET?.trim();
+  if (!secret) {
+    res.status(503).json({ ok: false, error: "missing_github_secret" });
+    return;
+  }
+  const raw = req.body instanceof Buffer ? req.body : Buffer.from(JSON.stringify(req.body ?? {}));
+  const sig = req.headers["x-hub-signature-256"] as string | undefined;
+  if (!verifyGithubSignature(raw, sig, secret)) {
+    res.status(401).send("");
+    return;
+  }
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(raw.toString("utf8")) as Record<string, unknown>;
+  } catch {
+    res.status(400).send("invalid_json");
+    return;
+  }
+  const event = (req.headers["x-github-event"] as string) || "unknown";
+  const deliveryId = (req.headers["x-github-delivery"] as string) || `${event}-${Date.now()}`;
+  const tenantUserId = (
+    (req.params as Record<string, string | undefined>).tenant ||
+    process.env.GITHUB_DEFAULT_TENANT ||
+    ""
+  ).trim();
+  if (!tenantUserId) {
+    res.status(400).json({ ok: false, error: "missing_tenant" });
+    return;
+  }
+
+  try {
+    const recs = transformGithubWebhook(payload, { userId: tenantUserId, deliveryId, event });
+    const out = ingestExternalBatch(recs);
+    res.status(200).json({ ok: true, accepted: out.results.length, errors: out.errors.length });
+  } catch (e: any) {
+    console.error("[ingest/github] failed:", e);
+    res.status(500).json({ ok: false, error: e?.message ?? "internal" });
+  }
+}
+
+const githubRawBody = express.raw({ type: "application/json", limit: "5mb" });
+app.post("/api/ingest/github", githubRawBody, handleGithubIngest);
+app.post("/api/ingest/github/:tenant", githubRawBody, handleGithubIngest);
+
+/** Jira webhook. Bearer secret authenticates the caller (Jira can't HMAC out of the box). */
+function handleJiraIngest(req: express.Request, res: express.Response) {
+  const secret = process.env.JIRA_WEBHOOK_BEARER?.trim();
+  if (!secret) {
+    res.status(503).json({ ok: false, error: "missing_jira_secret" });
+    return;
+  }
+  if (!verifyJiraBearer(req.headers.authorization as string | undefined, secret)) {
+    res.status(401).send("");
+    return;
+  }
+  const tenantUserId = (
+    (req.params as Record<string, string | undefined>).tenant ||
+    process.env.JIRA_DEFAULT_TENANT ||
+    ""
+  ).trim();
+  if (!tenantUserId) {
+    res.status(400).json({ ok: false, error: "missing_tenant" });
+    return;
+  }
+  try {
+    const recs = transformJiraWebhook(req.body as Record<string, unknown>, {
+      userId: tenantUserId,
+      bearerSecret: secret,
+      deliveryId: (req.headers["atl-request-id"] as string) || undefined,
+    });
+    const out = ingestExternalBatch(recs);
+    res.json({ ok: true, accepted: out.results.length, errors: out.errors.length });
+  } catch (e: any) {
+    console.error("[ingest/jira] failed:", e);
+    res.status(500).json({ ok: false, error: e?.message ?? "internal" });
+  }
+}
+
+const jiraJsonBody = express.json({ limit: "5mb" });
+app.post("/api/ingest/jira", jiraJsonBody, handleJiraIngest);
+app.post("/api/ingest/jira/:tenant", jiraJsonBody, handleJiraIngest);
+
+/** Generic CRM webhook (HubSpot/Salesforce/Pipedrive). `:vendor` becomes the source_subtype prefix. */
+function handleCrmIngest(req: express.Request, res: express.Response) {
+  const secret = process.env.CRM_WEBHOOK_BEARER?.trim();
+  if (!secret) {
+    res.status(503).json({ ok: false, error: "missing_crm_secret" });
+    return;
+  }
+  if (!verifyCrmBearer(req.headers.authorization as string | undefined, secret)) {
+    res.status(401).send("");
+    return;
+  }
+  const params = req.params as Record<string, string | undefined>;
+  const vendor = String(params.vendor || "crm").toLowerCase();
+  const tenantUserId = (params.tenant || process.env.CRM_DEFAULT_TENANT || "").trim();
+  if (!tenantUserId) {
+    res.status(400).json({ ok: false, error: "missing_tenant" });
+    return;
+  }
+  try {
+    const recs = transformCrmWebhook(req.body as Record<string, unknown>, {
+      userId: tenantUserId,
+      bearerSecret: secret,
+      vendor,
+    });
+    const out = ingestExternalBatch(recs);
+    res.json({ ok: true, accepted: out.results.length, errors: out.errors.length });
+  } catch (e: any) {
+    console.error("[ingest/crm] failed:", e);
+    res.status(500).json({ ok: false, error: e?.message ?? "internal" });
+  }
+}
+
+const crmJsonBody = express.json({ limit: "5mb" });
+app.post("/api/ingest/crm/:vendor", crmJsonBody, handleCrmIngest);
+app.post("/api/ingest/crm/:vendor/:tenant", crmJsonBody, handleCrmIngest);
+
 app.use(express.json());
 app.use(express.static(path.join(process.cwd(), "public")));
 
@@ -122,9 +283,53 @@ app.use((req, res, next) => {
 });
 
 // --- Auth Endpoints ---
+/** Signup OTP: request a code (SMTP must be configured). */
+app.post("/api/auth/otp/request", authRouteLimiter, async (req, res) => {
+  try {
+    if (!smtpConfigured()) {
+      return res.status(503).json({ error: "Email verification is not configured on this server" });
+    }
+    const { username, purpose } = req.body as { username?: string; purpose?: string };
+    const u = String(username || "").trim();
+    if (!u) return res.status(400).json({ error: "Username required" });
+    if (purpose !== "signup") {
+      return res.status(400).json({ error: "Only purpose \"signup\" is supported on this endpoint" });
+    }
+    if (db.getUser(u)) return res.status(400).json({ error: "Username taken" });
+
+    db.deleteExpiredEmailOtpChallenges();
+    const challengeToken = randomHex(24);
+    const code = randomOtpDigits();
+    const codeHash = hashEmailOtpCode(challengeToken, code);
+    const expires = new Date(Date.now() + config.email.otpTtlMinutes * 60 * 1000).toISOString();
+    db.insertEmailOtpChallenge({
+      challengeToken,
+      username: u,
+      purpose: "signup",
+      userId: null,
+      codeHash,
+      expiresAtIso: expires,
+    });
+    await sendOtpEmail(u, code, "signup");
+    res.json({
+      success: true,
+      challengeToken,
+      expiresInSeconds: config.email.otpTtlMinutes * 60,
+    });
+  } catch (e: any) {
+    console.error("[auth/otp/request]", e);
+    res.status(500).json({ error: "Failed to send verification email" });
+  }
+});
+
 app.post("/api/auth/register", authRouteLimiter, (req, res) => {
   try {
-    const { username, password } = req.body as { username?: string; password?: string };
+    const { username, password, otp, challengeToken } = req.body as {
+      username?: string;
+      password?: string;
+      otp?: string;
+      challengeToken?: string;
+    };
     const u = String(username || "").trim();
     const p = String(password || "");
     if (!u || !p) return res.status(400).json({ error: "Username and password required" });
@@ -133,6 +338,33 @@ app.post("/api/auth/register", authRouteLimiter, (req, res) => {
     }
     const existing = db.getUser(u);
     if (existing) return res.status(400).json({ error: "Username taken" });
+
+    if (smtpConfigured()) {
+      const ct = String(challengeToken || "").trim();
+      const otpStr = String(otp || "").trim();
+      if (!ct || !/^\d{6}$/.test(otpStr)) {
+        return res.status(400).json({
+          error: "Email verification required",
+          otpRequired: true,
+        });
+      }
+      const row = db.getEmailOtpChallenge(ct);
+      if (!row || row.purpose !== "signup" || row.username !== u || row.consumed_at) {
+        return res.status(400).json({ error: "Invalid or expired verification" });
+      }
+      if (new Date(row.expires_at).getTime() < Date.now()) {
+        return res.status(400).json({ error: "Verification code expired" });
+      }
+      if (row.attempts >= config.email.otpMaxAttempts) {
+        return res.status(429).json({ error: "Too many incorrect attempts" });
+      }
+      if (!verifyEmailOtpCode(row.code_hash, ct, otpStr)) {
+        db.incrementEmailOtpAttempts(ct);
+        return res.status(401).json({ error: "Invalid verification code" });
+      }
+      db.consumeEmailOtpChallenge(ct);
+    }
+
     const id = uuidv4();
     const hash = hashPassword(p);
     db.createUser(id, u, hash);
@@ -143,9 +375,14 @@ app.post("/api/auth/register", authRouteLimiter, (req, res) => {
   }
 });
 
-app.post("/api/auth/login", authRouteLimiter, (req, res) => {
+app.post("/api/auth/login", authRouteLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body as { username?: string; password?: string };
+    const { username, password, otp, challengeToken } = req.body as {
+      username?: string;
+      password?: string;
+      otp?: string;
+      challengeToken?: string;
+    };
     const u = String(username || "").trim();
     const p = String(password || "");
     const user = db.getUser(u) as { id: string; password_hash: string } | undefined;
@@ -156,8 +393,69 @@ app.post("/api/auth/login", authRouteLimiter, (req, res) => {
     if (!user.password_hash.startsWith("$2")) {
       db.updateUserPasswordHash(user.id, hashPassword(p));
     }
-    const sess = issueSession(res, user.id, req);
-    res.json({ success: true, userId: user.id, sessionId: sess.sessionId });
+
+    if (!smtpConfigured()) {
+      const sess = issueSession(res, user.id, req);
+      return res.json({ success: true, userId: user.id, sessionId: sess.sessionId });
+    }
+
+    const ctIn = String(challengeToken || "").trim();
+    const otpStr = String(otp || "").trim();
+    if (ctIn && otpStr) {
+      if (!/^\d{6}$/.test(otpStr)) {
+        return res.status(400).json({ error: "Enter the 6-digit code from your email" });
+      }
+      const row = db.getEmailOtpChallenge(ctIn);
+      if (
+        !row ||
+        row.purpose !== "login" ||
+        row.user_id !== user.id ||
+        row.username !== u ||
+        row.consumed_at
+      ) {
+        return res.status(400).json({ error: "Invalid verification" });
+      }
+      if (new Date(row.expires_at).getTime() < Date.now()) {
+        return res.status(400).json({ error: "Code expired" });
+      }
+      if (row.attempts >= config.email.otpMaxAttempts) {
+        return res.status(429).json({ error: "Too many incorrect attempts" });
+      }
+      if (!verifyEmailOtpCode(row.code_hash, ctIn, otpStr)) {
+        db.incrementEmailOtpAttempts(ctIn);
+        return res.status(401).json({ error: "Invalid verification code" });
+      }
+      db.consumeEmailOtpChallenge(ctIn);
+      const sess = issueSession(res, user.id, req);
+      return res.json({ success: true, userId: user.id, sessionId: sess.sessionId });
+    }
+
+    db.deleteExpiredEmailOtpChallenges();
+    db.deleteOpenLoginOtpForUser(user.id);
+    const challengeTokenNew = randomHex(24);
+    const code = randomOtpDigits();
+    const codeHash = hashEmailOtpCode(challengeTokenNew, code);
+    const expires = new Date(Date.now() + config.email.otpTtlMinutes * 60 * 1000).toISOString();
+    db.insertEmailOtpChallenge({
+      challengeToken: challengeTokenNew,
+      username: u,
+      purpose: "login",
+      userId: user.id,
+      codeHash,
+      expiresAtIso: expires,
+    });
+    try {
+      await sendOtpEmail(u, code, "login");
+    } catch (mailErr: unknown) {
+      console.error("[auth/login] sendOtpEmail", mailErr);
+      return res.status(502).json({ error: "Could not send sign-in code. Try again later." });
+    }
+    res.json({
+      success: false,
+      otpRequired: true,
+      challengeToken: challengeTokenNew,
+      expiresInSeconds: config.email.otpTtlMinutes * 60,
+    });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -1201,6 +1499,287 @@ app.post("/api/audit/run", authMiddleware, (_req, res) => {
   }
 });
 
+// --- Intelligence Endpoints (signal-detector + context-engine + hybrid retrieval) ---
+
+/**
+ * Returns the same DecisionContext object the agent supervisor sees: active
+ * decision, live executions, recent enriched signals. Intended for UI panels
+ * and ops debugging — no LLM, no mutation.
+ */
+app.get("/api/intelligence/context", authMiddleware, (req, res) => {
+  const userId = (req as any).userId;
+  try {
+    const ctx = fetchDecisionContext(userId);
+    res.json({ context: ctx });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to fetch context" });
+  }
+});
+
+/**
+ * Hybrid (FTS5 + cosine) retrieval across signals/executions/decisions.
+ * Tenant-scoped. Query is required. `types` and `limit` are optional.
+ *   GET /api/intelligence/search?q=onboarding&types=signal,execution&limit=10
+ */
+app.get("/api/intelligence/search", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const q = String(req.query.q ?? "").trim();
+  if (!q) {
+    res.status(400).json({ error: "missing required query param 'q'" });
+    return;
+  }
+  const typesRaw = String(req.query.types ?? "").trim();
+  const validTypes = new Set(["signal", "execution", "decision"]);
+  const types = typesRaw
+    ? typesRaw
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => validTypes.has(t))
+    : undefined;
+  let limit = Number(req.query.limit ?? 20);
+  if (!Number.isFinite(limit) || limit <= 0) limit = 20;
+  if (limit > 100) limit = 100;
+
+  try {
+    const hits = await hybridSearch(userId, q, {
+      types: types as ("signal" | "execution" | "decision")[] | undefined,
+      limit,
+    });
+    res.json({ query: q, count: hits.length, hits });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "search failed" });
+  }
+});
+
+/**
+ * Re-run the intelligence pipeline (detector + auto-linker) on a single
+ * signal. Used to recover from a missed enrichment or to re-evaluate a signal
+ * after the active decision changed.
+ *   POST /api/intelligence/relink  { signalId: "...", noLlm?: boolean }
+ */
+app.post("/api/intelligence/relink", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const signalId = String(req.body?.signalId ?? "").trim();
+  if (!signalId) {
+    res.status(400).json({ error: "signalId is required" });
+    return;
+  }
+  /** Tenant scoping: verify the signal belongs to this user (system sees all). */
+  const tenant = db.getSignalTenant(signalId);
+  if (!tenant) {
+    res.status(404).json({ error: "signal not found" });
+    return;
+  }
+  if (userId !== "system" && tenant !== userId) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+
+  try {
+    const result = await processSignal(signalId, { noLlm: !!req.body?.noLlm });
+    res.json({ success: true, result });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "relink failed" });
+  }
+});
+
+/**
+ * Warm embeddings for the active ledger surface. Idempotent — `ensureEmbedding`
+ * skips work when text_hash matches. Useful right after enabling an OpenAI key
+ * on an existing tenant.
+ *   POST /api/intelligence/warm-embeddings  { limit?: number }
+ */
+app.post("/api/intelligence/warm-embeddings", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const limitRaw = Number(req.body?.limit ?? 200);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 1000 ? Math.floor(limitRaw) : 200;
+  try {
+    const result = await warmEmbeddingsForActiveLedger(userId, limit);
+    res.json({ success: true, ...result });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "warm-embeddings failed" });
+  }
+});
+
+// =====================================================================
+// Manual ingest (for testing, ad-hoc events, internal tools)
+//   POST /api/ingest/manual { provider, subtype?, content, owner, externalId? }
+// =====================================================================
+app.post("/api/ingest/manual", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const { provider, subtype, content, owner, externalId, meta } = req.body as {
+    provider?: string;
+    subtype?: string;
+    content?: string;
+    owner?: string;
+    externalId?: string;
+    meta?: Record<string, unknown>;
+  };
+  if (!provider || !content || !owner) {
+    res.status(400).json({ error: "provider, content, owner required" });
+    return;
+  }
+  try {
+    const r = ingestExternal({
+      provider,
+      subtype,
+      userId,
+      content,
+      owner,
+      externalId,
+      meta,
+    });
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    if (e instanceof IngestError) {
+      res.status(400).json({ ok: false, code: e.code, error: e.message });
+      return;
+    }
+    res.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
+});
+
+// =====================================================================
+// Meeting ingestion
+//   POST /api/ingest/meeting { transcript, title?, attendees?, occurredAt?, sourceSubtype? }
+// =====================================================================
+app.post("/api/ingest/meeting", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const { transcript, title, attendees, occurredAt, sourceSubtype } = req.body as {
+    transcript?: string;
+    title?: string;
+    attendees?: string[];
+    occurredAt?: string;
+    sourceSubtype?: string;
+  };
+  if (!transcript || typeof transcript !== "string") {
+    res.status(400).json({ error: "transcript (string) is required" });
+    return;
+  }
+  try {
+    const r = await ingestMeeting({ userId, transcript, title, attendees, occurredAt, sourceSubtype });
+    res.json({ ok: true, ...r });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message ?? "meeting ingest failed" });
+  }
+});
+
+// =====================================================================
+// Operational queries (drift, overload, conflicts, related, search)
+// =====================================================================
+
+app.get("/api/operational/drift", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const riskAtLeast = String(req.query.riskAtLeast ?? "high") as "high" | "medium" | "any";
+  const minAgeMinutes = Number(req.query.minAgeMinutes ?? 10);
+  const limit = Number(req.query.limit ?? 100);
+  try {
+    const rows = findDriftSignals(userId, {
+      riskAtLeast: ["high", "medium", "any"].includes(riskAtLeast) ? riskAtLeast : "high",
+      minAgeMinutes: Number.isFinite(minAgeMinutes) ? minAgeMinutes : 10,
+      limit: Number.isFinite(limit) ? limit : 100,
+    });
+    res.json({ count: rows.length, rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "drift query failed" });
+  }
+});
+
+app.get("/api/operational/overloaded", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const minTotal = Number(req.query.minTotal ?? 5);
+  const minHighRiskSignals = Number(req.query.minHighRiskSignals ?? 1);
+  const limit = Number(req.query.limit ?? 50);
+  try {
+    const rows = findOverloadedOwners(userId, {
+      minTotal: Number.isFinite(minTotal) ? minTotal : 5,
+      minHighRiskSignals: Number.isFinite(minHighRiskSignals) ? minHighRiskSignals : 1,
+      limit: Number.isFinite(limit) ? limit : 50,
+    });
+    res.json({ count: rows.length, rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "overload query failed" });
+  }
+});
+
+app.get("/api/operational/conflicts", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const limit = Number(req.query.limit ?? 100);
+  try {
+    const rows = findConflictingExecutions(userId, Number.isFinite(limit) ? limit : 100);
+    res.json({ count: rows.length, rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "conflicts query failed" });
+  }
+});
+
+app.get("/api/operational/related", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const taskId = String(req.query.taskId ?? "").trim();
+  const k = Number(req.query.k ?? 10);
+  if (!taskId) {
+    res.status(400).json({ error: "taskId required" });
+    return;
+  }
+  try {
+    const rows = await findSignalsRelatedToTask(userId, taskId, Number.isFinite(k) ? k : 10);
+    res.json({ count: rows.length, rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "related query failed" });
+  }
+});
+
+app.get("/api/operational/search", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const q = String(req.query.q ?? "").trim();
+  const limit = Number(req.query.limit ?? 30);
+  if (!q) {
+    res.status(400).json({ error: "q required" });
+    return;
+  }
+  try {
+    const hits = await operationalSearch(userId, q, Number.isFinite(limit) ? limit : 30);
+    res.json({ query: q, count: hits.length, hits });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "operational search failed" });
+  }
+});
+
+// =====================================================================
+// Reports (API-triggered; never cron)
+// =====================================================================
+
+app.get("/api/reports/weekly", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const windowDays = Number(req.query.windowDays ?? 7);
+  const fmt = String(req.query.format ?? "json");
+  try {
+    const r = weeklyDriftReport(userId, Number.isFinite(windowDays) ? windowDays : 7);
+    if (fmt === "markdown") {
+      res.type("text/markdown").send(formatWeeklyDriftMarkdown(r));
+      return;
+    }
+    res.json(r);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "report failed" });
+  }
+});
+
+app.get("/api/reports/health", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const fmt = String(req.query.format ?? "json");
+  try {
+    const r = operationalHealth(userId);
+    if (fmt === "markdown") {
+      res.type("text/markdown").send(formatHealthMarkdown(r));
+      return;
+    }
+    res.json(r);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message ?? "health report failed" });
+  }
+});
+
 // --- Settings Endpoints ---
 app.get("/api/settings", authMiddleware, (req, res) => {
   const userId = (req as any).userId;
@@ -1408,7 +1987,7 @@ app.get("/api/decisions", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
   const status = req.query.status as string | undefined;
   try {
-    let sql = `SELECT id, vow, status, confidence, created_at, expected_outcomes
+    let sql = `SELECT id, vow, status, confidence, created_at, expected_outcomes, decision_reasoning
                FROM decision_ledger WHERE user_id = ?`;
     const params: unknown[] = [userId];
     if (status) {
@@ -1444,6 +2023,9 @@ app.post("/api/decisions", authMiddleware, (req, res) => {
     vow?: string;
     expected_outcomes?: unknown[];
     tasks?: { type?: string; weight?: number; owner?: string }[];
+    institutional_reasoning?: unknown;
+    reversal_conditions?: string;
+    constraints?: unknown[];
   };
   const vow = String(body.vow || "").trim();
   if (!vow) return res.status(400).json({ error: "vow required" });
@@ -1456,15 +2038,22 @@ app.post("/api/decisions", authMiddleware, (req, res) => {
             owner: String(t.owner || "system").slice(0, 120),
           }))
         : [{ type: "ACTION", weight: 1, owner: "system" }];
-    const id = db.saveDecisionEvent(userId, {
+    const payload: Record<string, unknown> = {
       vow: vow.slice(0, 4000),
       expected_outcomes: Array.isArray(body.expected_outcomes)
         ? body.expected_outcomes
         : [{ metric: "Outcome", target: "Define success criteria" }],
-      constraints: [],
+      constraints: Array.isArray(body.constraints) ? body.constraints : [],
       confidence: 0.75,
       tasks,
-    });
+    };
+    if (body.reversal_conditions != null && String(body.reversal_conditions).trim() !== "") {
+      payload.reversal_conditions = String(body.reversal_conditions).slice(0, 8000);
+    }
+    if (body.institutional_reasoning != null && typeof body.institutional_reasoning === "object") {
+      payload.institutional_reasoning = body.institutional_reasoning;
+    }
+    const id = db.saveDecisionEvent(userId, payload);
     res.status(201).json({ id, status: "DRAFT" });
   } catch (e: any) {
     res.status(400).json({ error: e.message || "Failed to create decision" });
