@@ -82,13 +82,16 @@ async function ensureLocalUser() {
   ]);
   const existingId = db.findUserIdByEmail(QA_LOGIN);
   const hash = hashPassword(QA_PASS);
+  let userId = existingId;
   if (existingId) {
     db.updateUserPasswordHash(existingId, hash);
   } else {
-    const id = crypto.randomUUID();
-    db.createUser(id, QA_LOGIN, hash, QA_LOGIN);
-    db.updateSetting(id, "profile.email", QA_LOGIN);
+    userId = crypto.randomUUID();
+    db.createUser(userId, QA_LOGIN, hash, QA_LOGIN);
+    db.updateSetting(userId, "profile.email", QA_LOGIN);
   }
+  // Owner role is required for /api/settings/bulk (onboarding flag) in login().
+  db.updateSetting(userId, "org.owner_user_id", userId);
   assertions.registerOrExistsOk = true;
 }
 
