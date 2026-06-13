@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-list-api="/api/early-access/leads/list">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="robots" content="noindex, nofollow"/>
+  <title>Early access leads — Hustronix</title>
+  <link rel="stylesheet" href="/leads.css"/>
+  <style>
+    body { margin: 0; background: #0a0a0a; color: #f5f5f5; font-family: system-ui, sans-serif; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <header class="site-page-header">
+    <div class="site-page-header-inner">
+      <a href="/" class="site-wordmark">HUSTRONI<span>X</span></a>
+      <nav class="site-page-nav"><a href="/">Landing</a></nav>
+    </div>
+  </header>
+
+  <main class="site-page-main">
+    <section id="leads-gate">
+      <h1>Early access leads</h1>
+      <p class="text-hx-muted" style="font-size:0.875rem;max-width:28rem">
+        Private viewer. Use this page on <strong>http://localhost:3000/leads.html</strong> while <code>npm run dev</code> is running, or the Netlify landing dev server on port 8888.
+      </p>
+      <form id="leads-login-form" class="leads-gate-form" autocomplete="off">
+        <label class="contact-field">
+          <span>Password</span>
+          <input id="leads-password" name="password" type="password" required autocomplete="current-password"/>
+        </label>
+        <button type="submit" class="contact-submit">Unlock</button>
+        <p id="leads-gate-error" class="leads-status err" hidden role="alert"></p>
+      </form>
+    </section>
+
+    <section id="leads-panel" hidden>
+      <div class="leads-toolbar">
+        <div>
+          <h1 style="font-size:1.5rem;margin:0">Submissions</h1>
+          <p id="leads-count" class="text-hx-muted" style="font-size:0.875rem"></p>
+        </div>
+        <div class="leads-toolbar-actions">
+          <button type="button" id="leads-refresh" class="leads-btn-secondary">Refresh</button>
+          <button type="button" id="leads-export" class="leads-btn-secondary">Export CSV</button>
+          <button type="button" id="leads-lock" class="leads-btn-secondary">Lock</button>
+        </div>
+      </div>
+      <p id="leads-load-error" class="leads-status err" hidden role="alert"></p>
+      <div class="leads-table-wrap">
+        <table class="leads-table" id="leads-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Company</th>
+              <th>Role</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+        <p id="leads-empty" class="text-hx-muted" style="padding:2rem;text-align:center" hidden>No submissions yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/leads.js" defer></script>
+</body>
+</html>

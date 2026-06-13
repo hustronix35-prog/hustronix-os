@@ -1,0 +1,28 @@
+# Hustronix
+
+> Hustronix is a Decision Operating System that turns scattered signals into structured decisions and enforced execution—one ledger-backed workspace for founders and operating teams.
+
+## Primary action
+- Early access waitlist: https://hustronix.online/#early-access (name, work email, optional company and role)
+
+## Public pages
+- Home: https://hustronix.online/
+- Contact: https://hustronix.online/contact
+- Privacy: https://hustronix.online/privacy
+- Terms: https://hustronix.online/terms
+- Cookies: https://hustronix.online/cookies
+
+## Product summary
+Hustronix is a **Decision Operating System** for founders and operating teams. It connects external signals to structured decisions and enforced execution in a ledger-backed workspace—not a passive dashboard or generic project tracker.
+
+## Key concepts
+- Decision ledger as source of truth
+- Signal ingestion and linking
+- Execution transitions with audit trail
+- Mission control for operating decisions
+
+## Contact
+- Email: hello@hustronix.online
+
+## Optional
+- Full text sitemap: https://hustronix.online/sitemap.xml

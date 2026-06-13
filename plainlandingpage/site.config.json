@@ -1,0 +1,15 @@
+{
+  "url": "https://hustronix.online",
+  "name": "Hustronix",
+  "legalName": "Hustronix",
+  "email": "hello@hustronix.online",
+  "locale": "en_US",
+  "logoPath": "/brand/hustronix-logo.png",
+  "iconPath": "/brand/hustronix-mark.png",
+  "tagline": "Decision Operating System",
+  "description": "Hustronix is a Decision Operating System that turns scattered signals into structured decisions and enforced execution—one ledger-backed workspace for founders and operating teams.",
+  "home": {
+    "title": "Hustronix Decision Intelligence System",
+    "description": "Join the Hustronix early access waitlist. The Decision Operating System that aligns decisions, signals, and execution for founders and operators—no dashboards, no noise."
+  }
+}

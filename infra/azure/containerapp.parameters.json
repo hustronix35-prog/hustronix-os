@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name": { "value": "hustronix-app" },
+    "image": { "value": "<acr-name>.azurecr.io/hustronix:latest" },
+    "environmentId": {
+      "value": "/subscriptions/<subscription-id>/resourceGroups/<rg>/providers/Microsoft.App/managedEnvironments/<env-name>"
+    },
+    "sqliteVolumeStorageName": { "value": "hustronix-files" },
+    "managedIdentityResourceId": {
+      "value": "/subscriptions/<subscription-id>/resourceGroups/<rg>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<uami-name>"
+    },
+    "appOrigin": { "value": "https://app.hustronix.online" },
+    "allowedOrigins": { "value": "https://app.hustronix.online,https://hustronix.online" },
+    "keyVaultSecretRefs": {
+      "value": {
+        "oauthEncryptionKey": "https://<vault>.vault.azure.net/secrets/OAUTH-TOKEN-ENCRYPTION-KEY",
+        "anthropicApiKey": "https://<vault>.vault.azure.net/secrets/ANTHROPIC-API-KEY",
+        "missionControlApiKey": "https://<vault>.vault.azure.net/secrets/MISSION-CONTROL-API-KEY",
+        "totpEncryptionKey": "https://<vault>.vault.azure.net/secrets/TOTP-ENCRYPTION-KEY",
+        "slackClientId": "https://<vault>.vault.azure.net/secrets/SLACK-CLIENT-ID",
+        "slackClientSecret": "https://<vault>.vault.azure.net/secrets/SLACK-CLIENT-SECRET",
+        "slackSigningSecret": "https://<vault>.vault.azure.net/secrets/SLACK-SIGNING-SECRET",
+        "githubOauthClientId": "https://<vault>.vault.azure.net/secrets/GITHUB-OAUTH-CLIENT-ID",
+        "githubOauthClientSecret": "https://<vault>.vault.azure.net/secrets/GITHUB-OAUTH-CLIENT-SECRET",
+        "githubWebhookSecret": "https://<vault>.vault.azure.net/secrets/GITHUB-WEBHOOK-SECRET",
+        "googleOauthClientId": "https://<vault>.vault.azure.net/secrets/GOOGLE-OAUTH-CLIENT-ID",
+        "googleOauthClientSecret": "https://<vault>.vault.azure.net/secrets/GOOGLE-OAUTH-CLIENT-SECRET",
+        "microsoftOauthClientId": "https://<vault>.vault.azure.net/secrets/MICROSOFT-OAUTH-CLIENT-ID",
+        "microsoftOauthClientSecret": "https://<vault>.vault.azure.net/secrets/MICROSOFT-OAUTH-CLIENT-SECRET",
+        "microsoftWebhookClientState": "https://<vault>.vault.azure.net/secrets/MICROSOFT-WEBHOOK-CLIENT-STATE",
+        "notionOauthClientId": "https://<vault>.vault.azure.net/secrets/NOTION-OAUTH-CLIENT-ID",
+        "notionOauthClientSecret": "https://<vault>.vault.azure.net/secrets/NOTION-OAUTH-CLIENT-SECRET",
+        "jiraOauthClientId": "https://<vault>.vault.azure.net/secrets/JIRA-OAUTH-CLIENT-ID",
+        "jiraOauthClientSecret": "https://<vault>.vault.azure.net/secrets/JIRA-OAUTH-CLIENT-SECRET",
+        "jiraWebhookSecret": "https://<vault>.vault.azure.net/secrets/JIRA-WEBHOOK-SECRET",
+        "linearOauthClientId": "https://<vault>.vault.azure.net/secrets/LINEAR-OAUTH-CLIENT-ID",
+        "linearOauthClientSecret": "https://<vault>.vault.azure.net/secrets/LINEAR-OAUTH-CLIENT-SECRET",
+        "linearWebhookSecret": "https://<vault>.vault.azure.net/secrets/LINEAR-WEBHOOK-SECRET",
+        "smtpUser": "https://<vault>.vault.azure.net/secrets/SMTP-USER",
+        "smtpPass": "https://<vault>.vault.azure.net/secrets/SMTP-PASS"
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+/** Inline before React hydrates; sync `data-theme` with localStorage (dashboard only — landing is always dark). */
+export const themeBlockingScript = `(function(){try{var p=location.pathname;var landing=p==='/'||p==='/contact';if(landing){document.documentElement.setAttribute('data-theme','dark');return;}var k='hustronix-theme';var t=localStorage.getItem(k);if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;

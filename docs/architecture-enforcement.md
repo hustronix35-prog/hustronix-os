@@ -108,8 +108,8 @@ Further caps (per-minute throttles, keyword gates) are backlog.
 - `docs/agents-and-slack-signals.md` — agents + Slack ingestion detail  
 - `src/auditor.ts` — rules  
 - `src/integrations/slackEvents.ts` — Events API + filters  
-- `src/server.ts` — link, transition, commit, OAuth  
-- `src/database.ts` — `transitionDecisionState`, `insertExternalSignal`  
+- `apps/api/src/server.ts` — link, transition, commit, OAuth
+- `apps/api/src/database.ts` — `transitionDecisionState`, `insertExternalSignal`
 
 ---
 

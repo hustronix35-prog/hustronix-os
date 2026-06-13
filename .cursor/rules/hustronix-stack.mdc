@@ -7,28 +7,31 @@ alwaysApply: true
 
 ## Architecture
 
-- **Backend**: Node + Express + WebSocket in repo root [`src/server.ts`](src/server.ts), SQLite via [`src/database.ts`](src/database.ts). Default HTTP port **3005** (`PORT`).
-- **Frontend**: Next.js App Router in [`hustronix-ui/`](hustronix-ui/). Default dev port **3000**. Production = two processes (API + `next start`) unless reverse-proxied to one origin.
+- **Backend**: Node + Express + WebSocket in [`apps/api/src/server.ts`](../../apps/api/src/server.ts), SQLite via [`apps/api/src/database.ts`](../../apps/api/src/database.ts). Default HTTP port **3005** (`PORT`).
+- **Frontend**: Next.js App Router in [`apps/web/`](../../apps/web/). Default dev port **3000**. Production = unified process (API + WS + Next) unless deliberately split behind a reverse proxy.
 
 ## Environment
 
 **API (root `.env`):** `PORT`, `ALLOWED_ORIGINS` (comma-separated; must include the Next origin, e.g. `http://localhost:3000`), `MISSION_CONTROL_API_KEY`, LLM keys as needed.
 
-**UI (`hustronix-ui/.env.local`):**
+**Anthropic routing (server):** Coordinator uses **premium** tier (`ANTHROPIC_MODEL_PREMIUM` or legacy `ANTHROPIC_MODEL`; default **`claude-sonnet-4-6`**). Sub-agents / intelligence use **fast** tier (`ANTHROPIC_MODEL_FAST`; default **`claude-haiku-4-5-20251001`**). Optional **`LLM_COORDINATOR_HAIKU=1`** forces the main coordinator onto the fast Haiku model (much cheaper). Retired snapshot ids redirect at runtime; fast tier rejects non-Haiku ids. SQLite `anthropicModel` overrides premium when env omits premium/legacy model. **`GET /api/health`** returns `llmConfigured`, `anthropicPremiumModel`, and `anthropicFastModel` (no secrets). **Cost-saver mode is default** (tighter history/iterations/caps); disable with `LLM_COST_SAVER=0`. OpenAI default chat model is **`gpt-4o-mini`** (`OPENAI_CHAT_MODEL`).
+
+**UI (`apps/web/.env.local`):**
 
 - **`NEXT_PUBLIC_API_URL`** — Absolute API origin (e.g. `http://127.0.0.1:3005`) **or leave unset / empty** so browser calls same-origin `/api/*` (recommended with cookies).
 - **`API_PROXY_TARGET`** (server-only, Next rewrites) — Where Next proxies `/api/:path*` when using same-origin mode; default `http://127.0.0.1:3005`.
-- **`NEXT_PUBLIC_WS_URL`** — Chat WebSocket (e.g. `ws://127.0.0.1:3005`). On localhost, [`api.ts`](hustronix-ui/src/lib/api.ts) can fall back to port 3005 when HTTP base is empty.
-- Optional **`NEXT_PUBLIC_API_KEY`** if not sending `x-user-id` / cookie session.
+- **`NEXT_PUBLIC_WS_URL`** — Chat WebSocket (e.g. `ws://127.0.0.1:3005`). On localhost, [`api.ts`](../../apps/web/src/lib/api.ts) can fall back to port 3005 when HTTP base is empty.
+- Optional **`NEXT_PUBLIC_API_KEY`** + stored **`hustronix_userId`** (automation only; sent as **`x-api-key` + `x-user-id`**). Normal UI auth uses the session cookie only.
 
 ## Auth contract
 
-- REST [`authMiddleware`](src/middleware/auth.ts): **`Bearer hx_live_…`** user tokens → cookie **`hustronix_session`** (opaque DB session) → legacy **`hustronix_uid`** → **`x-api-key` + `x-user-id`** (automation) → **`x-user-id`** on loopback only → **`system`** for local/key-only.
-- Passwords: **bcrypt** (12 rounds); legacy SHA-256 verifies once then upgrades. Rate limits on **`/api/auth/register`**, **`/api/auth/login`**, **`/api/auth/password`** ([`rateLimit.ts`](src/middleware/rateLimit.ts)).
-- **`POST /api/auth/logout`** revokes the session matching the cookie. Sessions + API keys: **`GET/POST/DELETE /api/auth/api-keys`**, **`GET/DELETE /api/auth/sessions`**, **`POST /api/auth/sessions/revoke-all`**. Profile updates: **`PATCH /api/me`** → `settings` keys **`profile.*`**.
-- **`external_signals.user_id`** scopes signals (migration default **`system`**); **`system`** principal sees all tenant signals.
-- WebSocket: session cookie / **`?session=`** / loopback **`?userId=`**; production rejects remote anonymous sockets ([`resolveWsUserId`](src/middleware/auth.ts)).
-- UI **`credentials: "include"`** ([`api.ts`](hustronix-ui/src/lib/api.ts)); localStorage **`hustronix_userId`** is dev convenience for loopback **`x-user-id`**.
+- REST [`authMiddleware`](../../apps/api/src/middleware/auth.ts): **`Bearer hx_live_…`** → cookie **`hustronix_session`** → optional legacy **`hustronix_uid`** (`ALLOW_LEGACY_UID_COOKIE=1`) → **`x-api-key` + `x-user-id`** (user must exist). No ambient **`system`** on loopback; use **`ALLOW_LOOPBACK_AUTH=1`** + API key for local scripts.
+- RBAC via [`authorization.ts`](../../apps/api/src/security/authorization.ts): role from **`org.owner_user_id`** / **`org.role`** (default **viewer**); mutators use **`requirePermission`**.
+- Passwords: **bcrypt** (12 rounds); legacy SHA-256 verifies once then upgrades. Rate limits on **`/api/auth/register`**, **`/api/auth/login`**, **`/api/auth/password`** ([`rateLimit.ts`](../../apps/api/src/middleware/rateLimit.ts)).
+- **`POST /api/auth/logout`** revokes the session matching the cookie. Sessions + API keys: **`GET/POST/DELETE /api/auth/api-keys`**, **`GET/DELETE /api/auth/sessions`**, **`POST /api/auth/sessions/revoke-all`**. Profile updates: **`PATCH /api/me`** → `settings` keys **`profile.*`** (writable keys allowlisted in [`settings-keys.ts`](../../apps/api/src/security/settings-keys.ts)).
+- **`external_signals.user_id`** scopes per-tenant signals; **`system`** automation principal does not receive cross-tenant signal reads.
+- WebSocket: session cookie; optional **`?session=`** when **`ALLOW_WS_SESSION_QUERY=1`**; loopback **`?userId=`** only with **`ALLOW_LOOPBACK_AUTH=1`** + API key ([`resolveWsAuth`](../../apps/api/src/middleware/auth.ts)).
+- UI **`credentials: "include"`** ([`api.ts`](../../apps/web/src/lib/api.ts)); **`hustronix_userId`** in localStorage is optional dev automation pairing with **`NEXT_PUBLIC_API_KEY`** only.
 
 **Proxy note:** Same-origin `/api` rewrites help cookies; if `Set-Cookie` is dropped by a proxy, align cookie `Domain`/`Path` or terminate auth at the edge.
 
@@ -45,6 +48,17 @@ alwaysApply: true
 | `/profile` | `GET/PATCH /api/me`, `GET /api/activity`, `GET/POST/DELETE /api/auth/api-keys`, sessions endpoints |
 | `/settings` | `GET /api/settings`, `POST /api/settings/bulk` (General + Notifications toggles mapped to `PREF.*`) |
 
+## Public marketing API
+
+| Endpoint | Behavior |
+|----|----|
+| `POST /api/early-access` | Early access waitlist (SQLite `early_access_leads`, optional SMTP notify via `EARLY_ACCESS_TO` / `CONTACT_TO`) |
+
+## Marketing surfaces
+
+- **Product landing** (`/`, Next) — Sign in / Get Started → `/login`, `/signup`; hero and pricing CTAs point at the app.
+- **Demand-validation static site** (`netlify-landing/`) — early-access + contact forms only; no product app links. Regenerate with `node scripts/export-netlify-landing.mjs` (sanitizes after export). API: **`POST /api/early-access`**, **`POST /api/contact`** (SQLite + optional SMTP).
+
 ## Still mock / partial
 
 - Profile **Security** password form UI (backend **`POST /api/auth/password`** exists).
@@ -53,7 +67,7 @@ alwaysApply: true
 
 ## Implementation rules
 
-1. **New UI data** — Prefer `apiGet`/`apiPost` from [`hustronix-ui/src/lib/api.ts`](hustronix-ui/src/lib/api.ts); map DB shapes in [`mappers.ts`](hustronix-ui/src/lib/mappers.ts).
+1. **New UI data** — Prefer `apiGet`/`apiPost` from [`apps/web/src/lib/api.ts`](../../apps/web/src/lib/api.ts); map DB shapes in [`mappers.ts`](../../apps/web/src/lib/mappers.ts).
 2. **New API** — Use `authMiddleware`; scope by `(req as any).userId`; keep responses JSON-stable for the UI.
 3. **CORS** — Add every browser origin that hosts the UI to `ALLOWED_ORIGINS`; use `credentials: true` + explicit origins when cookies matter.
 4. **Product positioning** — Ledger + auditor = source of truth; LLM/chat is an interface into that system, not a replacement for enforcement rules.

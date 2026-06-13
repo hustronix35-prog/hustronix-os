@@ -44,7 +44,7 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 
 ### Optional MCP
 
-- `**src/mcp.ts`** — loads `**mcp_config.json**` and attaches **stdio MCP servers** as external tools. Optional; unrelated to Slack ingestion unless you configure it.
+- `**apps/api/src/mcp.ts`** — loads `**mcp_config.json**` and attaches **stdio MCP servers** as external tools. Optional; unrelated to Slack ingestion unless you configure it.
 
 ---
 
@@ -56,7 +56,7 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 
 ### Flow (high level)
 
-1. **Install the Slack app** — User signs in to Hustronix and connects Slack (**Settings → Connections**). OAuth is implemented in `**src/server.ts`** (`/api/oauth/slack/start`, `/api/oauth/slack/callback`). The **bot token** is stored in `**oauth_connections`** (`provider = 'slack'`, `external_team_id` = Slack team id).
+1. **Install the Slack app** — User signs in to Hustronix and connects Slack (**Settings → Connections**). OAuth is implemented in `**apps/api/src/server.ts`** (`/api/oauth/slack/start`, `/api/oauth/slack/callback`). The **bot token** is stored in `**oauth_connections`** (`provider = 'slack'`, `external_team_id` = Slack team id).
 2. **Configure Slack Event Subscriptions** — In [api.slack.com](https://api.slack.com/apps) → *Event Subscriptions*:
   - **Request URL:** `https://<your-public-api-host>:<PORT>/api/integrations/slack/events`  
     - Default API `**PORT`** is **3005** (see root `.env`). Slack must reach this URL (use **ngrok** or similar for local dev).
@@ -67,11 +67,11 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 3. **Slack sends HTTP POSTs** — JSON payloads. Types:
   - `**url_verification`** — Slack sends a `challenge`; the handler returns `{ "challenge": "<value>" }` so Slack validates the URL.
   - `**event_callback**` — Contains `event_id`, `team_id`, and an `**event**` object.
-4. **Verification** — Requests must include `**X-Slack-Signature`** and `**X-Slack-Request-Timestamp**`. The server verifies HMAC using `**SLACK_SIGNING_SECRET**` (Slack app → *Basic Information* → *Signing Secret*). The route uses `**express.raw({ type: "application/json" })*`* so the body bytes match Slack’s signature (**must be registered before `express.json()`** — see `src/server.ts`).
+4. **Verification** — Requests must include `**X-Slack-Signature`** and `**X-Slack-Request-Timestamp**`. The server verifies HMAC using `**SLACK_SIGNING_SECRET**` (Slack app → *Basic Information* → *Signing Secret*). The route uses `**express.raw({ type: "application/json" })*`* so the body bytes match Slack’s signature (**must be registered before `express.json()`** — see `apps/api/src/server.ts`).
 5. **Dedup** — Each `event_id` is stored in `**slack_event_receipts`** so Slack retries do not create duplicate signals.
 6. **Tenant mapping** — `team_id` from the payload is resolved with `**oauth_connections`** (`getSlackTenantForTeam`). The **Hustronix `user_id`** who installed the app owns new signals (`external_signals.user_id`).
-7. **Which messages become signals?** — `**src/integrations/slackEvents.ts`** ingests `**message**` events that pass filters (e.g. skips `**bot_id**` messages, common non-message subtypes like `message_deleted`, etc.). Thread replies are labeled in the **content** text.
-8. **Insert** — `**insertExternalSignal`** writes `**UNVERIFIED**` rows. The **auditor** sets `**grace_expires_at`** for Slack (`+2 hours` in `**src/auditor.ts**`) and may **KILL** unlinked signals after grace.
+7. **Which messages become signals?** — `**apps/api/src/integrations/slackEvents.ts`** ingests `**message**` events that pass filters (e.g. skips `**bot_id**` messages, common non-message subtypes like `message_deleted`, etc.). Thread replies are labeled in the **content** text.
+8. **Insert** — `**insertExternalSignal`** writes `**UNVERIFIED**` rows. The **auditor** sets `**grace_expires_at`** for Slack (`+2 hours` in `**apps/api/src/auditor.ts**`) and may **KILL** unlinked signals after grace.
 9. **UI** — Signals appear under **Signals**, Mission Control previews, etc., scoped by `**user_id`** like other API data.
 
 ### Environment variables (API server)
@@ -90,10 +90,10 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 
 | File                              | Role                                                                                         |
 | --------------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/integrations/slackEvents.ts` | Events API handler → `external_signals`                                                      |
-| `src/server.ts`                   | Route `POST /api/integrations/slack/events`, OAuth routes                                    |
-| `src/database.ts`                 | `oauth_connections`, `slack_event_receipts`, `insertExternalSignal`, `getSlackTenantForTeam` |
-| `src/auditor.ts`                  | Grace windows for `SLACK` signals                                                            |
+| `apps/api/src/integrations/slackEvents.ts` | Events API handler → `external_signals`                                                      |
+| `apps/api/src/server.ts`                   | Route `POST /api/integrations/slack/events`, OAuth routes                                    |
+| `apps/api/src/database.ts`                 | `oauth_connections`, `slack_event_receipts`, `insertExternalSignal`, `getSlackTenantForTeam` |
+| `apps/api/src/auditor.ts`                  | Grace windows for `SLACK` signals                                                            |
 
 
 ### Operational notes

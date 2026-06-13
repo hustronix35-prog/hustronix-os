@@ -1,0 +1,3054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HUSTRONIX-COMPLETE-TECHNICAL-GUIDE</title>
+  <style>
+/*light */
+.markdown-body {
+  color-scheme: light;
+  /** CSS default easing. Use for hover state changes and micro-interactions. */
+  /** Accelerating motion. Use for elements exiting the viewport (moving off-screen). */
+  /** Smooth acceleration and deceleration. Use for elements moving or morphing within the viewport. */
+  /** Decelerating motion. Use for elements entering the viewport or appearing on screen. */
+  /** Constant motion with no acceleration. Use for continuous animations like progress bars or loaders. */
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  margin: 0;
+  font-weight: 400;
+  color: #1f2328;
+  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.markdown-body a {
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+}
+
+.markdown-body .octicon {
+  display: inline-block;
+  fill: currentColor;
+  vertical-align: text-bottom;
+}
+
+.markdown-body h1:hover .anchor .octicon-link:before,
+.markdown-body h2:hover .anchor .octicon-link:before,
+.markdown-body h3:hover .anchor .octicon-link:before,
+.markdown-body h4:hover .anchor .octicon-link:before,
+.markdown-body h5:hover .anchor .octicon-link:before,
+.markdown-body h6:hover .anchor .octicon-link:before {
+  width: 16px;
+  height: 16px;
+  content: ' ';
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+}
+
+.markdown-body details,
+.markdown-body figcaption,
+.markdown-body figure {
+  display: block;
+}
+
+.markdown-body summary {
+  display: list-item;
+}
+
+.markdown-body [hidden] {
+  display: none !important;
+}
+
+.markdown-body a {
+  background-color: rgba(0,0,0,0);
+  color: #0969da;
+  text-decoration: none;
+}
+
+.markdown-body abbr[title] {
+  border-bottom: none;
+  -webkit-text-decoration: underline dotted;
+  text-decoration: underline dotted;
+}
+
+.markdown-body b,
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body dfn {
+  font-style: italic;
+}
+
+.markdown-body h1 {
+  margin: .67em 0;
+  font-weight: 600;
+  padding-bottom: .3em;
+  font-size: 2em;
+  border-bottom: 1px solid #d1d9e0b3;
+}
+
+.markdown-body mark {
+  background-color: #fff8c5;
+  color: #1f2328;
+}
+
+.markdown-body small {
+  font-size: 90%;
+}
+
+.markdown-body sub,
+.markdown-body sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.markdown-body sub {
+  bottom: -0.25em;
+}
+
+.markdown-body sup {
+  top: -0.5em;
+}
+
+.markdown-body img {
+  border-style: none;
+  max-width: 100%;
+  box-sizing: content-box;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: monospace;
+  font-size: 1em;
+}
+
+.markdown-body figure {
+  margin: 1em 2.5rem;
+}
+
+.markdown-body hr {
+  box-sizing: content-box;
+  overflow: hidden;
+  background: rgba(0,0,0,0);
+  border-bottom: 1px solid #d1d9e0b3;
+  height: .25em;
+  padding: 0;
+  margin: 1.5rem 0;
+  background-color: #d1d9e0;
+  border: 0;
+}
+
+.markdown-body input {
+  font: inherit;
+  margin: 0;
+  overflow: visible;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.markdown-body [type=button],
+.markdown-body [type=reset],
+.markdown-body [type=submit] {
+  -webkit-appearance: button;
+  appearance: button;
+}
+
+.markdown-body [type=checkbox],
+.markdown-body [type=radio] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.markdown-body [type=number]::-webkit-inner-spin-button,
+.markdown-body [type=number]::-webkit-outer-spin-button {
+  height: auto;
+}
+
+.markdown-body [type=search]::-webkit-search-cancel-button,
+.markdown-body [type=search]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.markdown-body ::-webkit-input-placeholder {
+  color: inherit;
+  opacity: .54;
+}
+
+.markdown-body ::-webkit-file-upload-button {
+  -webkit-appearance: button;
+  appearance: button;
+  font: inherit;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body ::placeholder {
+  color: #59636e;
+  opacity: 1;
+}
+
+.markdown-body hr::before {
+  display: table;
+  content: "";
+}
+
+.markdown-body hr::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+
+.markdown-body table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  font-variant: tabular-nums;
+}
+
+.markdown-body td,
+.markdown-body th {
+  padding: 0;
+}
+
+.markdown-body details summary {
+  cursor: pointer;
+}
+
+.markdown-body a:focus,
+.markdown-body [role=button]:focus,
+.markdown-body input[type=radio]:focus,
+.markdown-body input[type=checkbox]:focus {
+  outline: 2px solid var(--borderColor-accent-emphasis);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.markdown-body a:focus:not(:focus-visible),
+.markdown-body [role=button]:focus:not(:focus-visible),
+.markdown-body input[type=radio]:focus:not(:focus-visible),
+.markdown-body input[type=checkbox]:focus:not(:focus-visible) {
+  outline: solid 1px rgba(0,0,0,0);
+}
+
+.markdown-body a:focus-visible,
+.markdown-body [role=button]:focus-visible,
+.markdown-body input[type=radio]:focus-visible,
+.markdown-body input[type=checkbox]:focus-visible {
+  outline: 2px solid var(--borderColor-accent-emphasis);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.markdown-body a:not([class]):focus,
+.markdown-body a:not([class]):focus-visible,
+.markdown-body input[type=radio]:focus,
+.markdown-body input[type=radio]:focus-visible,
+.markdown-body input[type=checkbox]:focus,
+.markdown-body input[type=checkbox]:focus-visible {
+  outline-offset: 0;
+}
+
+.markdown-body kbd {
+  display: inline-block;
+  padding: 0.25rem;
+  font: 11px ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  line-height: 10px;
+  color: #1f2328;
+  vertical-align: middle;
+  background-color: #f6f8fa;
+  border: solid 1px var(--borderColor-muted);
+  border-bottom-color: var(--borderColor-muted);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--borderColor-muted);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-body h2 {
+  font-weight: 600;
+  padding-bottom: .3em;
+  font-size: 1.5em;
+  border-bottom: 1px solid #d1d9e0b3;
+}
+
+.markdown-body h3 {
+  font-weight: 600;
+  font-size: 1.25em;
+}
+
+.markdown-body h4 {
+  font-weight: 600;
+  font-size: 1em;
+}
+
+.markdown-body h5 {
+  font-weight: 600;
+  font-size: .875em;
+}
+
+.markdown-body h6 {
+  font-weight: 600;
+  font-size: .85em;
+  color: #59636e;
+}
+
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.markdown-body blockquote {
+  margin: 0;
+  padding: 0 1em;
+  color: #59636e;
+  border-left: .25em solid #d1d9e0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 2em;
+}
+
+.markdown-body ol ol,
+.markdown-body ul ol {
+  list-style-type: lower-roman;
+}
+
+.markdown-body ul ul ol,
+.markdown-body ul ol ol,
+.markdown-body ol ul ol,
+.markdown-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+
+.markdown-body dd {
+  margin-left: 0;
+}
+
+.markdown-body tt,
+.markdown-body code,
+.markdown-body samp {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 12px;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 12px;
+  word-wrap: normal;
+}
+
+.markdown-body .octicon {
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-body input::-webkit-outer-spin-button,
+.markdown-body input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.markdown-body .mr-2 {
+  margin-right: 0.5rem !important;
+}
+
+.markdown-body::before {
+  display: table;
+  content: "";
+}
+
+.markdown-body::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+
+.markdown-body>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.markdown-body .absent {
+  color: #d1242f;
+}
+
+.markdown-body .anchor {
+  float: left;
+  padding-right: 0.25rem;
+  margin-left: -20px;
+  line-height: 1;
+}
+
+.markdown-body .anchor:focus {
+  outline: none;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body details {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.markdown-body blockquote>:first-child {
+  margin-top: 0;
+}
+
+.markdown-body blockquote>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1 .octicon-link,
+.markdown-body h2 .octicon-link,
+.markdown-body h3 .octicon-link,
+.markdown-body h4 .octicon-link,
+.markdown-body h5 .octicon-link,
+.markdown-body h6 .octicon-link {
+  color: #1f2328;
+  vertical-align: middle;
+  visibility: hidden;
+}
+
+.markdown-body h1:hover .anchor,
+.markdown-body h2:hover .anchor,
+.markdown-body h3:hover .anchor,
+.markdown-body h4:hover .anchor,
+.markdown-body h5:hover .anchor,
+.markdown-body h6:hover .anchor {
+  text-decoration: none;
+}
+
+.markdown-body h1:hover .anchor .octicon-link,
+.markdown-body h2:hover .anchor .octicon-link,
+.markdown-body h3:hover .anchor .octicon-link,
+.markdown-body h4:hover .anchor .octicon-link,
+.markdown-body h5:hover .anchor .octicon-link,
+.markdown-body h6:hover .anchor .octicon-link {
+  visibility: visible;
+}
+
+.markdown-body h1 tt,
+.markdown-body h1 code,
+.markdown-body h2 tt,
+.markdown-body h2 code,
+.markdown-body h3 tt,
+.markdown-body h3 code,
+.markdown-body h4 tt,
+.markdown-body h4 code,
+.markdown-body h5 tt,
+.markdown-body h5 code,
+.markdown-body h6 tt,
+.markdown-body h6 code {
+  padding: 0 .2em;
+  font-size: inherit;
+}
+
+.markdown-body summary h1,
+.markdown-body summary h2,
+.markdown-body summary h3,
+.markdown-body summary h4,
+.markdown-body summary h5,
+.markdown-body summary h6 {
+  display: inline-block;
+}
+
+.markdown-body summary h1 .anchor,
+.markdown-body summary h2 .anchor,
+.markdown-body summary h3 .anchor,
+.markdown-body summary h4 .anchor,
+.markdown-body summary h5 .anchor,
+.markdown-body summary h6 .anchor {
+  margin-left: -40px;
+}
+
+.markdown-body summary h1,
+.markdown-body summary h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.markdown-body ul.no-list,
+.markdown-body ol.no-list {
+  padding: 0;
+  list-style-type: none;
+}
+
+.markdown-body ol[type="a s"] {
+  list-style-type: lower-alpha;
+}
+
+.markdown-body ol[type="A s"] {
+  list-style-type: upper-alpha;
+}
+
+.markdown-body ol[type="i s"] {
+  list-style-type: lower-roman;
+}
+
+.markdown-body ol[type="I s"] {
+  list-style-type: upper-roman;
+}
+
+.markdown-body ol[type="1"] {
+  list-style-type: decimal;
+}
+
+.markdown-body div>ol:not([type]) {
+  list-style-type: decimal;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body li>p {
+  margin-top: 1rem;
+}
+
+.markdown-body li+li {
+  margin-top: .25em;
+}
+
+.markdown-body dl {
+  padding: 0;
+}
+
+.markdown-body dl dt {
+  padding: 0;
+  margin-top: 1rem;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.markdown-body dl dd {
+  padding: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-body table th {
+  font-weight: 600;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid #d1d9e0;
+}
+
+.markdown-body table td>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body table tr {
+  background-color: #ffffff;
+  border-top: 1px solid #d1d9e0b3;
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+.markdown-body table img {
+  background-color: rgba(0,0,0,0);
+}
+
+.markdown-body img[align=right] {
+  padding-left: 20px;
+}
+
+.markdown-body img[align=left] {
+  padding-right: 20px;
+}
+
+.markdown-body .emoji {
+  max-width: none;
+  vertical-align: text-top;
+  background-color: rgba(0,0,0,0);
+}
+
+.markdown-body span.frame {
+  display: block;
+  overflow: hidden;
+}
+
+.markdown-body span.frame>span {
+  display: block;
+  float: left;
+  width: auto;
+  padding: 7px;
+  margin: 13px 0 0;
+  overflow: hidden;
+  border: 1px solid #d1d9e0;
+}
+
+.markdown-body span.frame span img {
+  display: block;
+  float: left;
+}
+
+.markdown-body span.frame span span {
+  display: block;
+  padding: 5px 0 0;
+  clear: both;
+  color: #1f2328;
+}
+
+.markdown-body span.align-center {
+  display: block;
+  overflow: hidden;
+  clear: both;
+}
+
+.markdown-body span.align-center>span {
+  display: block;
+  margin: 13px auto 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.markdown-body span.align-center span img {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.markdown-body span.align-right {
+  display: block;
+  overflow: hidden;
+  clear: both;
+}
+
+.markdown-body span.align-right>span {
+  display: block;
+  margin: 13px 0 0;
+  overflow: hidden;
+  text-align: right;
+}
+
+.markdown-body span.align-right span img {
+  margin: 0;
+  text-align: right;
+}
+
+.markdown-body span.float-left {
+  display: block;
+  float: left;
+  margin-right: 13px;
+  overflow: hidden;
+}
+
+.markdown-body span.float-left span {
+  margin: 13px 0 0;
+}
+
+.markdown-body span.float-right {
+  display: block;
+  float: right;
+  margin-left: 13px;
+  overflow: hidden;
+}
+
+.markdown-body span.float-right>span {
+  display: block;
+  margin: 13px auto 0;
+  overflow: hidden;
+  text-align: right;
+}
+
+.markdown-body code,
+.markdown-body tt {
+  padding: .2em .4em;
+  margin: 0;
+  font-size: 85%;
+  white-space: break-spaces;
+  background-color: #818b981f;
+  border-radius: 6px;
+}
+
+.markdown-body code br,
+.markdown-body tt br {
+  display: none;
+}
+
+.markdown-body del code {
+  text-decoration: inherit;
+}
+
+.markdown-body samp {
+  font-size: 85%;
+}
+
+.markdown-body pre code {
+  font-size: 100%;
+}
+
+.markdown-body pre>code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: rgba(0,0,0,0);
+  border: 0;
+}
+
+.markdown-body .highlight {
+  margin-bottom: 1rem;
+}
+
+.markdown-body .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+
+.markdown-body .highlight pre,
+.markdown-body pre {
+  padding: 1rem;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.markdown-body pre code,
+.markdown-body pre tt {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: rgba(0,0,0,0);
+  border: 0;
+}
+
+.markdown-body .csv-data td,
+.markdown-body .csv-data th {
+  padding: 5px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.markdown-body .csv-data .blob-num {
+  padding: 10px 0.5rem 9px;
+  text-align: right;
+  background: #ffffff;
+  border: 0;
+}
+
+.markdown-body .csv-data tr {
+  border-top: 0;
+}
+
+.markdown-body .csv-data th {
+  font-weight: 600;
+  background: #f6f8fa;
+  border-top: 0;
+}
+
+.markdown-body [data-footnote-ref]::before {
+  content: "[";
+}
+
+.markdown-body [data-footnote-ref]::after {
+  content: "]";
+}
+
+.markdown-body .footnotes {
+  font-size: 12px;
+  color: #59636e;
+  border-top: 1px solid #d1d9e0;
+}
+
+.markdown-body .footnotes ol {
+  padding-left: 1rem;
+}
+
+.markdown-body .footnotes ol ul {
+  display: inline-block;
+  padding-left: 1rem;
+  margin-top: 1rem;
+}
+
+.markdown-body .footnotes li {
+  position: relative;
+}
+
+.markdown-body .footnotes li:target::before {
+  position: absolute;
+  top: calc(0.5rem*-1);
+  right: calc(0.5rem*-1);
+  bottom: calc(0.5rem*-1);
+  left: calc(1.5rem*-1);
+  pointer-events: none;
+  content: "";
+  border: 2px solid #0969da;
+  border-radius: 6px;
+}
+
+.markdown-body .footnotes li:target {
+  color: #1f2328;
+}
+
+.markdown-body .footnotes .data-footnote-backref g-emoji {
+  font-family: monospace;
+}
+
+.markdown-body .pl-c {
+  color: #59636e;
+}
+
+.markdown-body .pl-c1,
+.markdown-body .pl-s .pl-v {
+  color: #0550ae;
+}
+
+.markdown-body .pl-e,
+.markdown-body .pl-en {
+  color: #6639ba;
+}
+
+.markdown-body .pl-smi,
+.markdown-body .pl-s .pl-s1 {
+  color: #1f2328;
+}
+
+.markdown-body .pl-ent {
+  color: #0550ae;
+}
+
+.markdown-body .pl-k {
+  color: #cf222e;
+}
+
+.markdown-body .pl-s,
+.markdown-body .pl-pds,
+.markdown-body .pl-s .pl-pse .pl-s1,
+.markdown-body .pl-sr,
+.markdown-body .pl-sr .pl-cce,
+.markdown-body .pl-sr .pl-sre,
+.markdown-body .pl-sr .pl-sra {
+  color: #0a3069;
+}
+
+.markdown-body .pl-v,
+.markdown-body .pl-smw {
+  color: #953800;
+}
+
+.markdown-body .pl-bu {
+  color: #82071e;
+}
+
+.markdown-body .pl-ii {
+  color: var(--fgColor-danger);
+  background-color: var(--bgColor-danger-muted);
+}
+
+.markdown-body .pl-c2 {
+  color: #f6f8fa;
+  background-color: #cf222e;
+}
+
+.markdown-body .pl-sr .pl-cce {
+  font-weight: bold;
+  color: #116329;
+}
+
+.markdown-body .pl-ml {
+  color: #3b2300;
+}
+
+.markdown-body .pl-mh,
+.markdown-body .pl-mh .pl-en,
+.markdown-body .pl-ms {
+  font-weight: bold;
+  color: #0550ae;
+}
+
+.markdown-body .pl-mi {
+  font-style: italic;
+  color: #1f2328;
+}
+
+.markdown-body .pl-mb {
+  font-weight: bold;
+  color: #1f2328;
+}
+
+.markdown-body .pl-md {
+  color: #82071e;
+  background-color: #ffebe9;
+}
+
+.markdown-body .pl-mi1 {
+  color: #116329;
+  background-color: #dafbe1;
+}
+
+.markdown-body .pl-mc {
+  color: #953800;
+  background-color: #ffd8b5;
+}
+
+.markdown-body .pl-mi2 {
+  color: #d1d9e0;
+  background-color: #0550ae;
+}
+
+.markdown-body .pl-mdr {
+  font-weight: bold;
+  color: #8250df;
+}
+
+.markdown-body .pl-ba {
+  color: #59636e;
+}
+
+.markdown-body .pl-sg {
+  color: #818b98;
+}
+
+.markdown-body .pl-corl {
+  text-decoration: underline;
+  color: #0a3069;
+}
+
+.markdown-body [role=button]:focus:not(:focus-visible),
+.markdown-body [role=tabpanel][tabindex="0"]:focus:not(:focus-visible),
+.markdown-body button:focus:not(:focus-visible),
+.markdown-body summary:focus:not(:focus-visible),
+.markdown-body a:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+.markdown-body [tabindex="0"]:focus:not(:focus-visible),
+.markdown-body details-dialog:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.markdown-body g-emoji {
+  display: inline-block;
+  min-width: 1ch;
+  font-family: "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  font-size: 1em;
+  font-style: normal !important;
+  font-weight: 400;
+  line-height: 1;
+  vertical-align: -0.075em;
+}
+
+.markdown-body g-emoji img {
+  width: 1em;
+  height: 1em;
+}
+
+.markdown-body a:has(>p,>div,>pre,>blockquote) {
+  display: block;
+}
+
+.markdown-body a:has(>p,>div,>pre,>blockquote):not(:has(.snippet-clipboard-content,>pre)) {
+  width: fit-content;
+}
+
+.markdown-body a:has(>p,>div,>pre,>blockquote):has(.snippet-clipboard-content,>pre):focus-visible {
+  outline: 2px solid var(--borderColor-accent-emphasis);
+  outline-offset: 2px;
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item label {
+  font-weight: 400;
+}
+
+.markdown-body .task-list-item.enabled label {
+  cursor: pointer;
+}
+
+.markdown-body .task-list-item+.task-list-item {
+  margin-top: 0.25rem;
+}
+
+.markdown-body .task-list-item .handle {
+  display: none;
+}
+
+.markdown-body .task-list-item-checkbox {
+  margin: 0 .2em .25em -1.4em;
+  vertical-align: middle;
+}
+
+.markdown-body ul:dir(rtl) .task-list-item-checkbox {
+  margin: 0 -1.6em .25em .2em;
+}
+
+.markdown-body ol:dir(rtl) .task-list-item-checkbox {
+  margin: 0 -1.6em .25em .2em;
+}
+
+.markdown-body .contains-task-list:hover .task-list-item-convert-container,
+.markdown-body .contains-task-list:focus-within .task-list-item-convert-container {
+  display: block;
+  width: auto;
+  height: 24px;
+  overflow: visible;
+  clip-path: none;
+}
+
+.markdown-body ::-webkit-calendar-picker-indicator {
+  filter: invert(50%);
+}
+
+.markdown-body .markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  color: inherit;
+  border-left: .25em solid #d1d9e0;
+}
+
+.markdown-body .markdown-alert>:first-child {
+  margin-top: 0;
+}
+
+.markdown-body .markdown-alert>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body .markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1;
+}
+
+.markdown-body .markdown-alert.markdown-alert-note {
+  border-left-color: #0969da;
+}
+
+.markdown-body .markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: #0969da;
+}
+
+.markdown-body .markdown-alert.markdown-alert-important {
+  border-left-color: #8250df;
+}
+
+.markdown-body .markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: #8250df;
+}
+
+.markdown-body .markdown-alert.markdown-alert-warning {
+  border-left-color: #9a6700;
+}
+
+.markdown-body .markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: #9a6700;
+}
+
+.markdown-body .markdown-alert.markdown-alert-tip {
+  border-left-color: #1a7f37;
+}
+
+.markdown-body .markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: #1a7f37;
+}
+
+.markdown-body .markdown-alert.markdown-alert-caution {
+  border-left-color: #cf222e;
+}
+
+.markdown-body .markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: #d1242f;
+}
+
+.markdown-body>*:first-child>.heading-element:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body .highlight pre:has(+.zeroclipboard-container) {
+  min-height: 52px;
+}
+
+
+    body { background: #ffffff; color: #1f2328; }
+    .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 920px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+    @media print {
+      .markdown-body { max-width: none; padding: 1rem; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+  <article class="markdown-body">
+<h1>Hustronix OS — Complete Technical Guide</h1>
+<p><strong>Version:</strong> 1.0 · <strong>Generated:</strong> June 6, 2026<br>
+<strong>Audience:</strong> Founders and operators who want every layer explained in plain language, with full technical detail for engineers.</p>
+<hr>
+<h2>How to read this document</h2>
+<table>
+<thead>
+<tr>
+<th>If you want to understand…</th>
+<th>Start here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What the product <em>is</em> in one page</td>
+<td>§1 Executive Summary</td>
+</tr>
+<tr>
+<td>How data flows from Slack/GitHub into decisions</td>
+<td>§5 Data Flow</td>
+</tr>
+<tr>
+<td>Every screen in the app</td>
+<td>§7 Frontend Routes</td>
+</tr>
+<tr>
+<td>Every API endpoint</td>
+<td>§8 Backend API</td>
+</tr>
+<tr>
+<td>Where data is stored</td>
+<td>§9 Database</td>
+</tr>
+<tr>
+<td>Login, permissions, security</td>
+<td>§10 Auth &amp; Security</td>
+</tr>
+<tr>
+<td>AI chat and the coordinator</td>
+<td>§11 Chat &amp; AI</td>
+</tr>
+<tr>
+<td>Rules that enforce capacity and shadow work</td>
+<td>§12 Auditor</td>
+</tr>
+<tr>
+<td>Search, signals, embeddings</td>
+<td>§13 Intelligence</td>
+</tr>
+<tr>
+<td>Slack, GitHub, Google, etc.</td>
+<td>§14 Integrations</td>
+</tr>
+<tr>
+<td>Where it runs in production</td>
+<td>§16 Deployment</td>
+</tr>
+<tr>
+<td>All configuration knobs</td>
+<td>§17 Environment Variables</td>
+</tr>
+<tr>
+<td>What’s finished vs partial</td>
+<td>§18 Product Maturity</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Core idea in one sentence:</strong> Hustronix is an <strong>operating system for decisions and execution</strong> — external signals (Slack, GitHub, email, meetings) land in a <strong>database ledger</strong>, <strong>deterministic rules</strong> enforce capacity and policy, and an <strong>AI chat interface</strong> helps you draft and navigate that ledger without replacing it.</p>
+<hr>
+<h2>1. Executive Summary</h2>
+<h3>What Hustronix is</h3>
+<p>Hustronix is a <strong>decision and execution platform</strong> for teams that need to:</p>
+<ol>
+<li><strong>Commit</strong> to a small number of strategic decisions (the “vow”).</li>
+<li><strong>Track execution</strong> as tasks under those decisions.</li>
+<li><strong>Ingest signals</strong> from tools like Slack, GitHub, Google Calendar, and meetings.</li>
+<li><strong>Enforce rules</strong> automatically — shadow work, capacity limits, conflicting decisions.</li>
+<li><strong>Talk to an AI coordinator</strong> that reads the ledger and helps you act — but does not silently override rules.</li>
+</ol>
+<p>Think of it as <strong>Mission Control for organizational focus</strong>: not another chatbot, but a system where the <strong>database + auditor</strong> are the source of truth and the LLM is an interface.</p>
+<h3>The three layers (most important mental model)</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  LAYER 3 — INTERFACE (Next.js UI + WebSocket chat + LLM)   │
+│  What users see and talk to                                │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ reads/writes via API
+┌───────────────────────────▼─────────────────────────────────┐
+│  LAYER 2 — ENFORCEMENT (Auditor + conflict gates)            │
+│  Deterministic rules — no AI guessing                        │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ reads/writes
+┌───────────────────────────▼─────────────────────────────────┐
+│  LAYER 1 — LEDGER (SQLite database)                          │
+│  decisions · execution tasks · external signals · audit log  │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>File anchors:</strong> Ledger = <code>apps/api/src/database.ts</code> · Auditor = <code>apps/api/src/auditor.ts</code> · Coordinator = <code>apps/api/src/agent.ts</code> · UI = <code>apps/web/</code></p>
+<h3>Technology stack (simple glossary)</h3>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>What it means for Hustronix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Monorepo</strong></td>
+<td>One Git repository containing API, web app, shared code, and deployment configs</td>
+</tr>
+<tr>
+<td><strong>Node.js</strong></td>
+<td>JavaScript runtime that powers the backend server</td>
+</tr>
+<tr>
+<td><strong>Express</strong></td>
+<td>Web framework that handles HTTP API requests</td>
+</tr>
+<tr>
+<td><strong>Next.js</strong></td>
+<td>React framework for the web UI (pages, routing, styling)</td>
+</tr>
+<tr>
+<td><strong>SQLite</strong></td>
+<td>Single-file database stored at <code>./data/hustronix.db</code> (local) or mounted volume (production)</td>
+</tr>
+<tr>
+<td><strong>WebSocket</strong></td>
+<td>Persistent connection used for real-time chat streaming</td>
+</tr>
+<tr>
+<td><strong>LLM</strong></td>
+<td>Large language model (Claude by default) powering the chat coordinator</td>
+</tr>
+<tr>
+<td><strong>OAuth</strong></td>
+<td>Standard way users connect Slack, GitHub, Google, etc.</td>
+</tr>
+<tr>
+<td><strong>Unified server</strong></td>
+<td>Production mode: one process serves API + chat + website on one port</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2. Repository Structure</h2>
+<pre><code>Hustronix OS/
+├── apps/
+│   ├── api/                 Backend: Express, WebSocket, agents, SQLite
+│   │   └── src/
+│   │       ├── server.ts           HTTP routes (main API surface)
+│   │       ├── unified-server.ts   Production: API + Next.js together
+│   │       ├── database.ts         Schema, queries, migrations
+│   │       ├── agent.ts            Main AI coordinator
+│   │       ├── auditor.ts          Rule engine (shadow work, capacity)
+│   │       ├── bootstrap.ts        Startup: seeds, cron, WS wiring
+│   │       ├── auth/               Login, OAuth, sessions, 2FA
+│   │       ├── integrations/       Slack, GitHub, Google, etc.
+│   │       ├── intelligence/       Search, embeddings, auto-linking
+│   │       ├── notifications/      In-app, email, Slack delivery
+│   │       └── security/           RBAC, CSRF, rate limits, audit
+│   └── web/                 Frontend: Next.js App Router
+│       └── src/app/         Pages: mission-control, chat, signals, etc.
+├── packages/
+│   └── shared/              Shared TypeScript types between API and web
+├── infra/
+│   ├── docker/              Dockerfile + docker-compose
+│   ├── fly/                 Fly.io deployment config
+│   ├── azure/               Azure Container Apps (production target)
+│   └── db/postgres/         Future PostgreSQL schema (not runtime yet)
+├── netlify-landing/         Static marketing site (early access only)
+├── docs/                    Architecture and security documentation
+├── ops/scripts/             QA, security checks, PDF export
+├── data/                    Local SQLite file (gitignored except .gitkeep)
+├── .env                     API secrets (copy from .env.example)
+└── package.json             Root scripts: dev, build, deploy
+</code></pre>
+<hr>
+<h2>3. How the App Runs</h2>
+<h3>Development (two processes)</h3>
+<p>When you run <code>npm run dev</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Port</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>API + WebSocket</strong></td>
+<td>3005</td>
+<td>Handles <code>/api/*</code> and chat WebSocket</td>
+</tr>
+<tr>
+<td><strong>Next.js web</strong></td>
+<td>3000</td>
+<td>Serves the UI; proxies <code>/api/*</code> to port 3005</td>
+</tr>
+</tbody>
+</table>
+<p>The browser usually opens <strong><a href="http://localhost:3000">http://localhost:3000</a></strong>. API calls go to the same origin and get proxied to the backend.</p>
+<p><strong>Key files:</strong> <code>apps/web/next.config.ts</code> (proxy rules) · <code>apps/web/src/lib/api.ts</code> (how the UI calls the API)</p>
+<h3>Production (unified — one process)</h3>
+<p>When you run <code>npm run build</code> then <code>npm run start:unified</code>:</p>
+<ul>
+<li><strong>One Node process</strong> on port 3000 (or <code>PORT</code> env var)</li>
+<li>Serves REST API, WebSocket, and Next.js pages together</li>
+<li><strong>File:</strong> <code>apps/api/src/unified-server.ts</code></li>
+</ul>
+<p>This is how Docker, <a href="http://Fly.io">Fly.io</a>, and Azure deployments run.</p>
+<h3>Boot sequence (what happens when the server starts)</h3>
+<ol>
+<li>Load environment from <code>.env</code></li>
+<li>Open SQLite database, run schema migrations if needed</li>
+<li>Seed <code>system</code> user if missing</li>
+<li>Attach WebSocket handler to HTTP server</li>
+<li>Start <strong>auditor cron</strong> (every 5 minutes — safety net)</li>
+<li>Start <strong>integration workers</strong> (OAuth refresh, Google/Slack polling, notification digest)</li>
+<li>Optionally seed demo data (decisions + sample signals)</li>
+</ol>
+<p><strong>File:</strong> <code>apps/api/src/bootstrap.ts</code></p>
+<hr>
+<h2>4. Request Flow (Browser → Database)</h2>
+<pre><code>User clicks &quot;Commit Decision&quot; in Mission Control
+        │
+        ▼
+Next.js page (MissionControlClient.tsx)
+        │
+        ▼  POST /api/decisions/commit  (cookie: hustronix_session)
+Express server.ts
+        │
+        ▼  authMiddleware → resolves userId from session
+        │
+        ▼  requirePermission('decision:commit')
+        │
+        ▼  database.transitionDecisionState(ACTIVE)
+        │     └── findOtherActiveDecision() — blocks if another ACTIVE exists
+        │
+        ▼  auditor.runAfterLedgerMutation()
+        │
+        ▼  JSON response + optional WebSocket broadcast
+</code></pre>
+<p>Every mutating API route follows this pattern: <strong>authenticate → authorize → database → auditor → respond</strong>.</p>
+<hr>
+<h2>5. Data Flow — Signals to Execution</h2>
+<p>This is the product’s central loop:</p>
+<pre><code>External world                    Hustronix ledger                 UI
+─────────────                    ────────────────                 ──
+
+Slack message  ──webhook──►  external_signals (UNVERIFIED)
+GitHub PR      ──webhook──►       │
+Meeting notes  ──API──────►       ▼
+                             Intelligence pipeline:
+                             · detect intent/risk (LLM)
+                             · embed for search
+                             · auto-link (if confident)
+                                  │
+                                  ▼
+                             Signals UI (/signals)
+                             User links signal → task
+                                  │
+                                  ▼
+                             external_signals (LINKED)
+                             linked_execution_id → execution_ledger
+                                  │
+                                  ▼
+                             Auditor checks shadow work,
+                             capacity, grace periods
+</code></pre>
+<p><strong>Key principle:</strong> Ingestion <strong>never</strong> silently creates execution work. Linking is <strong>explicit</strong> (user or high-confidence auto-linker).</p>
+<p><strong>Docs:</strong> <code>docs/architecture-enforcement.md</code> · <strong>Code:</strong> <code>apps/api/src/intelligence/index.ts</code></p>
+<hr>
+<h2>6. Multi-Tenancy</h2>
+<p>Each customer organization is scoped by <strong><code>user_id</code></strong> on rows:</p>
+<ul>
+<li><code>external_signals.user_id</code> — signals belong to one tenant</li>
+<li><code>decision_ledger</code> / <code>execution_ledger</code> — scoped to the org owner</li>
+<li>Settings like <code>org.owner_user_id</code> and <code>org.role</code> define RBAC within a tenant</li>
+</ul>
+<p>The <strong><code>system</code></strong> automation principal exists for scripts but does <strong>not</strong> receive cross-tenant signal reads.</p>
+<hr>
+<h2>7. Frontend Routes</h2>
+<p>All pages live under <code>apps/web/src/app/</code>.</p>
+<h3>Public / marketing</h3>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Component</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td><code>LandingPage</code></td>
+<td>Product marketing homepage</td>
+</tr>
+<tr>
+<td><code>/login</code></td>
+<td><code>LoginClient</code></td>
+<td>Sign in (password, OTP, OAuth)</td>
+</tr>
+<tr>
+<td><code>/signup</code>, <code>/register</code></td>
+<td><code>SignupClient</code></td>
+<td>Create account</td>
+</tr>
+<tr>
+<td><code>/contact</code></td>
+<td><code>ContactForm</code></td>
+<td>Contact form</td>
+</tr>
+<tr>
+<td><code>/privacy</code>, <code>/terms</code>, <code>/cookies</code></td>
+<td>Legal pages</td>
+<td>Legal content</td>
+</tr>
+</tbody>
+</table>
+<h3>Authenticated dashboard</h3>
+<p>Wrapped in <code>(dashboard)/layout.tsx</code> — sidebar, auth gate, onboarding check.</p>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Component</th>
+<th>API / behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/mission-control</code></td>
+<td><code>MissionControlClient</code></td>
+<td><code>GET /api/mission-control/summary</code>, decisions list, WebSocket <code>COMMIT_DECISION</code></td>
+</tr>
+<tr>
+<td><code>/execute</code></td>
+<td><code>ExecuteClient</code></td>
+<td>Execution ledger, capacity, state transitions</td>
+</tr>
+<tr>
+<td><code>/signals</code></td>
+<td><code>SignalsClient</code></td>
+<td>Signal triage by state, link to tasks</td>
+</tr>
+<tr>
+<td><code>/chat</code></td>
+<td><code>ChatClient</code></td>
+<td>WebSocket chat with AI coordinator</td>
+</tr>
+<tr>
+<td><code>/reports</code></td>
+<td><code>ReportsClient</code></td>
+<td><code>GET /api/metrics/reports</code> — charts</td>
+</tr>
+<tr>
+<td><code>/teams</code></td>
+<td><code>TeamsClient</code></td>
+<td>Team roster, bar/donut charts</td>
+</tr>
+<tr>
+<td><code>/settings</code></td>
+<td><code>SettingsClient</code></td>
+<td>Org settings, notifications, integration toggles</td>
+</tr>
+<tr>
+<td><code>/profile</code></td>
+<td><code>ProfileClient</code></td>
+<td>Profile, API keys, active sessions</td>
+</tr>
+<tr>
+<td><code>/guide</code></td>
+<td><code>GuideClient</code></td>
+<td>In-app product walkthrough</td>
+</tr>
+<tr>
+<td><code>/onboarding</code></td>
+<td><code>OnboardingClient</code></td>
+<td>First-run org setup</td>
+</tr>
+</tbody>
+</table>
+<h3>Next.js API routes (server-side)</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/contact</code></td>
+<td>Proxies marketing contact to backend</td>
+</tr>
+<tr>
+<td><code>/api/early-access/leads/submit</code></td>
+<td>Waitlist submission</td>
+</tr>
+<tr>
+<td><code>/api/early-access/leads/list</code></td>
+<td>Admin list (protected)</td>
+</tr>
+<tr>
+<td><code>/oauth/[provider]</code></td>
+<td>OAuth redirect helper</td>
+</tr>
+</tbody>
+</table>
+<h3>Separate marketing site</h3>
+<p><strong><code>netlify-landing/</code></strong> — static site for demand validation only (early access + contact). No product app. Hosted on Netlify at <code>hustronix.online</code>. Regenerate with <code>npm run export:netlify-landing</code>.</p>
+<hr>
+<h2>8. Backend API — Complete Route Reference</h2>
+<p>Primary file: <strong><code>apps/api/src/server.ts</code></strong> (+ integration modules mounted at bottom).</p>
+<p>Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission</p>
+<h3>Health &amp; marketing 🔓</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/health</code></td>
+<td>Liveness: DB ok, uptime, LLM config (no secrets)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/early-access</code></td>
+<td>Waitlist signup → <code>early_access_leads</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contact</code></td>
+<td>Contact form → <code>marketing_contact_messages</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Webhooks (signature-verified, no session) 🔓</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/integrations/slack/events</code></td>
+<td>Slack Events API</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/github</code></td>
+<td>GitHub webhooks</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/github/:tenant</code></td>
+<td>GitHub (tenant-scoped)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/linear/:tenant</code></td>
+<td>Linear</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/jira</code>, <code>/api/ingest/jira/:tenant</code></td>
+<td>Jira</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/crm/:vendor</code></td>
+<td>Generic CRM</td>
+</tr>
+<tr>
+<td>POST</td>
+<td>Google/Microsoft ingest routes</td>
+<td>Calendar, Teams, Outlook</td>
+</tr>
+</tbody>
+</table>
+<h3>Authentication 🔓 / 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/providers</code></td>
+<td>Enabled login methods</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/otp/request</code></td>
+<td>Send email OTP</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/register</code></td>
+<td>Password registration</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/login</code></td>
+<td>Password login → session cookie</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/login/totp</code></td>
+<td>TOTP second factor</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/totp/status</code></td>
+<td>2FA enabled?</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/totp/setup\|confirm\|cancel\|disable</code></td>
+<td>Manage 2FA 🛡 <code>security:manage</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/logout</code></td>
+<td>Revoke session</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/auth/google/*</code>, <code>/api/auth/github/*</code></td>
+<td>Social <strong>login</strong> OAuth</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/password</code></td>
+<td>Change password 🛡</td>
+</tr>
+<tr>
+<td>GET/POST/DELETE</td>
+<td><code>/api/auth/api-keys</code></td>
+<td>Automation tokens <code>hx_live_…</code></td>
+</tr>
+<tr>
+<td>GET/DELETE</td>
+<td><code>/api/auth/sessions</code></td>
+<td>List/revoke sessions</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/sessions/revoke-all</code></td>
+<td>Log out everywhere</td>
+</tr>
+</tbody>
+</table>
+<h3>Integration OAuth (connect tools) 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/DELETE</td>
+<td><code>/api/oauth/:provider/*</code></td>
+<td>Slack, GitHub, Google, Microsoft, Notion, Jira, Linear</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/oauth/connections</code></td>
+<td>List connected integrations</td>
+</tr>
+</tbody>
+</table>
+<p><strong>File:</strong> <code>apps/api/src/auth/oauthRoutes.ts</code></p>
+<h3>Decisions &amp; execution 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Permission</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/mission-control/summary</code></td>
+<td>read</td>
+<td>Dashboard aggregate</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/decisions</code></td>
+<td>read</td>
+<td>List decisions</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/decisions</code></td>
+<td>write</td>
+<td>Create DRAFT decision</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/decisions/commit</code></td>
+<td><code>decision:commit</code></td>
+<td>Activate decision (conflict gate)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/execution/ledger</code></td>
+<td>read</td>
+<td>Task graph</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/execution/capacity</code></td>
+<td>read</td>
+<td>Capacity utilization</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/execution/transition</code></td>
+<td><code>execution:write</code></td>
+<td>Move task state</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/execution/signals</code></td>
+<td>read</td>
+<td>Signals list</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/execution/signals/by-state</code></td>
+<td>read</td>
+<td>Signals grouped by state</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/execution/link</code></td>
+<td><code>signal:write</code></td>
+<td>Link signal → task</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/execution/signals/kill</code></td>
+<td><code>signal:write</code></td>
+<td>Dismiss signal</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/audit/run</code></td>
+<td><code>audit:run</code></td>
+<td>Manual auditor sweep</td>
+</tr>
+</tbody>
+</table>
+<h3>Intelligence &amp; operations 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/intelligence/context</code></td>
+<td>Decision context for UI/agent</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/intelligence/search</code></td>
+<td>Hybrid full-text + embedding search</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/intelligence/relink</code></td>
+<td>Re-run auto-linker</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/intelligence/warm-embeddings</code></td>
+<td>Precompute embeddings</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/manual</code></td>
+<td>Manual signal insert</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/ingest/meeting</code></td>
+<td>Meeting transcript → signals</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/operational/drift</code></td>
+<td>Execution drift query</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/operational/overloaded</code></td>
+<td>Overloaded owners</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/operational/conflicts</code></td>
+<td>Conflicting work</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/operational/related</code></td>
+<td>Related signals</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/operational/search</code></td>
+<td>Operational search</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/reports/weekly</code></td>
+<td>Weekly drift report</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/reports/health</code></td>
+<td>Operational health report</td>
+</tr>
+</tbody>
+</table>
+<h3>User, settings, metrics 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/PATCH</td>
+<td><code>/api/me</code></td>
+<td>Profile + allowlisted settings keys</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/activity</code></td>
+<td>Activity feed</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/settings</code></td>
+<td>Org settings</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/settings/bulk</code></td>
+<td>Bulk update (notifications, general)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/settings/capacity-summary</code></td>
+<td>Capacity rollup</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/api/billing</code></td>
+<td>Billing settings (stub)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/metrics/reports</code></td>
+<td>Report metrics for charts</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/metrics/teams</code></td>
+<td>Team metrics</td>
+</tr>
+<tr>
+<td>GET/POST/DELETE</td>
+<td><code>/api/metrics/teams/roster/*</code></td>
+<td>Roster CRUD, import</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/chat/sidebar</code></td>
+<td>Chat sidebar context</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/connections</code></td>
+<td>Connection capability cards</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/connections/sync</code></td>
+<td>Sync connections</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/integrations/health</code></td>
+<td>Integration health status</td>
+</tr>
+</tbody>
+</table>
+<h3>Notifications 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/notifications</code></td>
+<td>In-app inbox</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/notifications/unread-count</code></td>
+<td>Badge count</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/notifications/:id/read</code></td>
+<td>Mark one read</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/notifications/read-all</code></td>
+<td>Mark all read</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/notifications/test</code></td>
+<td>Test delivery</td>
+</tr>
+</tbody>
+</table>
+<h3>Observability 🔐</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/audit-log</code></td>
+<td>Sovereign audit log 🛡 <code>audit:run</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/learning-log</code></td>
+<td>Post-decision learning</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/productivity</code></td>
+<td>Productivity metrics</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system/value-telemetry</code></td>
+<td>Internal telemetry</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>9. Database — SQLite Schema</h2>
+<p><strong>File:</strong> <code>apps/api/src/database.ts</code><br>
+<strong>Default path:</strong> <code>./data/hustronix.db</code> (env: <code>SQLITE_PATH</code>)</p>
+<h3>Core ledger (source of truth)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+<th>Key columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>decision_ledger</code></td>
+<td>Strategic commitments</td>
+<td><code>id</code>, <code>user_id</code>, <code>vow</code>, <code>status</code> (DRAFT→ACTIVE→…), <code>outcomes</code>, <code>constraints</code></td>
+</tr>
+<tr>
+<td><code>execution_ledger</code></td>
+<td>Tasks under decisions</td>
+<td><code>task_id</code>, <code>decision_id</code>, <code>owner</code>, <code>status</code>, <code>priority</code>, <code>weight</code>, <code>dependencies</code></td>
+</tr>
+<tr>
+<td><code>external_signals</code></td>
+<td>Events from Slack/GitHub/etc.</td>
+<td><code>id</code>, <code>user_id</code>, <code>source</code>, <code>state</code> (UNVERIFIED→GRACE→LINKED/KILLED), <code>linked_execution_id</code></td>
+</tr>
+<tr>
+<td><code>audit_log</code></td>
+<td>Auditor actions</td>
+<td><code>action</code>, <code>entity_type</code>, <code>details</code>, <code>timestamp</code></td>
+</tr>
+<tr>
+<td><code>ledger_events</code></td>
+<td>Hash-chained tamper-evident log</td>
+<td>Chained hashes for integrity</td>
+</tr>
+<tr>
+<td><code>owner_reputation</code></td>
+<td>Behavioral reputation</td>
+<td>Per-owner scores</td>
+</tr>
+</tbody>
+</table>
+<h3>Identity &amp; authentication</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>users</code></td>
+<td>Accounts: username, email, password_hash, TOTP columns</td>
+</tr>
+<tr>
+<td><code>user_sessions</code></td>
+<td>Session tokens (hashed), expiry, device info</td>
+</tr>
+<tr>
+<td><code>api_access_tokens</code></td>
+<td>Automation keys (<code>hx_live_…</code>)</td>
+</tr>
+<tr>
+<td><code>api_keys</code></td>
+<td>Per-user LLM provider keys (legacy)</td>
+</tr>
+<tr>
+<td><code>oauth_identities</code></td>
+<td>Social login linkage (Google/GitHub login)</td>
+</tr>
+<tr>
+<td><code>oauth_login_states</code></td>
+<td>Login OAuth CSRF states</td>
+</tr>
+<tr>
+<td><code>email_otp_challenges</code></td>
+<td>Email one-time password flows</td>
+</tr>
+<tr>
+<td><code>login_totp_challenges</code></td>
+<td>TOTP step-up during login</td>
+</tr>
+<tr>
+<td><code>oauth_connections</code></td>
+<td>Encrypted integration tokens (Slack bot, GitHub, etc.)</td>
+</tr>
+<tr>
+<td><code>oauth_pending_states</code></td>
+<td>In-flight OAuth flows</td>
+</tr>
+<tr>
+<td><code>oauth_subscriptions</code></td>
+<td>Webhook subscriptions (Microsoft, Google)</td>
+</tr>
+<tr>
+<td><code>slack_event_receipts</code></td>
+<td>Slack event idempotency</td>
+</tr>
+<tr>
+<td><code>external_event_dedup</code></td>
+<td>Cross-provider deduplication</td>
+</tr>
+</tbody>
+</table>
+<h3>Configuration &amp; SaaS</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>settings</code></td>
+<td>Key/value per user — org name, role, notification prefs</td>
+</tr>
+<tr>
+<td><code>team_roster</code></td>
+<td>Teams page roster entries</td>
+</tr>
+<tr>
+<td><code>notifications</code></td>
+<td>In-app notifications + delivery flags</td>
+</tr>
+<tr>
+<td><code>early_access_leads</code></td>
+<td>Marketing waitlist</td>
+</tr>
+<tr>
+<td><code>marketing_contact_messages</code></td>
+<td>Contact form submissions</td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td>Chat history (user, session_id, role, content)</td>
+</tr>
+<tr>
+<td><code>learning_log</code></td>
+<td>Post-decision learning entries</td>
+</tr>
+<tr>
+<td><code>security_events</code></td>
+<td>Security audit trail</td>
+</tr>
+</tbody>
+</table>
+<h3>Intelligence</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>signals_fts</code>, <code>executions_fts</code>, <code>decisions_fts</code></td>
+<td>Full-text search mirrors (FTS5)</td>
+</tr>
+<tr>
+<td><code>entity_embeddings</code></td>
+<td>Vector embeddings for hybrid search</td>
+</tr>
+<tr>
+<td><code>meeting_ingestions</code></td>
+<td>Meeting ingest metadata</td>
+</tr>
+</tbody>
+</table>
+<h3>Key relationships</h3>
+<pre><code>decision_ledger (1) ──&lt; execution_ledger (many)
+                              ▲
+                              │ linked_execution_id
+external_signals ─────────────┘
+
+Rule: at most ONE decision with status ACTIVE per user_id
+      (enforced in transitionDecisionState)
+</code></pre>
+<h3>Future: PostgreSQL</h3>
+<p>Schema exists at <code>infra/db/postgres/</code>. Migrate with <code>npm run db:pg:migrate</code>. <strong>Runtime still uses SQLite</strong> until cutover is complete.</p>
+<hr>
+<h2>10. Authentication &amp; Security</h2>
+<h3>How login works</h3>
+<ol>
+<li>User submits credentials at <code>/login</code></li>
+<li>API validates (password bcrypt, OTP, or OAuth)</li>
+<li>API creates row in <code>user_sessions</code>, sets cookie <strong><code>hustronix_session</code></strong></li>
+<li>Browser sends cookie on every request (<code>credentials: &quot;include&quot;</code>)</li>
+<li><code>authMiddleware</code> resolves <code>userId</code> and attaches to request</li>
+</ol>
+<p><strong>Auth resolution order</strong> (<code>apps/api/src/middleware/auth.ts</code>):</p>
+<ol>
+<li><code>Authorization: Bearer hx_live_…</code> → API access token</li>
+<li>Cookie <code>hustronix_session</code> → session table</li>
+<li>Legacy cookie <code>hustronix_uid</code> (if <code>ALLOW_LEGACY_UID_COOKIE=1</code>)</li>
+<li>Headers <code>x-api-key</code> + <code>x-user-id</code> (automation scripts)</li>
+<li>Loopback automation (dev only, with <code>ALLOW_LOOPBACK_AUTH=1</code>)</li>
+</ol>
+<h3>Roles &amp; permissions (RBAC)</h3>
+<p><strong>File:</strong> <code>apps/api/src/security/authorization.ts</code></p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Typical access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>owner</strong></td>
+<td>Full control — matches <code>settings.org.owner_user_id</code></td>
+</tr>
+<tr>
+<td><strong>admin</strong></td>
+<td>Most mutating operations</td>
+</tr>
+<tr>
+<td><strong>strategist</strong></td>
+<td>Decisions, execution, signals</td>
+</tr>
+<tr>
+<td><strong>operator</strong></td>
+<td>Execution transitions, signal linking</td>
+</tr>
+<tr>
+<td><strong>viewer</strong></td>
+<td>Read-only (default if no role set)</td>
+</tr>
+<tr>
+<td><strong>agent</strong></td>
+<td>Automation tokens</td>
+</tr>
+</tbody>
+</table>
+<p>Example permissions: <code>decision:commit</code>, <code>execution:write</code>, <code>signal:write</code>, <code>security:manage</code>, <code>agent:invoke</code>, <code>audit:run</code></p>
+<h3>Security middleware stack</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>File</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Request context</td>
+<td><code>security/requestContext.ts</code></td>
+<td>Request IDs, structured logs</td>
+</tr>
+<tr>
+<td>HTTP security</td>
+<td><code>security/httpSecurity.ts</code></td>
+<td>HTTPS enforcement, security headers, CSP</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td><code>security/cors.ts</code></td>
+<td>Explicit allowed origins, credentials</td>
+</tr>
+<tr>
+<td>CSRF</td>
+<td><code>security/csrf.ts</code></td>
+<td>Origin/referer check on cookie writes</td>
+</tr>
+<tr>
+<td>Rate limits</td>
+<td><code>middleware/rateLimit.ts</code></td>
+<td>Auth, API, marketing, AI tiers</td>
+</tr>
+<tr>
+<td>Settings allowlist</td>
+<td><code>security/settings-keys.ts</code></td>
+<td>Only approved keys writable via PATCH /api/me</td>
+</tr>
+<tr>
+<td>Ledger integrity</td>
+<td><code>security/ledgerIntegrity.ts</code></td>
+<td>Hash-chained <code>ledger_events</code></td>
+</tr>
+<tr>
+<td>Security events</td>
+<td><code>security/audit.ts</code></td>
+<td>Redacted security logging</td>
+</tr>
+</tbody>
+</table>
+<h3>Webhook security</h3>
+<ul>
+<li>Raw body preserved before JSON parsing</li>
+<li>HMAC verification (GitHub, Slack signatures)</li>
+<li>Idempotency tables prevent duplicate processing</li>
+</ul>
+<h3>Encryption keys (production required)</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OAUTH_TOKEN_ENCRYPTION_KEY</code></td>
+<td>Encrypts Slack/GitHub/etc. tokens at rest</td>
+</tr>
+<tr>
+<td><code>TOTP_ENCRYPTION_KEY</code></td>
+<td>Encrypts 2FA secrets</td>
+</tr>
+<tr>
+<td><code>MISSION_CONTROL_API_KEY</code></td>
+<td>Automation / script access</td>
+</tr>
+</tbody>
+</table>
+<p>Generate with: <code>openssl rand -hex 32</code></p>
+<p><strong>Full threat model:</strong> <code>docs/security-architecture.md</code><br>
+<strong>Launch checklist:</strong> <code>npm run security:launch</code></p>
+<hr>
+<h2>11. Chat &amp; AI System</h2>
+<h3>Two chat modes</h3>
+<table>
+<thead>
+<tr>
+<th>Session prefix</th>
+<th>Agent</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal UUID</td>
+<td><code>agent.ts</code> (coordinator)</td>
+<td>Full ledger access, decision tools</td>
+</tr>
+<tr>
+<td><code>asst:*</code></td>
+<td><code>assistant-agent.ts</code></td>
+<td>In-app guide only, memory tools</td>
+</tr>
+</tbody>
+</table>
+<h3>WebSocket protocol</h3>
+<p><strong>Attachment:</strong> Same HTTP server as Express (<code>attachWebSocketServer</code> in <code>server.ts</code>)</p>
+<p><strong>Client → Server messages:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>load_session</code></td>
+<td>Fetch chat history</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>Send message → run agent</td>
+</tr>
+<tr>
+<td><code>new_session</code></td>
+<td>Create new chat session</td>
+</tr>
+<tr>
+<td><code>COMMIT_DECISION</code></td>
+<td>Activate decision via WS</td>
+</tr>
+<tr>
+<td><code>SYNC_PROTOCOLS</code></td>
+<td>Refresh connections manager</td>
+</tr>
+<tr>
+<td><code>CAPABILITY_OVERRIDE</code></td>
+<td>Admin override (restricted)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Server → Client messages:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>typing</code></td>
+<td>Agent is thinking</td>
+</tr>
+<tr>
+<td><code>text_chunk</code></td>
+<td>Streaming response token</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>Complete message</td>
+</tr>
+<tr>
+<td><code>history</code></td>
+<td>Past messages</td>
+</tr>
+<tr>
+<td><code>DECISION_COMMITTED</code></td>
+<td>Decision activated</td>
+</tr>
+<tr>
+<td><code>error</code> / <code>auth_error</code></td>
+<td>Failure</td>
+</tr>
+</tbody>
+</table>
+<p><strong>UI file:</strong> <code>apps/web/src/app/(dashboard)/chat/ChatClient.tsx</code></p>
+<h3>Coordinator agent (<code>agent.ts</code>)</h3>
+<ul>
+<li><strong>System prompt:</strong> Institutional reasoning, org context, active decision</li>
+<li><strong>Tools available:</strong>
+<ul>
+<li><code>log_strategic_decision</code> — create DRAFT decision + tasks</li>
+<li><code>transition_execution</code> — move task state</li>
+<li><code>delegate_to_marketing</code> / <code>delegate_to_research</code> — sub-agents (web search only)</li>
+<li>Memory tools: <code>remember_fact</code>, <code>recall_memory</code></li>
+<li><code>ping</code>, file ops, web search</li>
+</ul>
+</li>
+<li><strong>Streaming:</strong> Sends <code>text_chunk</code> events as Claude responds</li>
+<li><strong>Cost saver:</strong> Default on — tighter history/iterations (<code>LLM_COST_SAVER=1</code>)</li>
+</ul>
+<h3>LLM model routing</h3>
+<p><strong>Files:</strong> <code>apps/api/src/llm.ts</code>, <code>anthropic-model-policy.ts</code>, <code>config.ts</code></p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Default model</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Premium</strong></td>
+<td><code>claude-sonnet-4-6</code></td>
+<td>Main coordinator</td>
+</tr>
+<tr>
+<td><strong>Fast</strong></td>
+<td><code>claude-haiku-4-5-20251001</code></td>
+<td>Intelligence, sub-agents</td>
+</tr>
+<tr>
+<td><strong>OpenAI fallback</strong></td>
+<td><code>gpt-4o-mini</code></td>
+<td>If <code>ACTIVE_PROVIDER=openai</code></td>
+</tr>
+</tbody>
+</table>
+<p>Env overrides: <code>ANTHROPIC_MODEL_PREMIUM</code>, <code>ANTHROPIC_MODEL_FAST</code>, <code>LLM_COORDINATOR_HAIKU=1</code> (cheaper coordinator)</p>
+<p>Check live config: <code>GET /api/health</code> → <code>anthropicPremiumModel</code>, <code>anthropicFastModel</code></p>
+<h3>Known design tension</h3>
+<p>Coordinator tools can <strong>mutate the database directly</strong> (convenient for demos). Target architecture: <strong>propose → validate → commit</strong> via API only. Documented in <code>docs/architecture-enforcement.md</code>.</p>
+<hr>
+<h2>12. Auditor — Deterministic Enforcement</h2>
+<p><strong>File:</strong> <code>apps/api/src/auditor.ts</code></p>
+<p>The auditor is <strong>not AI</strong>. It runs fixed rules against database state.</p>
+<h3>What it checks</h3>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Shadow work</strong></td>
+<td>Signals in GRACE period — unlinked work outside active decision</td>
+</tr>
+<tr>
+<td><strong>Capacity</strong></td>
+<td>Owner/task weight vs configured limits</td>
+</tr>
+<tr>
+<td><strong>NO-list</strong></td>
+<td>Blocked work patterns</td>
+</tr>
+<tr>
+<td><strong>Structural collapse</strong></td>
+<td>Dependency/orphan issues</td>
+</tr>
+<tr>
+<td><strong>Grace expiry</strong></td>
+<td>Auto-kill signals past grace window</td>
+</tr>
+</tbody>
+</table>
+<h3>When it runs</h3>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>After signal ingest</td>
+<td><code>runAfterSignalIngested()</code> — shadow work pass</td>
+</tr>
+<tr>
+<td>After ledger mutation</td>
+<td><code>runAfterLedgerMutation()</code> — full evaluate on transitions, links, commits</td>
+</tr>
+<tr>
+<td>Cron every 5 min</td>
+<td>Safety net in <code>bootstrap.ts</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Conflict gate (one ACTIVE decision)</h3>
+<p>When activating a decision (<code>status → ACTIVE</code>):</p>
+<ul>
+<li><code>findOtherActiveDecision(user_id)</code> checks for existing ACTIVE</li>
+<li>If found → throws <code>CONFLICT</code>, logs <code>DECISION_CONFLICT_BLOCKED</code></li>
+<li>Applies to: <code>POST /api/decisions/commit</code>, WebSocket <code>COMMIT_DECISION</code></li>
+</ul>
+<p>DRAFT creation is <strong>not</strong> conflict-checked — only activation.</p>
+<hr>
+<h2>13. Intelligence Layer</h2>
+<p><strong>Orchestrator:</strong> <code>apps/api/src/intelligence/index.ts</code></p>
+<p>When a signal arrives, this pipeline runs (async):</p>
+<pre><code>1. contextEngine    → fetch active decision + execution context
+2. signalDetector   → LLM + heuristics: intent, risk, urgency
+3. enrich           → persist classification on signal row
+4. embeddings       → vector BLOB in entity_embeddings
+5. autoLinker       → link to task if confidence ≥ threshold
+</code></pre>
+<h3>Search</h3>
+<p><strong>Hybrid search</strong> (<code>hybridSearch.ts</code>): combines FTS5 keyword search + embedding similarity.</p>
+<p><strong>API:</strong> <code>GET /api/intelligence/search?q=...</code></p>
+<h3>Operational queries</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Question answered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/operational/drift</code></td>
+<td>Is execution drifting from the vow?</td>
+</tr>
+<tr>
+<td><code>/api/operational/overloaded</code></td>
+<td>Who is over capacity?</td>
+</tr>
+<tr>
+<td><code>/api/operational/conflicts</code></td>
+<td>What work conflicts?</td>
+</tr>
+<tr>
+<td><code>/api/reports/weekly</code></td>
+<td>Weekly drift markdown report</td>
+</tr>
+</tbody>
+</table>
+<h3>Cost gates</h3>
+<p>Skips LLM enrichment when: signal too small/noisy, no active decision, already enriched.</p>
+<hr>
+<h2>14. Integrations</h2>
+<p><strong>Registry:</strong> <code>apps/api/src/auth/oauthProviders.ts</code></p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Connect</th>
+<th>Ingest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Slack</strong></td>
+<td>OAuth</td>
+<td>Events API webhook → signals</td>
+</tr>
+<tr>
+<td><strong>GitHub</strong></td>
+<td>OAuth + repo select</td>
+<td>Webhooks → signals</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>OAuth</td>
+<td>Calendar + Gmail workers</td>
+</tr>
+<tr>
+<td><strong>Microsoft</strong></td>
+<td>OAuth</td>
+<td>Teams + Outlook subscriptions</td>
+</tr>
+<tr>
+<td><strong>Notion</strong></td>
+<td>OAuth</td>
+<td>Poll worker</td>
+</tr>
+<tr>
+<td><strong>Jira</strong></td>
+<td>OAuth</td>
+<td>Webhooks</td>
+</tr>
+<tr>
+<td><strong>Linear</strong></td>
+<td>OAuth</td>
+<td>Webhooks</td>
+</tr>
+</tbody>
+</table>
+<h3>Normalized ingest path</h3>
+<p>All sources → <code>integrations/ingestRouter.ts</code> → <code>webhookTransforms.ts</code> → <code>external_signals</code> row → auditor → intelligence pipeline.</p>
+<h3>Background workers (started at boot)</h3>
+<ul>
+<li>OAuth token refresh (<code>auth/oauthRefreshWorker.ts</code>)</li>
+<li>Microsoft/Jira subscription renewal</li>
+<li>Notion poll</li>
+<li>Google calendar/gmail sync</li>
+<li>Notification digest scheduler</li>
+</ul>
+<h3>Integration health</h3>
+<p><code>GET /api/integrations/health</code> — connection status for Settings UI.</p>
+<p><strong>Roadmap gaps:</strong> <code>docs/integration-backlog.md</code></p>
+<hr>
+<h2>15. Notifications</h2>
+<p><strong>Dispatcher:</strong> <code>apps/api/src/notifications/dispatcher.ts</code></p>
+<p>When something important happens (decision committed, signal grace expiring, etc.):</p>
+<ol>
+<li>Create row in <code>notifications</code> table</li>
+<li>Check user preferences from <code>settings</code> (category toggles, channels)</li>
+<li>Deliver via enabled channels:
+<ul>
+<li><strong>In-app</strong> — always stored</li>
+<li><strong>Email</strong> — immediate SMTP (<code>auth/smtp.ts</code>)</li>
+<li><strong>Slack DM</strong> — via bot token from <code>oauth_connections</code></li>
+<li><strong>Digest</strong> — batched by <code>notifications/digest.ts</code> scheduler</li>
+</ul>
+</li>
+</ol>
+<p><strong>Settings UI</strong> maps toggles to <code>PREF.*</code> keys via <code>POST /api/settings/bulk</code>.</p>
+<hr>
+<h2>16. Deployment &amp; Infrastructure</h2>
+<h3>Production target: Azure Container Apps</h3>
+<ul>
+<li><strong>URL:</strong> <code>app.hustronix.online</code></li>
+<li><strong>Config:</strong> <code>infra/azure/</code> (Bicep, Key Vault, ACR)</li>
+<li><strong>Deploy:</strong> <code>./infra/azure/deploy.sh</code> or CI on <code>v*</code> tags (<code>.github/workflows/deploy-azure.yml</code>)</li>
+<li><strong>Marketing:</strong> <code>hustronix.online</code> on Netlify (<code>netlify-landing/</code>)</li>
+</ul>
+<h3>Docker</h3>
+<pre><code class="language-bash">docker build -f infra/docker/Dockerfile -t hustronix .
+docker run --env-file .env -p 3000:3000 -v hustronix-data:/app/data hustronix
+</code></pre>
+<p>Or: <code>docker compose -f infra/docker/docker-compose.yml up --build</code></p>
+<h3><a href="http://Fly.io">Fly.io</a></h3>
+<pre><code class="language-bash">fly deploy -c infra/fly/fly.toml
+</code></pre>
+<p>Persistent volume for SQLite at <code>/app/data</code>.</p>
+<h3>CI pipelines</h3>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.github/workflows/build.yml</code></td>
+<td>Build all workspaces</td>
+</tr>
+<tr>
+<td><code>.github/workflows/qa-ui.yml</code></td>
+<td>UI QA pass</td>
+</tr>
+<tr>
+<td><code>.github/workflows/deploy-azure.yml</code></td>
+<td>Production deploy on tags</td>
+</tr>
+</tbody>
+</table>
+<h3>Production checklist (from README)</h3>
+<ol>
+<li><code>NODE_ENV=production</code></li>
+<li>Change <code>MISSION_CONTROL_API_KEY</code> from example</li>
+<li>Set <code>ALLOWED_ORIGINS</code> and <code>APP_ORIGIN</code> to exact HTTPS URLs</li>
+<li><code>REQUIRE_HTTPS=true</code> behind TLS</li>
+<li>Set <code>OAUTH_TOKEN_ENCRYPTION_KEY</code> and <code>TOTP_ENCRYPTION_KEY</code></li>
+<li>Configure LLM keys (<code>ANTHROPIC_API_KEY</code>)</li>
+<li>Wire integration OAuth credentials per provider</li>
+<li>Mount persistent storage for <code>SQLITE_PATH</code></li>
+<li>Run <code>npm run security:launch</code></li>
+<li>Run <code>npm run build</code> and <code>npm run qa:ui</code></li>
+</ol>
+<hr>
+<h2>17. Environment Variables Reference</h2>
+<h3>Root <code>.env</code> (API + server)</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PORT</code></td>
+<td>HTTP port</td>
+<td><code>3005</code> (dev) / <code>3000</code> (prod unified)</td>
+</tr>
+<tr>
+<td><code>ALLOWED_ORIGINS</code></td>
+<td>CORS allowed browser origins</td>
+<td><code>http://localhost:3000</code></td>
+</tr>
+<tr>
+<td><code>APP_ORIGIN</code></td>
+<td>Public UI URL for OAuth redirects</td>
+<td><code>https://app.hustronix.online</code></td>
+</tr>
+<tr>
+<td><code>SQLITE_PATH</code></td>
+<td>Database file path</td>
+<td><code>./data/hustronix.db</code></td>
+</tr>
+<tr>
+<td><code>MISSION_CONTROL_API_KEY</code></td>
+<td>Script/automation key</td>
+<td>(change in prod)</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Claude API key</td>
+<td><code>sk-ant-…</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_MODEL_PREMIUM</code></td>
+<td>Coordinator model</td>
+<td><code>claude-sonnet-4-6</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_MODEL_FAST</code></td>
+<td>Fast tier model</td>
+<td><code>claude-haiku-4-5-20251001</code></td>
+</tr>
+<tr>
+<td><code>LLM_COORDINATOR_HAIKU=1</code></td>
+<td>Force cheap coordinator</td>
+<td>optional</td>
+</tr>
+<tr>
+<td><code>LLM_COST_SAVER=0</code></td>
+<td>Disable cost caps</td>
+<td>default on</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>OpenAI fallback</td>
+<td>if using OpenAI</td>
+</tr>
+<tr>
+<td><code>OAUTH_TOKEN_ENCRYPTION_KEY</code></td>
+<td>Integration token encryption</td>
+<td>64 hex chars</td>
+</tr>
+<tr>
+<td><code>TOTP_ENCRYPTION_KEY</code></td>
+<td>2FA secret encryption</td>
+<td>64 hex chars</td>
+</tr>
+<tr>
+<td><code>REQUIRE_HTTPS</code></td>
+<td>Force HTTPS</td>
+<td><code>true</code> in prod</td>
+</tr>
+<tr>
+<td>Per-provider OAuth</td>
+<td><code>SLACK_*</code>, <code>GITHUB_OAUTH_*</code>, etc.</td>
+<td>see <code>.env.example</code></td>
+</tr>
+<tr>
+<td>SMTP</td>
+<td><code>SMTP_*</code> for email OTP/notifications</td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
+<h3><code>apps/web/.env.local</code> (Next.js)</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEXT_PUBLIC_API_URL</code></td>
+<td>Absolute API URL, or empty for same-origin <code>/api</code></td>
+</tr>
+<tr>
+<td><code>API_PROXY_TARGET</code></td>
+<td>Where Next proxies <code>/api/*</code> (default <code>http://127.0.0.1:3005</code>)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_WS_URL</code></td>
+<td>WebSocket URL (default derives from API)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_API_KEY</code></td>
+<td>Dev automation only (with <code>hustronix_userId</code> in localStorage)</td>
+</tr>
+</tbody>
+</table>
+<p>Full list: <code>.env.example</code> and <code>apps/web/.env.example</code></p>
+<hr>
+<h2>18. Product Maturity — What’s Real vs Partial</h2>
+<h3>Fully wired (live API + UI)</h3>
+<ul>
+<li>Mission Control, Execute, Signals, Chat, Reports, Teams</li>
+<li>Profile (except password form UI — backend exists)</li>
+<li>Settings (General + Notifications; some tabs UI-only)</li>
+<li>Auth: password, OTP, OAuth login, sessions, API keys, TOTP backend</li>
+<li>Integrations: OAuth connect + webhook ingest for major providers</li>
+<li>Auditor + conflict gate + intelligence pipeline</li>
+<li>Notifications: in-app + email/Slack/digest</li>
+</ul>
+<h3>Partial / mock / backlog</h3>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profile password change UI</td>
+<td>Backend <code>POST /api/auth/password</code> exists; form UI incomplete</td>
+</tr>
+<tr>
+<td>Settings Organization/Rules/Capacity tabs</td>
+<td>Some UI-only, not all persisted</td>
+</tr>
+<tr>
+<td><code>connections_manager</code> capability cards</td>
+<td>Partially demo/mock</td>
+</tr>
+<tr>
+<td>PostgreSQL runtime</td>
+<td>Schema ready; still SQLite in production</td>
+</tr>
+<tr>
+<td>Coordinator direct DB writes</td>
+<td>Works; target is propose→validate→commit</td>
+</tr>
+<tr>
+<td>Telegram bridges</td>
+<td>Removed from repo</td>
+</tr>
+<tr>
+<td>Billing</td>
+<td>Stub endpoints</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scope doc:</strong> <code>docs/product-scope.md</code> — direction is <strong>demo-full</strong> with enforcement kernel as truth.</p>
+<hr>
+<h2>19. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Decision</strong></td>
+<td>A strategic commitment (the “vow”) with outcomes and constraints</td>
+</tr>
+<tr>
+<td><strong>Execution task</strong></td>
+<td>A unit of work linked to a decision</td>
+</tr>
+<tr>
+<td><strong>Signal</strong></td>
+<td>An external event (Slack msg, GitHub PR) ingested into the ledger</td>
+</tr>
+<tr>
+<td><strong>GRACE</strong></td>
+<td>Time window where unlinked signal is visible before auto-kill</td>
+</tr>
+<tr>
+<td><strong>LINKED</strong></td>
+<td>Signal explicitly tied to an execution task</td>
+</tr>
+<tr>
+<td><strong>KILLED</strong></td>
+<td>Signal dismissed (by user or auditor)</td>
+</tr>
+<tr>
+<td><strong>ACTIVE decision</strong></td>
+<td>The one committed decision currently in force (max 1 per org)</td>
+</tr>
+<tr>
+<td><strong>DRAFT decision</strong></td>
+<td>Proposed decision not yet committed</td>
+</tr>
+<tr>
+<td><strong>Coordinator</strong></td>
+<td>The main LLM agent in chat</td>
+</tr>
+<tr>
+<td><strong>Auditor</strong></td>
+<td>Rule engine — not AI</td>
+</tr>
+<tr>
+<td><strong>Tenant</strong></td>
+<td>One customer org, scoped by <code>user_id</code></td>
+</tr>
+<tr>
+<td><strong>Unified server</strong></td>
+<td>Single process serving API + UI + WebSocket</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>20. Key Documentation Index</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>Quick start, commands, deploy</td>
+</tr>
+<tr>
+<td><code>docs/architecture-enforcement.md</code></td>
+<td>Ledger vs LLM, auditor triggers</td>
+</tr>
+<tr>
+<td><code>docs/security-architecture.md</code></td>
+<td>Threat model, target hardening</td>
+</tr>
+<tr>
+<td><code>docs/product-scope.md</code></td>
+<td>Demo-full vs minimal scope</td>
+</tr>
+<tr>
+<td><code>docs/agents-and-slack-signals.md</code></td>
+<td>Agent + Slack flow</td>
+</tr>
+<tr>
+<td><code>docs/integration-backlog.md</code></td>
+<td>Integration roadmap</td>
+</tr>
+<tr>
+<td><code>.cursor/rules/hustronix-stack.mdc</code></td>
+<td>Developer stack contract</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Appendix A — Decision State Machine</h2>
+<pre><code>DRAFT ──commit──► ACTIVE ──► COMPLETED / ARCHIVED / SUPERSEDED
+                      │
+                      └── blocked if another ACTIVE exists (conflict gate)
+</code></pre>
+<h2>Appendix B — Signal State Machine</h2>
+<pre><code>UNVERIFIED ──► GRACE ──link──► LINKED
+                 │
+                 └──kill──► KILLED (user or auditor after grace expiry)
+</code></pre>
+<h2>Appendix C — Common Dev Commands</h2>
+<pre><code class="language-bash">npm install                          # Install all workspaces
+cp .env.example .env                 # API env
+cp apps/web/.env.example apps/web/.env.local
+npm run dev                          # API :3005 + web :3000
+npm run build                        # Build shared + api + web
+npm run start:unified                # Production unified server
+npm run security:launch              # Security checklist
+npm run qa:ui                        # UI QA pass
+curl http://localhost:3000/api/health
+</code></pre>
+<hr>
+<p><em>This guide reflects the codebase as of June 2026. For the latest deploy steps, see <code>README.md</code>. For enforcement design rationale, see <code>docs/architecture-enforcement.md</code>.</em></p>
+
+  </article>
+</body>
+</html>

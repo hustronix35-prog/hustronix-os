@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-demand-landing="1">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="robots" content="noindex, nofollow"/>
+  <title>Early access leads — Hustronix</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="site-pages.css"/>
+  <link rel="icon" href="brand/hustronix-mark.png" type="image/png"/>
+  <script>document.documentElement.setAttribute("data-theme","dark");</script>
+</head>
+<body class="min-h-dvh bg-hx-bg font-sans text-hx-text antialiased">
+  <header class="site-page-header">
+    <div class="site-page-header-inner">
+      <a href="index.html" class="site-wordmark">HUSTRONI<span>X</span></a>
+      <nav class="site-page-nav" aria-label="Site">
+        <a href="index.html">Landing</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-page-main leads-page-main">
+    <section id="leads-panel" class="leads-panel">
+      <div class="leads-toolbar">
+        <div>
+          <h1 class="leads-panel-title">Early access submissions</h1>
+          <p id="leads-count" class="leads-count text-hx-muted text-sm"></p>
+        </div>
+        <div class="leads-toolbar-actions">
+          <button type="button" id="leads-refresh" class="leads-btn-secondary">Refresh</button>
+          <button type="button" id="leads-export" class="leads-btn-secondary">Export CSV</button>
+        </div>
+      </div>
+      <p id="leads-load-error" class="leads-status err" hidden role="alert"></p>
+      <div class="leads-table-wrap">
+        <table class="leads-table" id="leads-table">
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Company</th>
+              <th scope="col">Role</th>
+              <th scope="col">Source</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+        <p id="leads-empty" class="leads-empty text-hx-muted text-sm" hidden>No submissions yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-page-footer">
+    <span>© Hustronix</span>
+    <nav aria-label="Footer">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </nav>
+  </footer>
+
+  <script src="leads.js" defer></script>
+</body>
+</html>

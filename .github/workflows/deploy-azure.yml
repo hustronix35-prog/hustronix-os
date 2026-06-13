@@ -1,0 +1,82 @@
+# Azure Container Apps deploy — only fires on a release tag so PR merges don't
+# accidentally push to prod. Requires these GitHub Actions secrets/vars:
+#
+#   secrets.AZURE_CREDENTIALS           — output of `az ad sp create-for-rbac --sdk-auth`
+#   vars.AZURE_RESOURCE_GROUP           — e.g. hustronix-prod
+#   vars.AZURE_CONTAINER_REGISTRY       — e.g. hustronixprod  (without .azurecr.io)
+#   vars.AZURE_CONTAINER_APP_NAME       — usually hustronix-app
+#
+# To create the service principal:
+#   az ad sp create-for-rbac --name hustronix-deploy \
+#     --role Contributor --scopes /subscriptions/<sub>/resourceGroups/<rg> --sdk-auth
+
+name: Deploy (Azure Container Apps)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (e.g. 1.2.3 or commit SHA)'
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            echo "value=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "value=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${GITHUB_SHA::12}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR build (multi-stage, inside Azure)
+        run: |
+          az acr build \
+            --registry "${{ vars.AZURE_CONTAINER_REGISTRY }}" \
+            --image "hustronix:${{ steps.tag.outputs.value }}" \
+            --file infra/docker/Dockerfile \
+            --platform linux/amd64 \
+            .
+
+      - name: Update Container App revision
+        # We only change the image — secrets and env stay locked to whatever
+        # was set by the most recent Bicep apply. Run the full Bicep template
+        # separately when env or secret bindings change.
+        run: |
+          az containerapp update \
+            -g "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -n "${{ vars.AZURE_CONTAINER_APP_NAME }}" \
+            --image "${{ vars.AZURE_CONTAINER_REGISTRY }}.azurecr.io/hustronix:${{ steps.tag.outputs.value }}"
+
+      - name: Smoke test /api/health
+        run: |
+          FQDN=$(az containerapp show -g "${{ vars.AZURE_RESOURCE_GROUP }}" -n "${{ vars.AZURE_CONTAINER_APP_NAME }}" --query properties.configuration.ingress.fqdn -o tsv)
+          echo "Waiting up to 60s for new revision to serve /api/health…"
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -sf "https://$FQDN/api/health" >/dev/null; then
+              echo "✅ /api/health is healthy on https://$FQDN"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ /api/health did not return 200 within 60s — check logs:"
+          az containerapp logs show -g "${{ vars.AZURE_RESOURCE_GROUP }}" -n "${{ vars.AZURE_CONTAINER_APP_NAME }}" --tail 200 || true
+          exit 1

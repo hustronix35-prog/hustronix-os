@@ -1,0 +1,62 @@
+# Puppeteer UI pass: register → login → onboarding → dashboard + axe (critical gate).
+name: QA UI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  qa-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PORT: "3005"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      MISSION_CONTROL_API_KEY: "ci_qa_key"
+      ACTIVE_PROVIDER: "anthropic"
+      QA_USERNAME: "hustronix-qa-automation"
+      QA_PASSWORD: "DemoCheck2026!"
+      QA_AXE_FAIL_ON: "critical"
+      QA_API_ORIGIN: "http://127.0.0.1:3005"
+      QA_BASE_URL: "http://localhost:3000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Lint UI
+        run: npm -w @hustronix/web run lint
+
+      - name: Build API + UI
+        run: npm run build:all
+
+      - name: Start servers and run QA
+        run: |
+          set -euo pipefail
+          node apps/api/dist/index.js &
+          echo $! > /tmp/hx-api.pid
+          ( cd apps/web && PORT=3000 npm run start ) &
+          echo $! > /tmp/hx-ui.pid
+          for i in $(seq 1 90); do
+            if curl -sf "http://127.0.0.1:3005/api/health" >/dev/null \
+               && curl -sf "http://127.0.0.1:3000/" >/dev/null; then
+              break
+            fi
+            if [ "$i" -eq 90 ]; then
+              echo "Timeout waiting for API + Next"
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run qa:ui
+          kill "$(cat /tmp/hx-api.pid)" "$(cat /tmp/hx-ui.pid)" 2>/dev/null || true

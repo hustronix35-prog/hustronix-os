@@ -1,0 +1,142 @@
+/* Minimal styles for /leads.html (viewer) */
+.site-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 10, 0.92);
+  backdrop-filter: blur(8px);
+}
+.site-page-header-inner {
+  margin: 0 auto;
+  max-width: 72rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+}
+.site-wordmark {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #f5f5f5;
+  text-decoration: none;
+}
+.site-wordmark span {
+  color: #c6a85a;
+}
+.site-page-nav a {
+  font-size: 0.875rem;
+  color: rgba(245, 245, 245, 0.55);
+  text-decoration: none;
+}
+.site-page-nav a:hover {
+  color: #c6a85a;
+}
+.site-page-main {
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 2.5rem 1.5rem 4rem;
+}
+.text-hx-muted {
+  color: rgba(245, 245, 245, 0.55);
+}
+.leads-gate-form {
+  margin-top: 1.5rem;
+  max-width: 22rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 10, 0.8);
+}
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.contact-field span {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 245, 0.45);
+}
+.contact-field input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #f5f5f5;
+  outline: none;
+}
+.contact-submit {
+  margin-top: 1.25rem;
+  width: 100%;
+  border: none;
+  border-radius: 0.75rem;
+  background: #c6a85a;
+  color: #0a0a0a;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.leads-status.err {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #f87171;
+}
+.leads-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.leads-toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.leads-btn-secondary {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.leads-table-wrap {
+  overflow-x: auto;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.leads-table th,
+.leads-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.leads-table th {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 245, 0.45);
+}
+.leads-table a {
+  color: #c6a85a;
+}

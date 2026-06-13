@@ -1,16 +1,15 @@
 @echo off
 TITLE Hustronix OS Launcher
+set "ROOT=%~dp0"
+set "ROOT=%ROOT:~0,-1%"
 
-:: ──── Hustronix OS Bot ────
-echo [Hustronix OS] Starting bot...
-start "Hustronix OS Bot" /MIN cmd /k "cd /d "d:\Hustronix OS" && npm run dev"
+echo [Hustronix OS] Starting API...
+start "Hustronix API" /MIN cmd /k "cd /d "%ROOT%" && npm run dev:api"
 
-:: Wait a moment for the bot to bind its port before starting the dashboard
 ping -n 6 127.0.0.1 >nul
 
-:: ──── Next.js UI (hustronix-ui) ────
-echo [Hustronix OS] Starting hustronix-ui...
-start "Hustronix UI" /MIN cmd /k "cd /d "d:\Hustronix OS\hustronix-ui" && npm run dev"
+echo [Hustronix OS] Starting UI...
+start "Hustronix UI" /MIN cmd /k "cd /d "%ROOT%" && npm run dev:web"
 
-echo [Hustronix OS] Both services launched. Closing launcher...
+echo [Hustronix OS] Both services launched.
 exit

@@ -1,0 +1,39 @@
+# Fly.io — deploy with: fly launch (once) then fly deploy
+# Requires secrets: fly secrets set ANTHROPIC_API_KEY=... MISSION_CONTROL_API_KEY=... ALLOWED_ORIGINS=...
+
+app = "hustronix"
+primary_region = "iad"
+
+[build]
+  dockerfile = "infra/docker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  HOST = "0.0.0.0"
+  UNIFIED_SERVER = "1"
+  SQLITE_PATH = "/app/data/hustronix.db"
+  REQUIRE_HTTPS = "true"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "90s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "5s"
+
+[[mounts]]
+  source = "hustronix_data"
+  destination = "/app/data"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -1,0 +1,14 @@
+{
+  "ignore": {
+    "overrides": [
+      {
+        "files": ["src/app/**", "src/components/**", "src/hooks/**", "src/lib/**", "src/data/**"],
+        "rules": ["deslop/unused-file"]
+      },
+      {
+        "files": ["src/components/landing/HeroCanvas.tsx"],
+        "rules": ["react-doctor/no-unknown-property"]
+      }
+    ]
+  }
+}

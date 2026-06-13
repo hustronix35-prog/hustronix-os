@@ -1,0 +1,43 @@
+# Local production-like stack. Copy .env.example → .env and set secrets before `docker compose up`.
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ../../.env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOST: 0.0.0.0
+      UNIFIED_SERVER: "1"
+      SQLITE_PATH: /app/data/hustronix.db
+      # Override APP_ORIGIN / ALLOWED_ORIGINS in .env to match your public URL.
+    volumes:
+      - hustronix-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+  # Optional: Postgres schema target (runtime still SQLite until async cutover lands).
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: hustronix
+      POSTGRES_PASSWORD: hustronix
+      POSTGRES_DB: hustronix
+    ports:
+      - "5432:5432"
+    volumes:
+      - hustronix-pg:/var/lib/postgresql/data
+
+volumes:
+  hustronix-data:
+  hustronix-pg:
