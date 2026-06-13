@@ -65,7 +65,12 @@ function checkApiRouteAuth() {
   }
   const lines = read(serverPath).split(/\r?\n/);
   const routeRe = /app\.(get|post|patch|delete|put)\(\s*["'`]([^"'`]+)["'`]/;
-  const publicExact = new Set(["/api/health", "/api/auth/providers"]);
+  const publicExact = new Set([
+    "/api/health",
+    "/api/auth/providers",
+    "/api/early-access",
+    "/api/contact",
+  ]);
   const publicPrefixes = [
     "/api/auth/otp/request",
     "/api/auth/register",
@@ -78,8 +83,15 @@ function checkApiRouteAuth() {
     "/api/ingest/github",
     "/api/ingest/jira",
     "/api/ingest/crm",
+    "/api/ingest/linear",
   ];
-  const protectedBySignature = ["/api/integrations/slack/events", "/api/ingest/github", "/api/ingest/jira", "/api/ingest/crm"];
+  const protectedBySignature = [
+    "/api/integrations/slack/events",
+    "/api/ingest/github",
+    "/api/ingest/jira",
+    "/api/ingest/crm",
+    "/api/ingest/linear",
+  ];
 
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(routeRe);
