@@ -1227,9 +1227,18 @@ function redirectBrowserAfterSocialLogin(
   return res.redirect(302, `${origin}/onboarding?signed_in=1`);
 }
 
+/** Social login callbacks must match the browser origin (Next.js :3000), not the API port. */
+function socialLoginRedirectUri(provider: "google" | "github"): string {
+  const envKey = provider === "google" ? "GOOGLE_REDIRECT_URI" : "GITHUB_REDIRECT_URI";
+  return (
+    process.env[envKey]?.trim() ||
+    `${config.server.appOrigin}/api/auth/${provider}/callback`
+  );
+}
+
 app.get("/api/auth/google/start", authRouteLimiter, (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI?.trim();
+  const redirectUri = socialLoginRedirectUri("google");
   if (!clientId || !redirectUri) {
     return res.status(500).send("Set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI (Google Cloud Console OAuth client).");
   }
@@ -1262,7 +1271,7 @@ app.get("/api/auth/google/callback", authRouteLimiter, async (req, res) => {
   }
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI?.trim();
+  const redirectUri = socialLoginRedirectUri("google");
   if (!clientId || !clientSecret || !redirectUri) {
     return redirectBrowserAfterSocialLogin(res, req, null, "server_oauth_not_configured");
   }
@@ -1324,7 +1333,7 @@ app.get("/api/auth/google/callback", authRouteLimiter, async (req, res) => {
 
 app.get("/api/auth/github/start", authRouteLimiter, (req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID?.trim();
-  const redirectUri = process.env.GITHUB_REDIRECT_URI?.trim();
+  const redirectUri = socialLoginRedirectUri("github");
   if (!clientId || !redirectUri) {
     return res.status(500).send("Set GITHUB_CLIENT_ID and GITHUB_REDIRECT_URI (GitHub OAuth App).");
   }
@@ -1354,7 +1363,7 @@ app.get("/api/auth/github/callback", authRouteLimiter, async (req, res) => {
   }
   const clientId = process.env.GITHUB_CLIENT_ID?.trim();
   const clientSecret = process.env.GITHUB_CLIENT_SECRET?.trim();
-  const redirectUri = process.env.GITHUB_REDIRECT_URI?.trim();
+  const redirectUri = socialLoginRedirectUri("github");
   if (!clientId || !clientSecret || !redirectUri) {
     return redirectBrowserAfterSocialLogin(res, req, null, "server_oauth_not_configured");
   }
