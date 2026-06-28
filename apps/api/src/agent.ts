@@ -11,11 +11,31 @@ import { sanitizeInstitutionalTone } from "./epistemic-engine.js";
 import { institutionalReasoningToolSchema } from "./coordinator-log-decision-schema.js";
 import { fetchDecisionContext, formatForPrompt } from "./intelligence/index.js";
 import { formatOrganizationContextBlock } from "./org-context.js";
+import {
+  formatOrganizationStateForPrompt,
+  getOrganizationState,
+} from "./state/organization-state.js";
+import { resolveTenantContext } from "./security/tenant-context.js";
 import { formatPlanModePrompt } from "./plan-mode.js";
+import type { AuthKind } from "./middleware/auth.js";
+import { secureAuthorizeToolExecution } from "./security/agent-tool-gate.js";
+import { gateUserChatInput, executeSecuredTool, formatSecurityError } from "./security/security-gateway.js";
+import { agentToolArgsForGateway } from "./security/mutation-handlers.js";
+import { assertSubAgentToolAllowed } from "./security/tool-permissions.js";
+import { getMcpToolsAsOpenAIFormat } from "./mcp.js";
+import { executeSecuredMcpTool, isMcpToolName } from "./mcp-gateway.js";
+import { routeUserQuery, logReasoningPath } from "./reasoning/router.js";
+import { checkOrgLlmBudget, recordLlmTurn } from "./middleware/llmBudget.js";
+import {
+  AuthorizationError,
+  CapabilityDeniedError,
+  TenantIsolationError,
+} from "./security/authorization-errors.js";
 
 export type RunAgentOptions = {
   /** Cursor-style plan turn: clarifying questions before mutating tools. */
   planMode?: boolean;
+  authKind?: AuthKind | string;
 };
 
 /** Normalize malformed model outputs where name and JSON were concatenated. */
@@ -136,6 +156,7 @@ function compactCoordinatorRoundAfterTools(
  */
 async function runSubAgent(
   userId: string,
+  authKind: AuthKind | string | undefined,
   agentName: string,
   query: string,
   tools: any[],
@@ -183,6 +204,30 @@ async function runSubAgent(
         messages.push({
           role: "tool",
           content: `Error: Tool "${tc.name}" not found.`,
+          tool_call_id: tc.id,
+          name: tc.name,
+        });
+        continue;
+      }
+
+      try {
+        assertSubAgentToolAllowed(tc.name);
+        secureAuthorizeToolExecution({
+          userId,
+          authKind,
+          toolName: tc.name,
+          toolArgs: typeof tc.arguments === "string" ? JSON.parse(tc.arguments) : tc.arguments,
+        });
+      } catch (err) {
+        const msg =
+          err instanceof AuthorizationError ||
+          err instanceof CapabilityDeniedError ||
+          err instanceof TenantIsolationError
+            ? err.message
+            : "Forbidden.";
+        messages.push({
+          role: "tool",
+          content: `Error: ${msg}`,
           tool_call_id: tc.id,
           name: tc.name,
         });
@@ -251,12 +296,24 @@ function buildSupervisorPrompt(
   }
 
   const organizationContextBlock = formatOrganizationContextBlock(userId);
+
+  let organizationStateBlock = "";
+  if (config.agent.orgStateEnabled) {
+    try {
+      const tenant = resolveTenantContext(userId);
+      const state = getOrganizationState(tenant.orgId, userId);
+      organizationStateBlock = formatOrganizationStateForPrompt(state, "supervisor");
+    } catch (e) {
+      console.warn("[agent] organization state unavailable:", e);
+    }
+  }
+
   const planModeBlock = formatPlanModePrompt(Boolean(options?.planMode));
 
   return `
 ### HUX-COORDINATOR | LEDGER MODE
 You align recorded decisions, execution capacity, and observed signals. You are infrastructure: evidence-first, uncertainty-aware, and gated on causal validation before any irreversible recommendation.
-${organizationContextBlock}${decisionContextBlock}
+${organizationContextBlock}${organizationStateBlock}${decisionContextBlock}
 ${planModeBlock}
 
 **Operating principles**
@@ -284,7 +341,7 @@ ${COORDINATOR_INSTITUTIONAL_CONTRACT}
 `;
 }
 
-function buildCoordinatorTools(userId: string): any[] {
+function buildCoordinatorTools(userId: string, authKind?: AuthKind | string): any[] {
   return [
     {
       name: "ping",
@@ -303,6 +360,7 @@ function buildCoordinatorTools(userId: string): any[] {
       handler: async ({ query }: any) =>
         await runSubAgent(
           userId,
+          authKind,
           "Marketing",
           query,
           marketingTools,
@@ -316,6 +374,7 @@ function buildCoordinatorTools(userId: string): any[] {
       handler: async ({ query }: any) =>
         await runSubAgent(
           userId,
+          authKind,
           "Research",
           query,
           researchTools,
@@ -402,12 +461,43 @@ export async function runAgent(
   wsReply?: AgentWsReply,
   options?: RunAgentOptions,
 ): Promise<string> {
+  const authKind = options?.authKind;
   if (!llm.hasLlmCredentials(userId)) {
     const msg =
       "No AI API key is configured on the server. Add ANTHROPIC_API_KEY (and optionally OPENAI_API_KEY) to the `.env` file in the project folder, set ACTIVE_PROVIDER if needed, then restart the backend.";
     emitAgentWs(wsReply, "typing", { status: false });
     emitAgentWs(wsReply, "error", { message: msg });
     db.saveMessage(userId, "assistant", `[Error] ${msg}`, null, sessionId);
+    return `Error: ${msg}`;
+  }
+
+  const inputGate = gateUserChatInput({ userId, content: userInput, sourceLabel: "coordinator_chat" });
+  if (!inputGate.allowed) {
+    const blocked = inputGate.message ?? "Input blocked.";
+    emitAgentWs(wsReply, "typing", { status: false });
+    emitAgentWs(wsReply, "error", { message: blocked });
+    db.saveMessage(userId, "assistant", `[Blocked] ${blocked}`, null, sessionId);
+    return `Error: ${blocked}`;
+  }
+
+  const tenant = resolveTenantContext(userId);
+  const budget = checkOrgLlmBudget(tenant.orgId);
+  const routing = routeUserQuery(userId, userInput);
+  logReasoningPath(userId, routing.level, userInput);
+
+  if (routing.level === "L0" && routing.l0Result?.answerable) {
+    const answer = routing.l0Result.response;
+    emitAgentWs(wsReply, "typing", { status: false });
+    emitAgentWs(wsReply, "text", { text: answer, reasoning_path: "L0" });
+    db.saveMessage(userId, "user", userInput, null, sessionId);
+    db.saveMessage(userId, "assistant", answer, null, sessionId);
+    return answer;
+  }
+
+  if (!budget.allowed && routing.useLlm) {
+    const msg = `Organization daily LLM budget reached (${budget.used}/${budget.limit}). Retry tomorrow or raise ORG_LLM_DAILY_BUDGET.`;
+    emitAgentWs(wsReply, "typing", { status: false });
+    emitAgentWs(wsReply, "error", { message: msg });
     return `Error: ${msg}`;
   }
 
@@ -441,16 +531,38 @@ export async function runAgent(
 
   const planMode = Boolean(options?.planMode);
   const supervisorPrompt = buildSupervisorPrompt(userId, worldModel, { planMode });
-  const coordinatorTools = buildCoordinatorTools(userId);
+  const routerContext = routing.contextBlock ? `\n${routing.contextBlock}\n` : "";
+  const coordinatorTools = buildCoordinatorTools(userId, authKind);
+  try {
+    const mcpTools = await getMcpToolsAsOpenAIFormat();
+    for (const t of mcpTools) {
+      if (t?.function?.name) {
+        coordinatorTools.push({
+          name: t.function.name,
+          description: t.function.description,
+          parameters: t.function.parameters,
+          handler: async (args: Record<string, unknown>) =>
+            executeSecuredMcpTool({
+              userId,
+              authKind,
+              toolName: t.function.name,
+              toolArgs: args,
+            }),
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("[Coordinator] MCP tools unavailable:", e);
+  }
 
   const perfHint = planMode
     ? "\n\nPlan mode: prioritize clarifying questions over tool calls this turn; keep prose short."
     : "\n\nPerformance & cost: Prefer short user-visible prose (headline + bullets); put depth inside tools (e.g. institutional_reasoning), not long narrative before tool calls. Skip redundant tool rounds. When the request is ambiguous, ask clarifying questions before mutating tools.";
 
   let messages: llm.Message[] = [
-    { role: "system", content: `${coreSystemPrompt}\n\n${supervisorPrompt}${perfHint}` },
+    { role: "system", content: `${coreSystemPrompt}\n\n${supervisorPrompt}${routerContext}${perfHint}` },
     ...history,
-    { role: "user", content: userInput },
+    { role: "user", content: inputGate.isolatedContent },
   ];
 
   db.saveMessage(userId, "user", userInput, null, sessionId);
@@ -479,6 +591,7 @@ export async function runAgent(
       let streamedThisRound = "";
       let response: Awaited<ReturnType<typeof llm.chat>>;
       try {
+        recordLlmTurn(tenant.orgId, routing.level === "L3" ? 1 : 2);
         response = await llm.chat(
           userId,
           messages,
@@ -487,7 +600,10 @@ export async function runAgent(
             streamedThisRound += chunk;
             emitAgentWs(wsReply, "text_chunk", { text: chunk });
           },
-          { abortSignal: abortCtl.signal, modelTier: "premium" },
+          {
+            abortSignal: abortCtl.signal,
+            modelTier: routing.level === "L3" ? "fast" : "premium",
+          },
         );
       } catch (llmErr: unknown) {
         const msg = llmErr instanceof Error ? llmErr.message : String(llmErr);
@@ -566,6 +682,30 @@ export async function runAgent(
           };
         }
         console.log(`[Coordinator -> tool] ${tc.name}`);
+        if (isMcpToolName(tc.name)) {
+          try {
+            secureAuthorizeToolExecution({
+              userId,
+              authKind,
+              toolName: tc.name,
+              toolArgs: typeof tc.arguments === "string" ? JSON.parse(tc.arguments) : tc.arguments,
+            });
+            const mcpResult = await executeSecuredMcpTool({
+              userId,
+              authKind,
+              toolName: tc.name,
+              toolArgs: typeof tc.arguments === "string" ? JSON.parse(tc.arguments) : tc.arguments,
+            });
+            return { tool_call_id: tc.id, name: tc.name, content: mcpResult };
+          } catch (err: any) {
+            return {
+              tool_call_id: tc.id,
+              name: tc.name,
+              content: `Error: ${formatSecurityError(err)}`,
+            };
+          }
+        }
+
         const tool = (coordinatorTools as any[]).find((t: any) => t.name === tc.name);
 
         if (!tool) {
@@ -586,10 +726,40 @@ export async function runAgent(
           if (args.to) args.to = preservedLiteralEmail(args.to, userInput);
           if (args.email) args.email = preservedLiteralEmail(args.email, userInput);
 
-          db.log(userId, "Coordinator Execute", `${tc.name}`);
-          const result = await (tool.handler || tool.execute)({ ...args, userId });
+          const gatewayArgs = agentToolArgsForGateway(tc.name, args as Record<string, unknown>);
+          const mutatingTools = new Set([
+            "log_strategic_decision",
+            "transition_execution",
+            "remember_fact",
+            "update_domain_state",
+          ]);
 
-          let resultStr = JSON.stringify(result);
+          db.log(userId, "Coordinator Execute", `${tc.name}`);
+          let resultStr: string;
+          if (mutatingTools.has(tc.name)) {
+            resultStr = await executeSecuredTool(
+              {
+                userId,
+                authKind,
+                toolName: tc.name,
+                toolArgs: gatewayArgs,
+                approvalId: (gatewayArgs.approval_id ?? gatewayArgs.approvalId) as string | undefined,
+              },
+              async (input) => {
+                const out = await (tool.handler || tool.execute)(input);
+                return typeof out === "string" ? out : JSON.stringify(out);
+              },
+            );
+          } else {
+            secureAuthorizeToolExecution({
+              userId,
+              authKind,
+              toolName: tc.name,
+              toolArgs: gatewayArgs,
+            });
+            const result = await (tool.handler || tool.execute)({ ...args, userId });
+            resultStr = JSON.stringify(result);
+          }
           const coordCap = config.agent.coordinatorToolResultMaxChars;
           if (resultStr.length > coordCap) resultStr = `${resultStr.slice(0, coordCap)}... [Result Truncated]`;
 
@@ -600,11 +770,17 @@ export async function runAgent(
             content: resultStr,
           };
         } catch (err: any) {
+          const forbidden =
+            err instanceof AuthorizationError ||
+            err instanceof CapabilityDeniedError ||
+            err instanceof TenantIsolationError;
           console.error(`Coordinator tool error (${tc.name}):`, err.message);
           return {
             tool_call_id: tc.id,
             name: tc.name,
-            content: `Error: ${err.message}`,
+            content: forbidden
+              ? `Error: Forbidden — ${formatSecurityError(err)}`
+              : `Error: ${formatSecurityError(err)}`,
           };
         }
       };

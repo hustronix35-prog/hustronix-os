@@ -33,6 +33,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { SegmentTabs } from "@/components/ui/segment-tabs";
 import { cn } from "@/lib/cn";
 import { apiGet, apiPost } from "@/lib/api";
+import { fetchIntegrationsHealth, type IntegrationHealth } from "@/lib/integrations-health";
 import { mapSignal, type ApiExecution, type ApiSignal } from "@/lib/mappers";
 
 type TabId = "unverified" | "linked" | "killed";
@@ -70,6 +71,17 @@ function tabDetailBadge(tab: TabId): string {
 }
 
 type CapRow = { id: string; name: string; status: string; description: string };
+
+function healthToCapRows(providers: IntegrationHealth[]): CapRow[] {
+  return providers.map((p) => ({
+    id: p.provider,
+    name: p.label,
+    status: p.connected ? (p.needsReauth ? "NEEDS_REAUTH" : "CONNECTED") : "DISCONNECTED",
+    description: p.connected
+      ? `${p.signalCount24h} signals (24h)`
+      : "Not connected — open Settings → Connections",
+  }));
+}
 
 export function SignalsClient() {
   const { push } = useRouter();
@@ -132,8 +144,8 @@ export function SignalsClient() {
 
   const loadCapabilities = useCallback(async () => {
     try {
-      const data = await apiGet<{ capabilities: CapRow[] }>("/api/connections");
-      setCapabilities(data.capabilities || []);
+      const data = await fetchIntegrationsHealth();
+      setCapabilities(healthToCapRows(data.providers || []));
     } catch {
       setCapabilities([]);
     }

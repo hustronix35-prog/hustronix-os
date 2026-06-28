@@ -6,6 +6,14 @@ import crypto from "crypto";
 import type { AuditorWriteContext } from "./auditor-context.js";
 import { attachEpistemicDerivation, type EpistemicOrgContext } from "./epistemic-engine.js";
 import { config } from "./config.js";
+import { ensureSecuritySchema } from "./security/security-schema.js";
+import { ensureV8EnterpriseSchema } from "./security/v8-schema.js";
+import { ensureV9TrustSchema } from "./security/v9-schema.js";
+import { ensureEntitySchema } from "./entities/schema.js";
+import { ensureStateSchema } from "./state/schema.js";
+import { ensureBeliefSchema } from "./beliefs/schema.js";
+import { ensureSimulationSchema } from "./simulation/schema.js";
+import { onDecisionTerminalState } from "./evaluation/outcome-evaluation.js";
 
 function resolveSqlitePath(): string {
   const configured = config.storage.dbPath.trim();
@@ -254,6 +262,7 @@ export class HustronixDB {
     this.ensureDecisionLedgerColumns();
     this.ensureDecisionReasoningColumn();
     this.ensureTenantColumns();
+    this.ensureOrgIdColumns();
     this.ensureOwnerReputationColumns();
     this.ensureOAuthTables();
     this.ensureSocialAuthTables();
@@ -266,6 +275,40 @@ export class HustronixDB {
     this.ensureNotificationsSchema();
     this.ensureEarlyAccessSchema();
     this.ensureMarketingContactSchema();
+    this.ensureSecuritySchemaV7();
+  }
+
+  private ensureSecuritySchemaV7() {
+    const ensureColumn = (table: string, name: string, ddl: string) => {
+      try {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${ddl}`);
+      } catch {
+        /* already exists */
+      }
+    };
+    ensureSecuritySchema((sql) => this.db.exec(sql), ensureColumn);
+    ensureV8EnterpriseSchema((sql) => this.db.exec(sql), ensureColumn);
+    ensureV9TrustSchema((sql) => this.db.exec(sql), ensureColumn);
+    ensureEntitySchema((sql) => this.db.exec(sql));
+    ensureStateSchema((sql) => this.db.exec(sql));
+    ensureBeliefSchema((sql) => this.db.exec(sql));
+    ensureSimulationSchema((sql) => this.db.exec(sql));
+    ensureEntitySchema((sql) => this.db.exec(sql));
+    ensureStateSchema((sql) => this.db.exec(sql));
+
+    /** Backfill lifecycle_state from legacy status. */
+    try {
+      this.db.exec(`
+        UPDATE decision_ledger SET lifecycle_state = CASE status
+          WHEN 'DRAFT' THEN 'PROPOSED'
+          WHEN 'REVERSED' THEN 'REVOKED'
+          ELSE status
+        END
+        WHERE lifecycle_state IS NULL OR lifecycle_state = ''
+      `);
+    } catch {
+      /* ignore */
+    }
   }
 
   private ensureMarketingContactSchema() {
@@ -2043,16 +2086,18 @@ export class HustronixDB {
     ingestMeta?: string;
   }) {
     const detectedAt = row.detectedAt ?? null;
+    const orgId = this.resolveOrgIdForUser(row.userId);
     this.db
       .prepare(
         `INSERT INTO external_signals
-            (id, user_id, source, content, owner, detected_at, state,
+            (id, user_id, org_id, source, content, owner, detected_at, state,
              source_subtype, external_id, ingest_meta)
-         VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), 'UNVERIFIED', ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), 'UNVERIFIED', ?, ?, ?)`,
       )
       .run(
         row.id,
         row.userId,
+        orgId,
         row.source,
         row.content,
         row.owner,
@@ -2072,11 +2117,33 @@ export class HustronixDB {
   }
 
   /** Link a signal to an execution (tenant checks done by caller). */
-  linkExternalSignalToTask(signalId: string, taskId: string) {
+  linkExternalSignalToTask(
+    signalId: string,
+    taskId: string,
+    meta?: { linkMethod?: string; linkProvenance?: Record<string, unknown> },
+  ) {
+    const linkMethod = meta?.linkMethod ?? "manual";
+    const linkProvenanceJson = meta?.linkProvenance ? JSON.stringify(meta.linkProvenance) : null;
     this.db
-      .prepare(`UPDATE external_signals SET state = 'LINKED', linked_execution_id = ? WHERE id = ?`)
-      .run(taskId, signalId);
+      .prepare(
+        `UPDATE external_signals
+         SET state = 'LINKED', linked_execution_id = ?, link_method = ?, link_provenance_json = ?
+         WHERE id = ?`,
+      )
+      .run(taskId, linkMethod, linkProvenanceJson, signalId);
     this.invokeLedgerAuditor({ type: "signal_link", signalId, taskId });
+  }
+
+  /** Reversible unlink — returns signal to UNVERIFIED for review. */
+  unlinkExternalSignal(signalId: string) {
+    this.db
+      .prepare(
+        `UPDATE external_signals
+         SET state = 'UNVERIFIED', linked_execution_id = NULL, link_method = NULL, link_provenance_json = NULL
+         WHERE id = ?`,
+      )
+      .run(signalId);
+    this.invokeLedgerAuditor({ type: "signal", signalId });
   }
 
   /** Mark a signal KILLED (tenant checks done by caller). */
@@ -2129,16 +2196,86 @@ export class HustronixDB {
     }
   }
 
+  /** Phase 0: org_id on ledger tables for tenant scoping. */
+  private ensureOrgIdColumns() {
+    const addCol = (table: string, col: string, ddl: string) => {
+      const cols = this.db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+      if (!cols.some((c) => c.name === col)) {
+        try {
+          this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${ddl}`);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    addCol("decision_ledger", "org_id", "TEXT");
+    addCol("execution_ledger", "org_id", "TEXT");
+    addCol("external_signals", "org_id", "TEXT");
+    addCol("external_signals", "link_method", "TEXT");
+    addCol("external_signals", "link_provenance_json", "TEXT");
+  }
+
+  /** Resolve org_id without importing tenant-context (avoids circular deps). */
+  resolveOrgIdForUser(userId: string): string {
+    if (!userId || userId === "system") return "system";
+    const mem = this.db
+      .prepare(`SELECT org_id FROM workspace_members WHERE user_id = ? ORDER BY created_at ASC LIMIT 1`)
+      .get(userId) as { org_id: string } | undefined;
+    if (mem?.org_id) return mem.org_id;
+    const org = this.db
+      .prepare(`SELECT id FROM organizations WHERE owner_user_id = ? LIMIT 1`)
+      .get(userId) as { id: string } | undefined;
+    if (org?.id) return org.id;
+    return `org_${userId}`;
+  }
+
+  /** Backfill org_id on boot — safe to re-run. */
+  backfillOrgIds(): { decisions: number; executions: number; signals: number } {
+    let decisions = 0;
+    let executions = 0;
+    let signals = 0;
+    const decisionRows = this.db
+      .prepare(`SELECT id, user_id FROM decision_ledger WHERE org_id IS NULL OR org_id = ''`)
+      .all() as { id: string; user_id: string }[];
+    for (const row of decisionRows) {
+      const orgId = this.resolveOrgIdForUser(row.user_id);
+      this.db.prepare(`UPDATE decision_ledger SET org_id = ? WHERE id = ?`).run(orgId, row.id);
+      decisions++;
+    }
+    const execRows = this.db
+      .prepare(
+        `SELECT e.task_id, d.org_id, d.user_id
+         FROM execution_ledger e
+         INNER JOIN decision_ledger d ON e.decision_id = d.id
+         WHERE e.org_id IS NULL OR e.org_id = ''`,
+      )
+      .all() as { task_id: string; org_id: string | null; user_id: string }[];
+    for (const row of execRows) {
+      const orgId = row.org_id || this.resolveOrgIdForUser(row.user_id);
+      this.db.prepare(`UPDATE execution_ledger SET org_id = ? WHERE task_id = ?`).run(orgId, row.task_id);
+      executions++;
+    }
+    const signalRows = this.db
+      .prepare(`SELECT id, user_id FROM external_signals WHERE org_id IS NULL OR org_id = ''`)
+      .all() as { id: string; user_id: string }[];
+    for (const row of signalRows) {
+      const orgId = this.resolveOrgIdForUser(row.user_id);
+      this.db.prepare(`UPDATE external_signals SET org_id = ? WHERE id = ?`).run(orgId, row.id);
+      signals++;
+    }
+    return { decisions, executions, signals };
+  }
+
   /**
-   * Deterministic ACTIVE conflict rule: at most one ACTIVE decision per user_id.
-   * Contradiction is approximated by parallel ACTIVE commitments; new activations must wait.
+   * Deterministic ACTIVE conflict rule: at most one ACTIVE decision per org_id.
    */
-  private findOtherActiveDecision(userId: string, excludeDecisionId: string) {
+  private findOtherActiveDecision(orgId: string, excludeDecisionId: string) {
     return this.db
       .prepare(
-        `SELECT id, vow FROM decision_ledger WHERE user_id = ? AND status = 'ACTIVE' AND id != ?`
+        `SELECT id, vow FROM decision_ledger
+         WHERE org_id = ? AND status = 'ACTIVE' AND id != ?`,
       )
-      .get(userId, excludeDecisionId) as { id: string; vow: string } | undefined;
+      .get(orgId, excludeDecisionId) as { id: string; vow: string } | undefined;
   }
 
   /** Non-terminal decisions for supervisor context (DRAFT / ACTIVE / UNDER_REVIEW). */
@@ -2511,11 +2648,11 @@ export class HustronixDB {
 
     this.db.prepare(`
       INSERT INTO decision_ledger (
-        id, user_id, fingerprint, vow, expected_outcomes, constraints, reversal_conditions, confidence, status, decision_reasoning
+        id, user_id, org_id, fingerprint, vow, expected_outcomes, constraints, reversal_conditions, confidence, status, decision_reasoning
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)
     `).run(
-      id, userId, fingerprint, data.vow || "Unspecified Vow",
+      id, userId, this.resolveOrgIdForUser(userId), fingerprint, data.vow || "Unspecified Vow",
       JSON.stringify(data.expected_outcomes || []),
       JSON.stringify(data.constraints || []),
       data.reversal_conditions || null,
@@ -2548,20 +2685,21 @@ export class HustronixDB {
 
   transitionDecisionState(id: string, newState: string, reason: string = 'System state change') {
     const current = this.db.prepare("SELECT * FROM decision_ledger WHERE id = ?").get(id) as
-      | { user_id: string; status: string }
+      | { user_id: string; org_id: string | null; status: string }
       | undefined;
     if (!current) throw new Error("Decision not found.");
 
     if (newState === "ACTIVE") {
-      const other = this.findOtherActiveDecision(current.user_id || "system", id);
+      const orgId = current.org_id || this.resolveOrgIdForUser(current.user_id || "system");
+      const other = this.findOtherActiveDecision(orgId, id);
       if (other) {
         this.logAudit(
           "DECISION_CONFLICT_BLOCKED",
-          `Another ACTIVE decision exists (${other.id}); at most one ACTIVE decision per user.`,
+          `Another ACTIVE decision exists (${other.id}); at most one ACTIVE decision per organization.`,
           id
         );
         throw new Error(
-          `CONFLICT: Cannot activate while decision ${other.id} is ACTIVE for this user.`
+          `CONFLICT: Cannot activate while decision ${other.id} is ACTIVE for this organization.`
         );
       }
     }
@@ -2569,6 +2707,18 @@ export class HustronixDB {
     this.db.prepare(`
       UPDATE decision_ledger SET status = ?, last_update = CURRENT_TIMESTAMP WHERE id = ?
     `).run(newState, id);
+
+    const lifecycleMap: Record<string, string> = {
+      DRAFT: "PROPOSED",
+      REVERSED: "REVOKED",
+      KILLED: "REVOKED",
+    };
+    const lifecycle = lifecycleMap[newState] ?? newState;
+    try {
+      this.db.prepare(`UPDATE decision_ledger SET lifecycle_state = ? WHERE id = ?`).run(lifecycle, id);
+    } catch {
+      /* lifecycle_state column may be absent on very old DBs until migration runs */
+    }
 
     this.logAudit('DECISION_TRANSITION', `New State: ${newState} | ${reason}`, id);
 
@@ -2578,18 +2728,27 @@ export class HustronixDB {
     }
 
     this.invokeLedgerAuditor({ type: "decision", decisionId: id });
+    try {
+      onDecisionTerminalState(id, newState);
+    } catch (e) {
+      console.error("[DB] Outcome evaluation hook failed:", e);
+    }
   }
 
   saveExecutionTask(data: any, skipAuditorHook = false) {
     const taskId = data.task_id || uuidv4();
+    const decisionRow = this.db
+      .prepare(`SELECT user_id, org_id FROM decision_ledger WHERE id = ?`)
+      .get(data.decision_id) as { user_id: string; org_id: string | null } | undefined;
+    const orgId = decisionRow?.org_id || this.resolveOrgIdForUser(decisionRow?.user_id || "system");
     this.db.prepare(`
       INSERT INTO execution_ledger (
-        task_id, decision_id, parent_task_id, owner, type, priority, weight, status,
+        task_id, decision_id, org_id, parent_task_id, owner, type, priority, weight, status,
         dependencies, success_condition, failure_condition
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
     `).run(
-      taskId, data.decision_id, data.parent_task_id || null, data.owner || 'system',
+      taskId, data.decision_id, orgId, data.parent_task_id || null, data.owner || 'system',
       data.type || 'ACTION', data.priority || 3, data.weight || 1.0,
       JSON.stringify(data.dependencies || []),
       data.success_condition || null, data.failure_condition || null

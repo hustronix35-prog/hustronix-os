@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { apiGet, apiPost } from "@/lib/api";
+import { parseApprovalIdFromError } from "@/lib/approval-flow";
 
 type DecisionRow = {
   id: string;
@@ -23,6 +24,7 @@ export function DecisionsPanel({
   const [rows, setRows] = useState<DecisionRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [approvalId, setApprovalId] = useState("");
 
   const load = useCallback(async () => {
     setErr(null);
@@ -42,10 +44,22 @@ export function DecisionsPanel({
     const justification = window.prompt("Commit justification (optional)") || "Committed from Mission Control";
     setBusy(id);
     try {
-      await apiPost("/api/decisions/commit", { decisionId: id, justification });
+      await apiPost("/api/decisions/commit", {
+        decisionId: id,
+        justification,
+        approvalId: approvalId.trim() || undefined,
+      });
+      setApprovalId("");
       await load();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      const pending = parseApprovalIdFromError(msg);
+      if (pending) setApprovalId(pending);
+      alert(
+        pending
+          ? `${msg}\n\nApproval ID copied to the field below. After dual-control in Settings → Approvals, retry commit.`
+          : msg,
+      );
     } finally {
       setBusy(null);
     }
@@ -68,6 +82,17 @@ export function DecisionsPanel({
         </Button>
       </div>
       {err && <p className="px-5 py-2 text-sm text-hx-danger">{err}</p>}
+      <div className="border-b border-hx-border px-4 py-2">
+        <label className="block text-xs font-medium uppercase tracking-wider text-hx-muted">
+          Dual-control approval ID (optional)
+        </label>
+        <input
+          className="mt-1 w-full rounded-md border border-hx-border bg-hx-bg px-3 py-2 text-sm"
+          placeholder="Paste approval id after Settings → Approvals"
+          value={approvalId}
+          onChange={(e) => setApprovalId(e.target.value)}
+        />
+      </div>
       <div className="max-h-[320px] overflow-y-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="sticky top-0 bg-hx-surface-elevated/90 text-[10px] font-semibold uppercase tracking-wider text-hx-muted">

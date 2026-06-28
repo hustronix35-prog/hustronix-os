@@ -1,11 +1,17 @@
 import { config } from "./config.js";
 import * as llm from "./llm.js";
-import { memoryTools } from "./tools/index.js";
+import { definition as getCurrentTimeDef, handler as getCurrentTimeHandler } from "./tools/get-current-time.js";
 import { type AgentWsReply } from "./server.js";
 import { db } from "./database.js";
 import { sanitizeAgentErrorMessage } from "./utils/client-safe-errors.js";
 import { sanitizeInstitutionalTone } from "./epistemic-engine.js";
 import { buildAssistantSystemPrompt } from "./assistant-guide.js";
+import type { AuthKind } from "./middleware/auth.js";
+import { gateUserChatInput } from "./security/security-gateway.js";
+import { executeSecuredTool, formatSecurityError } from "./security/security-gateway.js";
+
+/** Assistant is product-help only — no ledger mutation tools. */
+const assistantTools = [{ ...getCurrentTimeDef, handler: getCurrentTimeHandler }];
 
 function emitAgentWs(wsReply: AgentWsReply | undefined, type: string, data: Record<string, unknown>) {
   const payload = { type, ...data };
@@ -21,6 +27,7 @@ export async function runAssistantAgent(
   userInput: string,
   sessionId: string,
   wsReply?: AgentWsReply,
+  options?: { authKind?: AuthKind | string },
 ): Promise<string> {
   if (!llm.hasLlmCredentials(userId)) {
     const msg =
@@ -29,6 +36,14 @@ export async function runAssistantAgent(
     emitAgentWs(wsReply, "error", { message: msg });
     db.saveMessage(userId, "assistant", `[Error] ${msg}`, null, sessionId);
     return `Error: ${msg}`;
+  }
+
+  const inputGate = gateUserChatInput({ userId, content: userInput, sourceLabel: "assistant_chat" });
+  if (!inputGate.allowed) {
+    const blocked = inputGate.message ?? "Input blocked.";
+    emitAgentWs(wsReply, "error", { message: blocked });
+    db.saveMessage(userId, "assistant", `[Blocked] ${blocked}`, null, sessionId);
+    return `Error: ${blocked}`;
   }
 
   const rawHistory = db.getRecentMessages(userId, sessionId, 24);
@@ -45,7 +60,7 @@ export async function runAssistantAgent(
   const messages: llm.Message[] = [
     { role: "system", content: systemPrompt },
     ...history,
-    { role: "user", content: userInput },
+    { role: "user", content: inputGate.isolatedContent },
   ];
 
   db.saveMessage(userId, "user", userInput, null, sessionId);
@@ -71,7 +86,7 @@ export async function runAssistantAgent(
         response = await llm.chat(
           userId,
           messages,
-          memoryTools,
+          assistantTools,
           (chunk) => {
             streamed += chunk;
             emitAgentWs(wsReply, "text_chunk", { text: chunk });
@@ -109,7 +124,7 @@ export async function runAssistantAgent(
         }
 
         for (const tc of response.toolCalls) {
-          const tool = memoryTools.find((t) => t.name === tc.name);
+          const tool = assistantTools.find((t) => t.name === tc.name);
           let result = "Tool not available.";
           if (tool) {
             try {
@@ -117,9 +132,17 @@ export async function runAssistantAgent(
                 typeof tc.arguments === "string"
                   ? JSON.parse(tc.arguments)
                   : (tc.arguments as Record<string, unknown>);
-              result = String(await tool.handler({ ...args, userId }));
+              result = await executeSecuredTool(
+                {
+                  userId,
+                  authKind: options?.authKind,
+                  toolName: tc.name,
+                  toolArgs: args,
+                },
+                tool.handler,
+              );
             } catch (e: unknown) {
-              result = sanitizeAgentErrorMessage(e instanceof Error ? e.message : String(e));
+              result = sanitizeAgentErrorMessage(formatSecurityError(e));
             }
           }
           messages.push({

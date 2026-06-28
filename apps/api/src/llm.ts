@@ -8,6 +8,7 @@ import {
 } from "./anthropic-model-policy.js";
 import { config } from "./config.js";
 import { db } from "./database.js";
+import { assertOrgLlmBudget, estimateLlmUnits, recordOrgLlmSpend } from "./security/llm-budget.js";
 
 console.log("🛠️ [SYSTEM] LLM Module Loaded (Hardened V2.3 - 2026 Compatibility Layer)");
 
@@ -149,6 +150,8 @@ export async function chat(
     );
   }
 
+  const budget = assertOrgLlmBudget(userId);
+
   let lastError: unknown = null;
 
   for (const provider of sortedQueue) {
@@ -177,7 +180,9 @@ export async function chat(
       const racers: Promise<LlmChatResult>[] = [chatPromise];
       if (abortPromise) racers.push(abortPromise);
 
-      return await Promise.race(racers);
+      const result = await Promise.race(racers);
+      recordOrgLlmSpend(budget.orgId, estimateLlmUnits(messages, result.text));
+      return result;
     } catch (err: unknown) {
       lastError = err;
       const m = err instanceof Error ? err.message : String(err);

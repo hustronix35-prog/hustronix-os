@@ -24,7 +24,54 @@ import {
   filterWritableSettings,
   InvalidSettingKeyError,
 } from "./security/settings-keys.js";
-import { userHasPermission } from "./security/authorization.js";
+import type { AuthKind } from "./middleware/auth.js";
+import { authorizeWsAction, wsActionFromPayload } from "./security/action-authorization.js";
+import { AuthorizationError } from "./security/authorization-errors.js";
+import { userHasPermission, requirePermission, principalRole } from "./security/authorization.js";
+import { computeTrustMetrics } from "./security/trust-metrics.js";
+import { getSecurityDashboard } from "./security/security-observability.js";
+import {
+  computeOrganizationalTruth,
+  getCurrentOrganizationalTruth,
+} from "./security/organizational-truth.js";
+import { explainMemoryFact } from "./security/memory-fact.js";
+import { listBeliefs, explainBelief } from "./beliefs/belief-engine.js";
+import { runCausalSimulation } from "./simulation/causal-simulator.js";
+import { computeDigitalTwin } from "./state/digital-twin.js";
+import {
+  listEntities,
+  getEntity,
+  getEntityNeighbors,
+  getEntityTimeline,
+  isEntityType,
+} from "./entities/index.js";
+import {
+  getOrganizationState,
+  getCurrentStateVersion,
+  listStateVersions,
+  diffStateVersions,
+  rollbackStateVersion,
+  parseSnapshot,
+  listDoctrineRules,
+  createDoctrineRule,
+  updateDoctrineRule,
+  supersedeDoctrineRule,
+  getDoctrineRule,
+  rebuildOrganizationState,
+} from "./state/index.js";
+import { approvePendingAction, getApprovalById, listPendingApprovals } from "./security/approval-gate.js";
+import { assertResourceTenantAccess, resolveTenantContext, tenantSqlScope } from "./security/tenant-context.js";
+import { assertLedgerTenantAccess } from "./security/tenant-scope.js";
+import { authorizeAndExecuteMutation } from "./security/security-gateway.js";
+import {
+  mutationCommitDecision,
+  mutationCreateDraftDecision,
+  mutationKillSignal,
+  mutationLinkSignal,
+  mutationTransitionExecution,
+  mutationUnlinkSignal,
+} from "./security/mutation-handlers.js";
+import { checkWsRateLimit } from "./middleware/ws-rate-limit.js";
 import {
   aiRouteLimiter,
   authRouteLimiter,
@@ -39,7 +86,6 @@ import { handleMarketingContactRequest } from "./marketing-contact.js";
 import { buildCorsOptions } from "./security/cors.js";
 import { csrfOriginGuard } from "./security/csrf.js";
 import { recordSecurityEvent } from "./security/audit.js";
-import { requirePermission } from "./security/authorization.js";
 import { requireHttpsMiddleware, securityHeadersMiddleware } from "./security/httpSecurity.js";
 import { getRequestId, logJson, requestContextMiddleware } from "./security/requestContext.js";
 import { sqliteDatetimeToIso } from "./utils/sqlite-datetime.js";
@@ -71,7 +117,6 @@ import {
 } from "./auth/totpCore.js";
 import { handleSlackEventsRequest } from "./integrations/slackEvents.js";
 import { auditor } from "./auditor.js";
-import { requireCausalValidationForActivation } from "./institutional-reasoning.js";
 import {
   fetchDecisionContext,
   hybridSearch,
@@ -127,6 +172,7 @@ import {
 import { mountGoogleWebhook } from "./integrations/googleWebhook.js";
 import { mountGoogleRoutes } from "./integrations/googleRoutes.js";
 import { mountConnectionsHealthRoute } from "./integrations/connectionsHealth.js";
+import { getGraphImpact } from "./security/evidence-graph.js";
 
 const LEGACY_UID_COOKIE = "hustronix_uid";
 const SESSION_COOKIE = "hustronix_session";
@@ -256,27 +302,28 @@ function completePrimaryLogin(res: express.Response, req: express.Request, userI
   return res.json(buildTotpLoginResponse(userId));
 }
 
-function commitDecisionActive(userId: string, decisionId: string, justification?: string) {
-  const tenant = db.getDecisionTenant(decisionId);
-  if (!tenant) throw new Error("Decision not found.");
-  if (userId !== "system" && tenant !== userId) {
-    throw new Error("Forbidden: decision belongs to another account.");
-  }
-  const row = db.getDecisionLedgerRow(decisionId);
-  if (row?.decision_reasoning != null && String(row.decision_reasoning).trim() !== "") {
-    requireCausalValidationForActivation(row.decision_reasoning);
-  }
-  db.transitionDecisionState(decisionId, "ACTIVE", justification || "Committed via Hustronix");
-  if (userId !== "system") {
-    void notify(userId, {
-      kind: "decision.committed",
-      title: "Decision committed",
-      body: `Decision ${decisionId} is now ACTIVE.`,
-      linkUrl: defaultAppLink(`/mission-control`),
-      payload: { decisionId, status: "ACTIVE" },
-    }).catch((err) => console.error("[notifications] decision.committed:", err));
-  }
-  return tenant;
+function commitDecisionActive(
+  userId: string,
+  decisionId: string,
+  justification?: string,
+  options?: { approvalId?: string; emergencyOverride?: boolean; emergencyReason?: string },
+  authKind?: AuthKind | string,
+) {
+  return authorizeAndExecuteMutation(
+    {
+      userId,
+      authKind,
+      permission: "decision:commit",
+      actionType: "commit_decision",
+      toolName: "commit_decision",
+      toolArgs: { decisionId, justification: justification ?? "" },
+      resourceTenantId: db.getDecisionTenant(decisionId),
+      approvalId: options?.approvalId,
+      emergencyOverride: options?.emergencyOverride,
+      emergencyReason: options?.emergencyReason,
+    },
+    () => mutationCommitDecision(userId, decisionId, justification, options),
+  );
 }
 
 function appendAuthorityLedgerEvent(params: {
@@ -326,7 +373,16 @@ function signalsTenant(userId: string): { sql: string; params: unknown[] } {
   if (!userId || userId === "system") {
     return { sql: " AND 1 = 0", params: [] };
   }
-  return { sql: " AND user_id = ?", params: [userId] };
+  return tenantSqlScope(resolveTenantContext(userId));
+}
+
+/** Tenant scope for decision_ledger joins (`d` alias). */
+function ledgerTenantScope(userId: string): { sql: string; params: unknown[] } {
+  const scope = tenantSqlScope(resolveTenantContext(userId));
+  return {
+    sql: scope.sql.replace(/\borg_id\b/g, "d.org_id").replace(/\buser_id\b/g, "d.user_id"),
+    params: scope.params,
+  };
 }
 
 function assertKnownTenantUserId(tenantUserId: string, res: express.Response): boolean {
@@ -1839,12 +1895,14 @@ app.get("/api/execution/signals/by-state", authMiddleware, (req, res) => {
 app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
   try {
     const userId = (req as any).userId as string;
+    const { sql: ledgerSql, params: ledgerParams } = ledgerTenantScope(userId);
+    const decisionScope = tenantSqlScope(resolveTenantContext(userId));
     const ownerFromExec = db.rawGet(
       `SELECT e.owner FROM execution_ledger e
        INNER JOIN decision_ledger d ON e.decision_id = d.id
-       WHERE d.user_id = ? AND e.status IN ('ACTIVE','PENDING')
+       WHERE 1=1${ledgerSql} AND e.status IN ('ACTIVE','PENDING')
        ORDER BY e.last_update DESC LIMIT 1`,
-      [userId],
+      ledgerParams,
     )[0] as { owner: string } | undefined;
     const owner =
       (req.query.owner as string)?.trim() ||
@@ -1852,13 +1910,13 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
       "system";
 
     const activeDecision = db.rawGet(
-      `SELECT * FROM decision_ledger WHERE user_id = ? AND status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1`,
-      [userId],
+      `SELECT * FROM decision_ledger WHERE status = 'ACTIVE'${decisionScope.sql} ORDER BY created_at DESC LIMIT 1`,
+      decisionScope.params,
     )[0] as Record<string, unknown> | undefined;
 
     const fallbackDecision = db.rawGet(
-      `SELECT * FROM decision_ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
-      [userId],
+      `SELECT * FROM decision_ledger WHERE 1=1${decisionScope.sql} ORDER BY created_at DESC LIMIT 1`,
+      decisionScope.params,
     )[0] as Record<string, unknown> | undefined;
 
     const decision = activeDecision || fallbackDecision;
@@ -1867,9 +1925,9 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
       `SELECT e.status, COUNT(*) as n
        FROM execution_ledger e
        INNER JOIN decision_ledger d ON e.decision_id = d.id
-       WHERE d.user_id = ?
+       WHERE 1=1${ledgerSql}
        GROUP BY e.status`,
-      [userId],
+      ledgerParams,
     ) as { status: string; n: number }[];
 
     const byStatus: Record<string, number> = {};
@@ -1883,8 +1941,10 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
 
     const cap = db.getOwnerCapacity(owner);
     const activeTasks = db.rawGet(
-      `SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'`,
-      [owner],
+      `SELECT sum(e.weight) as total_weight FROM execution_ledger e
+       INNER JOIN decision_ledger d ON e.decision_id = d.id
+       WHERE e.owner = ? AND e.status = 'ACTIVE'${ledgerSql}`,
+      [owner, ...ledgerParams],
     ) as { total_weight: number | null }[];
     const currentLoad = Number(activeTasks[0]?.total_weight || 0);
     const loadPct =
@@ -1894,10 +1954,10 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
       `SELECT e.task_id, e.owner, e.weight, e.status, e.success_condition, e.last_update, d.vow as decision_vow
        FROM execution_ledger e
        INNER JOIN decision_ledger d ON e.decision_id = d.id
-       WHERE d.user_id = ? AND e.status IN ('ACTIVE','BLOCKED','PENDING')
+       WHERE 1=1${ledgerSql} AND e.status IN ('ACTIVE','BLOCKED','PENDING')
        ORDER BY e.last_update DESC
        LIMIT 8`,
-      [userId],
+      ledgerParams,
     );
 
     const { sql: sigSql, params: sigParams } = signalsTenant(userId);
@@ -2153,17 +2213,36 @@ app.get("/api/execution/capacity", authMiddleware, (req, res) => {
   }
 });
 
-app.post("/api/execution/transition", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, (req, res) => {
-  const { taskId, newState, reason } = req.body as { taskId?: string; newState?: string; reason?: string };
+app.post("/api/execution/transition", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, async (req, res) => {
+  const { taskId, newState, reason, approvalId, emergencyOverride, emergencyReason } = req.body as {
+    taskId?: string;
+    newState?: string;
+    reason?: string;
+    approvalId?: string;
+    emergencyOverride?: boolean;
+    emergencyReason?: string;
+  };
   const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
   try {
     if (!taskId || !newState) return res.status(400).json({ error: "taskId and newState required" });
     const tenant = db.getExecutionTenantForTask(taskId);
     if (!tenant) return res.status(404).json({ error: "Task not found" });
-    if (userId !== "system" && tenant !== userId) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    const result = db.transitionExecutionState(taskId, newState, reason);
+    const result = await authorizeAndExecuteMutation(
+      {
+        userId,
+        authKind,
+        permission: "execution:write",
+        actionType: "transition_execution",
+        toolName: "transition_execution",
+        toolArgs: { task_id: taskId, newState, reason: reason ?? "" },
+        resourceTenantId: tenant,
+        approvalId,
+        emergencyOverride,
+        emergencyReason,
+      },
+      () => mutationTransitionExecution(userId, { taskId, newState, reason }),
+    );
     appendAuthorityLedgerEvent({
       req,
       orgId: tenant,
@@ -2177,27 +2256,60 @@ app.post("/api/execution/transition", authMiddleware, requirePermission("executi
         result,
       },
     });
-    res.json({ success: true, ...result });
+    res.json(result);
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    const status = err?.message?.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: err.message });
   }
 });
 
-app.post("/api/execution/link", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, (req, res) => {
+app.post("/api/execution/link", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, async (req, res) => {
   const { signalId, taskId } = req.body as { signalId?: string; taskId?: string };
   const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
   try {
     if (!signalId || !taskId) return res.status(400).json({ error: "signalId and taskId required" });
-    const sigT = db.getSignalTenant(signalId);
-    const execT = db.getExecutionTenantForTask(taskId);
-    if (!sigT || !execT) return res.status(404).json({ error: "Signal or task not found" });
-    if (userId !== "system" && (sigT !== userId || execT !== userId)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    db.linkExternalSignalToTask(signalId, taskId);
+    await authorizeAndExecuteMutation(
+      {
+        userId,
+        authKind,
+        permission: "execution:write",
+        actionType: "link_execution_signal",
+        toolName: "link_execution_signal",
+        toolArgs: { signalId, taskId },
+      },
+      () => {
+        mutationLinkSignal(userId, { signalId, taskId, linkMethod: "manual" });
+      },
+    );
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to link signal" });
+  } catch (err: any) {
+    const status = err?.message?.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: err.message || "Failed to link signal" });
+  }
+});
+
+app.post("/api/execution/unlink", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, async (req, res) => {
+  const { signalId } = req.body as { signalId?: string };
+  const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
+  try {
+    if (!signalId) return res.status(400).json({ error: "signalId required" });
+    await authorizeAndExecuteMutation(
+      {
+        userId,
+        authKind,
+        permission: "execution:write",
+        actionType: "unlink_execution_signal",
+        toolName: "link_execution_signal",
+        toolArgs: { signalId, action: "unlink" },
+      },
+      () => mutationUnlinkSignal(userId, { signalId }),
+    );
+    res.json({ success: true, signalId });
+  } catch (err: any) {
+    const status = err?.message?.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: err.message || "Failed to unlink signal" });
   }
 });
 
@@ -2227,6 +2339,390 @@ app.get("/api/intelligence/context", authMiddleware, (req, res) => {
     res.status(500).json({ error: e?.message || "failed to fetch context" });
   }
 });
+
+/** V7 trust metrics — memory confidence, contradictions, security posture. */
+app.get("/api/trust/metrics", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  try {
+    res.json(computeTrustMetrics(orgId));
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to compute trust metrics" });
+  }
+});
+
+/** V8 organizational truth — what the company currently believes and why. */
+app.get("/api/truth/current", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  const workspaceId = (req as any).workspaceId as string | undefined;
+  try {
+    const snapshot = computeOrganizationalTruth(orgId, workspaceId);
+    res.json(snapshot);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to compute organizational truth" });
+  }
+});
+
+app.get("/api/truth/snapshots", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  try {
+    res.json({ truths: getCurrentOrganizationalTruth(orgId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list truth snapshots" });
+  }
+});
+
+/** V8 security observability dashboard. */
+app.get("/api/security/dashboard", authMiddleware, requirePermission("audit:run"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  try {
+    res.json(getSecurityDashboard(orgId));
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to load security dashboard" });
+  }
+});
+
+/** Explain a memory fact — who, when, source, evidence, contradictions. */
+app.get("/api/entities", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const type = typeof req.query.type === "string" ? req.query.type : undefined;
+    if (type && !isEntityType(type)) {
+      return res.status(400).json({ error: "Invalid entity type." });
+    }
+    const limit = Math.min(parseInt(String(req.query.limit ?? "100"), 10) || 100, 500);
+    const entities = listEntities(ctx, { type: type as any, limit });
+    res.json({ entities });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/entities/:id/neighbors", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const entity = getEntity(ctx.orgId, String(req.params.id));
+    if (!entity) return res.status(404).json({ error: "Entity not found." });
+    assertResourceTenantAccess(ctx, entity.tenant_id);
+    const neighbors = getEntityNeighbors(ctx.orgId, entity.id);
+    res.json({ entity_id: entity.id, neighbors });
+  } catch (e: any) {
+    res.status(e?.code === "TENANT_ISOLATION" ? 403 : 500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/entities/:id/timeline", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const entity = getEntity(ctx.orgId, String(req.params.id));
+    if (!entity) return res.status(404).json({ error: "Entity not found." });
+    assertResourceTenantAccess(ctx, entity.tenant_id);
+    const timeline = getEntityTimeline(ctx.orgId, entity.id);
+    res.json({ entity_id: entity.id, timeline });
+  } catch (e: any) {
+    res.status(e?.code === "TENANT_ISOLATION" ? 403 : 500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/graph/impact", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const entityId = String(req.query.entityId ?? "").trim() || undefined;
+    const refId = String(req.query.refId ?? "").trim() || undefined;
+    const nodeType = String(req.query.nodeType ?? "").trim() || undefined;
+    const direction = (String(req.query.direction ?? "both") as "upstream" | "downstream" | "both");
+    const depth = parseInt(String(req.query.depth ?? "3"), 10);
+    if (!entityId && !refId) {
+      return res.status(400).json({ error: "entityId or refId required." });
+    }
+    const impact = getGraphImpact({
+      tenantId: ctx.orgId,
+      entityId,
+      refId,
+      nodeType: nodeType as any,
+      direction,
+      depth: Number.isFinite(depth) ? depth : 3,
+    });
+    res.json(impact);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/state/current", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const state = getOrganizationState(ctx.orgId, ctx.userId);
+    const version = getCurrentStateVersion(ctx.orgId);
+    res.json({
+      version: version?.version ?? state.meta.version,
+      compiled_at: state.meta.compiled_at,
+      state,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/state/versions", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const limit = Math.min(parseInt(String(req.query.limit ?? "50"), 10) || 50, 200);
+    const versions = listStateVersions(ctx.orgId, limit).map((v) => ({
+      version: v.version,
+      parent_version: v.parent_version,
+      compiled_at: v.compiled_at,
+      trigger_event: v.trigger_event,
+      author: v.author,
+    }));
+    res.json({ versions });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/state/diff", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const v1 = parseInt(String(req.query.v1 ?? ""), 10);
+    const v2 = parseInt(String(req.query.v2 ?? ""), 10);
+    if (!Number.isFinite(v1) || !Number.isFinite(v2)) {
+      return res.status(400).json({ error: "Query params v1 and v2 are required integers." });
+    }
+    const diff = diffStateVersions(ctx.orgId, v1, v2);
+    if (!diff) return res.status(404).json({ error: "One or both versions not found." });
+    res.json(diff);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/state/rebuild", authMiddleware, mutationRouteLimiter, (req, res) => {
+  try {
+    const role = principalRole(req);
+    if (role !== "owner" && role !== "admin") {
+      return res.status(403).json({ error: "Forbidden", requiredRole: "owner or admin" });
+    }
+    const ctx = resolveTenantContext((req as any).userId);
+    const state = rebuildOrganizationState(ctx.orgId, ctx.userId);
+    recordSecurityEvent(req, "STATE_REBUILD", "warning", {
+      tenantId: ctx.orgId,
+      version: state.meta.version,
+    });
+    res.json({
+      success: true,
+      version: state.meta.version,
+      compiled_at: state.meta.compiled_at,
+      state,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/state/rollback", authMiddleware, mutationRouteLimiter, (req, res) => {
+  try {
+    if (principalRole(req) !== "owner") {
+      return res.status(403).json({ error: "Forbidden", requiredRole: "owner" });
+    }
+    const ctx = resolveTenantContext((req as any).userId);
+    const toVersion = parseInt(String(req.query.toVersion ?? req.body?.toVersion ?? ""), 10);
+    if (!Number.isFinite(toVersion)) {
+      return res.status(400).json({ error: "toVersion is required." });
+    }
+    const rolled = rollbackStateVersion(ctx.orgId, toVersion, ctx.userId);
+    if (!rolled) return res.status(404).json({ error: "Target version not found." });
+    recordSecurityEvent(req, "STATE_ROLLBACK", "critical", {
+      toVersion,
+      tenantId: ctx.orgId,
+      newVersion: rolled.version,
+    });
+    const snapshot = parseSnapshot(rolled);
+    res.json({ success: true, version: rolled.version, state: snapshot });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/doctrine", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const status = req.query.status === "SUPERSEDED" ? "SUPERSEDED" : "ACTIVE";
+    res.json({ rules: listDoctrineRules(ctx, status) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/doctrine", authMiddleware, requirePermission("settings:write"), mutationRouteLimiter, (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const statement = String(req.body?.statement ?? "").trim();
+    if (!statement) return res.status(400).json({ error: "statement is required." });
+    const priority = req.body?.priority === "constitutional" ? "constitutional" : "guidance";
+    const entityScope = String(req.body?.entity_scope ?? req.body?.entityScope ?? "org-wide");
+    const rule = createDoctrineRule({
+      tenantId: ctx.orgId,
+      statement,
+      priority,
+      entityScope,
+    });
+    res.status(201).json({ rule });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.patch("/api/doctrine/:id", authMiddleware, requirePermission("settings:write"), mutationRouteLimiter, (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const ruleId = String(req.params.id);
+    const existing = getDoctrineRule(ctx.orgId, ruleId);
+    if (!existing) return res.status(404).json({ error: "Doctrine rule not found." });
+    const updated = updateDoctrineRule(ctx.orgId, ruleId, {
+      statement: req.body?.statement ? String(req.body.statement) : undefined,
+      priority: req.body?.priority === "constitutional" || req.body?.priority === "guidance"
+        ? req.body.priority
+        : undefined,
+      status: req.body?.status === "SUPERSEDED" || req.body?.status === "ACTIVE" ? req.body.status : undefined,
+      entity_scope: req.body?.entity_scope ? String(req.body.entity_scope) : undefined,
+    });
+    res.json({ rule: updated });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.delete("/api/doctrine/:id", authMiddleware, requirePermission("settings:write"), mutationRouteLimiter, (req, res) => {
+  try {
+    const ctx = resolveTenantContext((req as any).userId);
+    const ruleId = String(req.params.id);
+    const existing = getDoctrineRule(ctx.orgId, ruleId);
+    if (!existing) return res.status(404).json({ error: "Doctrine rule not found." });
+    const rule = supersedeDoctrineRule(ctx.orgId, ruleId);
+    res.json({ rule });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/memory/facts/:id/explain", authMiddleware, requirePermission("memory:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  const factId = String(req.params.id);
+  try {
+    const explanation = explainMemoryFact(factId);
+    if (!explanation) return res.status(404).json({ error: "Memory fact not found." });
+    const ctx = resolveTenantContext((req as any).userId);
+    const factTenant = String((explanation as { tenant_id?: string }).tenant_id ?? orgId);
+    assertResourceTenantAccess(ctx, factTenant);
+    res.json(explanation);
+  } catch (e: any) {
+    res.status(e?.code === "TENANT_ISOLATION" ? 403 : 500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/beliefs", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const status = req.query.status as string | undefined;
+  try {
+    const ctx = resolveTenantContext(userId);
+    const beliefs = listBeliefs(ctx.orgId, status as any);
+    res.json({ beliefs });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/beliefs/:id/explain", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const beliefId = String(req.params.id);
+  try {
+    const explanation = explainBelief(beliefId);
+    if (!explanation) return res.status(404).json({ error: "Belief not found." });
+    const ctx = resolveTenantContext(userId);
+    assertResourceTenantAccess(ctx, String(explanation.tenant_id));
+    res.json(explanation);
+  } catch (e: any) {
+    res.status(e?.code === "TENANT_ISOLATION" ? 403 : 500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/decisions/simulate", authMiddleware, requirePermission("decision:read"), aiRouteLimiter, (req, res) => {
+  const userId = (req as any).userId as string;
+  const body = req.body as {
+    decisionId?: string;
+    vow?: string;
+    capacityDelta?: Record<string, number>;
+    revenueDeltaPct?: number;
+    churnRiskDelta?: number;
+  };
+  try {
+    const ctx = resolveTenantContext(userId);
+    const vow = String(body.vow || "").trim();
+    if (!vow && !body.decisionId) {
+      return res.status(400).json({ error: "vow or decisionId required" });
+    }
+    let vowText = vow;
+    if (!vowText && body.decisionId) {
+      const row = db.getDecisionLedgerRow(body.decisionId);
+      if (!row) return res.status(404).json({ error: "Decision not found" });
+      vowText = String(row.vow || "");
+    }
+    const result = runCausalSimulation({
+      tenantId: ctx.orgId,
+      decisionId: body.decisionId,
+      vow: vowText,
+      capacityDelta: body.capacityDelta,
+      revenueDeltaPct: body.revenueDeltaPct,
+      churnRiskDelta: body.churnRiskDelta,
+      createdBy: userId,
+    });
+    res.json({
+      ...result,
+      digital_twin: computeDigitalTwin(ctx.orgId),
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "simulation failed" });
+  }
+});
+
+app.get("/api/security/approvals/pending", authMiddleware, requirePermission("security:manage"), (req, res) => {
+  const viewerId = (req as any).userId as string;
+  const orgId = String((req as any).orgId || viewerId);
+  try {
+    res.json({ approvals: listPendingApprovals(orgId, viewerId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list approvals" });
+  }
+});
+
+app.get("/api/security/approvals/:id", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const orgId = String((req as any).orgId || userId);
+  try {
+    const row = getApprovalById(String(req.params.id), orgId);
+    if (!row) return res.status(404).json({ error: "Approval not found." });
+    if (row.actor_id !== userId && !userHasPermission(userId, (req as any).authKind, "security:manage")) {
+      return res.status(403).json({ error: "Forbidden." });
+    }
+    res.json({ approval: row });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to load approval" });
+  }
+});
+
+app.post(
+  "/api/security/approvals/:id/approve",
+  authMiddleware,
+  requirePermission("security:manage"),
+  mutationRouteLimiter,
+  (req, res) => {
+    const approverId = (req as any).userId as string;
+    const orgId = String((req as any).orgId || (req as any).userId);
+    const ok = approvePendingAction(String(req.params.id), approverId, orgId);
+    if (!ok) return res.status(400).json({ error: "Approval not found, expired, or already processed." });
+    res.json({ success: true, approvalId: req.params.id });
+  },
+);
 
 /**
  * Hybrid (FTS5 + cosine) retrieval across signals/executions/decisions.
@@ -3065,9 +3561,10 @@ app.get("/api/decisions", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
   const status = req.query.status as string | undefined;
   try {
+    const scope = tenantSqlScope(resolveTenantContext(userId));
     let sql = `SELECT id, vow, status, confidence, created_at, expected_outcomes, decision_reasoning
-               FROM decision_ledger WHERE user_id = ?`;
-    const params: unknown[] = [userId];
+               FROM decision_ledger WHERE 1=1${scope.sql}`;
+    const params: unknown[] = [...scope.params];
     if (status) {
       sql += ` AND status = ?`;
       params.push(status);
@@ -3080,12 +3577,23 @@ app.get("/api/decisions", authMiddleware, (req, res) => {
   }
 });
 
-app.post("/api/decisions/commit", authMiddleware, requirePermission("decision:commit"), mutationRouteLimiter, (req, res) => {
+app.post("/api/decisions/commit", authMiddleware, requirePermission("decision:commit"), mutationRouteLimiter, async (req, res) => {
   const userId = (req as any).userId as string;
-  const { decisionId, justification } = req.body as { decisionId?: string; justification?: string };
+  const authKind = (req as any).authKind as string | undefined;
+  const { decisionId, justification, approvalId, emergencyOverride, emergencyReason } = req.body as {
+    decisionId?: string;
+    justification?: string;
+    approvalId?: string;
+    emergencyOverride?: boolean;
+    emergencyReason?: string;
+  };
   if (!decisionId) return res.status(400).json({ error: "decisionId required" });
   try {
-    const orgId = commitDecisionActive(userId, decisionId, justification);
+    const orgId = await commitDecisionActive(userId, decisionId, justification, {
+      approvalId,
+      emergencyOverride,
+      emergencyReason,
+    }, authKind);
     appendAuthorityLedgerEvent({
       req,
       orgId,
@@ -3107,8 +3615,9 @@ app.post("/api/decisions/commit", authMiddleware, requirePermission("decision:co
 });
 
 /** Create a DRAFT decision (optional default task). */
-app.post("/api/decisions", authMiddleware, requirePermission("decision:write"), mutationRouteLimiter, (req, res) => {
+app.post("/api/decisions", authMiddleware, requirePermission("decision:write"), mutationRouteLimiter, async (req, res) => {
   const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
   const body = req.body as {
     vow?: string;
     expected_outcomes?: unknown[];
@@ -3116,67 +3625,65 @@ app.post("/api/decisions", authMiddleware, requirePermission("decision:write"), 
     institutional_reasoning?: unknown;
     reversal_conditions?: string;
     constraints?: unknown[];
+    approvalId?: string;
   };
   const vow = String(body.vow || "").trim();
   if (!vow) return res.status(400).json({ error: "vow required" });
   try {
-    const tasks =
-      Array.isArray(body.tasks) && body.tasks.length > 0
-        ? body.tasks.map((t) => ({
-            type: t.type || "ACTION",
-            weight: typeof t.weight === "number" ? t.weight : 1,
-            owner: String(t.owner || "system").slice(0, 120),
-          }))
-        : [{ type: "ACTION", weight: 1, owner: "system" }];
-    const payload: Record<string, unknown> = {
-      vow: vow.slice(0, 4000),
-      expected_outcomes: Array.isArray(body.expected_outcomes)
-        ? body.expected_outcomes
-        : [{ metric: "Outcome", target: "Define success criteria" }],
-      constraints: Array.isArray(body.constraints) ? body.constraints : [],
-      confidence: 0.75,
-      tasks,
-    };
-    if (body.reversal_conditions != null && String(body.reversal_conditions).trim() !== "") {
-      payload.reversal_conditions = String(body.reversal_conditions).slice(0, 8000);
-    }
-    if (body.institutional_reasoning != null && typeof body.institutional_reasoning === "object") {
-      payload.institutional_reasoning = body.institutional_reasoning;
-    }
-    const id = db.saveDecisionEvent(userId, payload);
+    const created = await authorizeAndExecuteMutation(
+      {
+        userId,
+        authKind,
+        permission: "decision:write",
+        actionType: "log_strategic_decision",
+        toolName: "log_strategic_decision",
+        toolArgs: { vow, ...body },
+        approvalId: body.approvalId,
+      },
+      () => mutationCreateDraftDecision(userId, body),
+    );
+    const orgId = resolveTenantContext(userId).orgId;
     appendAuthorityLedgerEvent({
       req,
-      orgId: userId,
+      orgId,
       aggregateType: "decision",
-      aggregateId: id,
+      aggregateId: created.id,
       eventType: "decision.create",
       payload: {
-        decisionId: id,
+        decisionId: created.id,
         status: "DRAFT",
-        vow: payload.vow,
-        confidence: payload.confidence,
+        vow: vow.slice(0, 4000),
       },
     });
-    res.status(201).json({ id, status: "DRAFT" });
+    res.status(201).json(created);
   } catch (e: any) {
-    res.status(400).json({ error: e.message || "Failed to create decision" });
+    const status = e?.message?.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: e.message || "Failed to create decision" });
   }
 });
 
-app.post("/api/execution/signals/kill", authMiddleware, requirePermission("signal:write"), mutationRouteLimiter, (req, res) => {
+app.post("/api/execution/signals/kill", authMiddleware, requirePermission("signal:write"), mutationRouteLimiter, async (req, res) => {
   const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
   const { signalId } = req.body as { signalId?: string };
   if (!signalId) return res.status(400).json({ error: "signalId required" });
   try {
-    const tenant = db.getSignalTenant(signalId);
-    if (!tenant) return res.status(404).json({ error: "Signal not found" });
-    if (userId !== "system" && tenant !== userId) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    db.killExternalSignal(signalId);
+    await authorizeAndExecuteMutation(
+      {
+        userId,
+        authKind,
+        permission: "signal:write",
+        actionType: "kill_signal",
+        toolName: "kill_signal",
+        toolArgs: { signalId },
+        resourceTenantId: db.getSignalTenant(signalId),
+      },
+      () => mutationKillSignal(userId, { signalId }),
+    );
     res.json({ success: true, signalId });
   } catch (e: any) {
-    res.status(500).json({ error: e.message || "Failed to kill signal" });
+    const status = e?.message?.includes("not found") ? 404 : e?.message?.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: e.message || "Failed to kill signal" });
   }
 });
 
@@ -3818,6 +4325,7 @@ export type AgentWsReply = (payload: Record<string, unknown>) => void;
 
 export type AgentMessageOptions = {
   planMode?: boolean;
+  authKind?: AuthKind | string;
 };
 
 let onMessage:
@@ -3882,13 +4390,28 @@ function wireWebSocketHandlers(wss: WebSocketServer) {
   ws.on("message", async (data) => {
     try {
       const payload = JSON.parse(data.toString());
-      
+      const wsAction = wsActionFromPayload(payload);
+      if (wsAction) {
+        authorizeWsAction({ userId, authKind, action: wsAction });
+      }
+
       if (payload.type === "load_session") {
         const sid = payload.sessionId || "default";
         const history = db.getRecentMessages(userId, sid, 200);
         ws.send(JSON.stringify({ type: "history", sessionId: sid, data: history }));
       }
       else if (payload.type === "text" && onMessage) {
+        const textLimit = checkWsRateLimit(userId, "text");
+        if (!textLimit.allowed) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              error: `Chat rate limit exceeded. Retry in ${Math.ceil((textLimit.retryAfterMs ?? 0) / 1000)}s.`,
+              code: "RATE_LIMIT",
+            }),
+          );
+          return;
+        }
         const sid = payload.sessionId || "default";
         const reply: AgentWsReply = (obj) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
@@ -3897,16 +4420,28 @@ function wireWebSocketHandlers(wss: WebSocketServer) {
           payload.planMode === true ||
           payload.mode === "plan" ||
           payload.chatMode === "plan";
-        await onMessage(userId, payload.text, sid, reply, { planMode });
+        await onMessage(userId, payload.text, sid, reply, { planMode, authKind });
       }
       else if (payload.type === "COMMIT_DECISION") {
-        if (!userHasPermission(userId, authKind, "decision:commit")) {
-          ws.send(JSON.stringify({ type: "error", error: "Forbidden", code: "decision:commit" }));
+        const commitLimit = checkWsRateLimit(userId, "commit_decision");
+        if (!commitLimit.allowed) {
+          broadcast(
+            "DECISION_COMMIT_FAILED",
+            {
+              decisionId: payload.decisionId,
+              error: `Rate limit exceeded. Retry in ${Math.ceil((commitLimit.retryAfterMs ?? 0) / 1000)}s.`,
+            },
+            userId,
+          );
           return;
         }
         console.log(`🛡️ [Decision] Committing decision ${payload.decisionId}...`);
         try {
-          commitDecisionActive(userId, payload.decisionId, payload.justification);
+          await commitDecisionActive(userId, payload.decisionId, payload.justification, {
+            approvalId: payload.approvalId,
+            emergencyOverride: payload.emergencyOverride,
+            emergencyReason: payload.emergencyReason,
+          }, authKind);
           broadcast(
             "DECISION_COMMITTED",
             { decisionId: payload.decisionId, status: "ACTIVE" },
@@ -3925,8 +4460,8 @@ function wireWebSocketHandlers(wss: WebSocketServer) {
         }
       }
       else if (payload.type === "SYNC_PROTOCOLS") {
-        if (!userHasPermission(userId, authKind, "agent:invoke")) {
-          ws.send(JSON.stringify({ type: "error", error: "Forbidden", code: "agent:invoke" }));
+        if (process.env.DEMO_MODE !== "1") {
+          ws.send(JSON.stringify({ type: "error", error: "SYNC_PROTOCOLS requires DEMO_MODE=1.", code: "FORBIDDEN" }));
           return;
         }
         await connectionsManager.syncProtocols();
@@ -3940,13 +4475,23 @@ function wireWebSocketHandlers(wss: WebSocketServer) {
         );
       }
       else if (payload.type === "CAPABILITY_OVERRIDE") {
-        if (!userHasPermission(userId, authKind, "security:manage")) {
-          ws.send(JSON.stringify({ type: "error", error: "Forbidden", code: "security:manage" }));
+        if (process.env.DEMO_MODE !== "1") {
+          ws.send(JSON.stringify({ type: "error", error: "CAPABILITY_OVERRIDE requires DEMO_MODE=1.", code: "FORBIDDEN" }));
           return;
         }
         connectionsManager.updateStatus(payload.id, payload.status, payload.reason);
       }
     } catch (err) {
+      if (err instanceof AuthorizationError) {
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            error: err.message,
+            code: err.requiredPermission || "FORBIDDEN",
+          }),
+        );
+        return;
+      }
       console.error("❌ [Server] Inbound message error:", err);
     }
   });

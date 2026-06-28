@@ -12,6 +12,8 @@ export type Permission =
   | "execution:write"
   | "signal:read"
   | "signal:write"
+  | "memory:read"
+  | "memory:write"
   | "settings:read"
   | "settings:write"
   | "security:manage"
@@ -27,6 +29,8 @@ const ROLE_PERMISSIONS: Record<HustronixRole, ReadonlySet<Permission>> = {
     "execution:write",
     "signal:read",
     "signal:write",
+    "memory:read",
+    "memory:write",
     "settings:read",
     "settings:write",
     "security:manage",
@@ -41,6 +45,8 @@ const ROLE_PERMISSIONS: Record<HustronixRole, ReadonlySet<Permission>> = {
     "execution:write",
     "signal:read",
     "signal:write",
+    "memory:read",
+    "memory:write",
     "settings:read",
     "settings:write",
     "security:manage",
@@ -54,10 +60,24 @@ const ROLE_PERMISSIONS: Record<HustronixRole, ReadonlySet<Permission>> = {
     "execution:read",
     "signal:read",
     "signal:write",
+    "memory:read",
     "agent:invoke",
   ]),
-  operator: new Set(["decision:read", "execution:read", "execution:write", "signal:read", "signal:write"]),
-  viewer: new Set(["decision:read", "execution:read", "signal:read", "settings:read"]),
+  operator: new Set([
+    "decision:read",
+    "execution:read",
+    "execution:write",
+    "signal:read",
+    "signal:write",
+    "memory:read",
+  ]),
+  viewer: new Set([
+    "decision:read",
+    "execution:read",
+    "signal:read",
+    "memory:read",
+    "settings:read",
+  ]),
   agent: new Set(["decision:read", "execution:read", "signal:read", "signal:write", "agent:invoke"]),
 };
 

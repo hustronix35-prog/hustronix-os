@@ -3,6 +3,7 @@ import type { IncomingMessage } from "http";
 import { config } from "../config.js";
 import { db } from "../database.js";
 import { hashOpaqueToken } from "../auth/tokens.js";
+import { resolveTenantContext } from "../security/tenant-context.js";
 
 export type AuthKind =
   | "api_token"
@@ -49,8 +50,11 @@ function attachPrincipal(
   authKind: AuthKind,
   extra?: { sessionId?: string },
 ) {
+  const tenant = resolveTenantContext(userId);
   (req as any).userId = userId;
-  (req as any).orgId = userId;
+  (req as any).orgId = tenant.orgId;
+  (req as any).workspaceId = tenant.workspaceId;
+  (req as any).tenantRole = tenant.role;
   (req as any).authKind = authKind;
   if (extra?.sessionId) (req as any).sessionId = extra.sessionId;
 }

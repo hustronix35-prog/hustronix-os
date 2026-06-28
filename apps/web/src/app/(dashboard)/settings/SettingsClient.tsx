@@ -7,6 +7,7 @@ import { ActiveIntegrationsAside } from "@/components/integrations/ActiveIntegra
 import { ConnectionHealthCard } from "@/components/integrations/ConnectionHealthCard";
 import { IntegrationConnectModal } from "@/components/integrations/IntegrationConnectModal";
 import { CapacitySettingsPanel } from "@/components/settings/CapacitySettingsPanel";
+import { ApprovalsPanel } from "@/components/settings/ApprovalsPanel";
 import { PasswordCard } from "@/components/security/PasswordCard";
 import { DashboardHero } from "@/components/shell/DashboardHero";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -37,6 +38,7 @@ import { cn } from "@/lib/cn";
 const SETTINGS_TAB_SLUG: Record<(typeof settingsTabs)[number], string> = {
   General: "general",
   Connections: "connections",
+  Approvals: "approvals",
   "Rules & Policies": "rules",
   Capacity: "capacity",
   Notifications: "notifications",
@@ -85,6 +87,7 @@ function integrationLiveConnected(
 const TAB_FROM_QUERY: Record<string, (typeof settingsTabs)[number]> = {
   general: "General",
   connections: "Connections",
+  approvals: "Approvals",
   rules: "Rules & Policies",
   capacity: "Capacity",
   notifications: "Notifications",
@@ -863,6 +866,8 @@ export function SettingsClient() {
                 />
               </>
             )}
+
+            {tab === "Approvals" && <ApprovalsPanel />}
 
             {tab === "Rules & Policies" && (
               <Card className="space-y-6">

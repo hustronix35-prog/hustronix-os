@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { apiGet, apiPost } from "@/lib/api";
+import { parseApprovalIdFromError } from "@/lib/approval-flow";
 import { mapExecution, type ApiExecution } from "@/lib/mappers";
 import { previewText } from "@/lib/preview-text";
 
@@ -96,6 +97,7 @@ export function ExecuteClient() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ExecutionRow | null>(null);
   const [rowMenuId, setRowMenuId] = useState<string | null>(null);
+  const [approvalId, setApprovalId] = useState("");
   const [dismissFromChatBanner, setDismissFromChatBanner] = useState(false);
   const [storageFromChat, setStorageFromChat] = useState(false);
 
@@ -251,10 +253,19 @@ export function ExecuteClient() {
         taskId: raw.task_id,
         newState,
         reason: `UI ${newState}`,
+        approvalId: approvalId.trim() || undefined,
       });
+      setApprovalId("");
       await refresh();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      const pending = parseApprovalIdFromError(msg);
+      if (pending) setApprovalId(pending);
+      alert(
+        pending
+          ? `${msg}\n\nUse Settings → Approvals for dual-control, then retry with the approval ID field.`
+          : msg,
+      );
     }
   }
 
@@ -552,6 +563,15 @@ export function ExecuteClient() {
               </div>
             </div>
             <div data-tour="exec-transition" className="flex flex-col gap-3">
+              <label className="text-xs font-medium uppercase tracking-wider text-hx-muted">
+                Approval ID (dual-control)
+              </label>
+              <input
+                className="w-full rounded-md border border-hx-border bg-hx-bg px-3 py-2 text-sm"
+                placeholder="Required for high-risk transitions"
+                value={approvalId}
+                onChange={(e) => setApprovalId(e.target.value)}
+              />
               <Button
                 variant="outlineGold"
                 className="w-full"

@@ -2,9 +2,20 @@ import { db } from "../database.js";
 import { fetchDecisionContext, formatForPrompt } from "./contextEngine.js";
 import { detectSignal, detectSignalHeuristic } from "./signalDetector.js";
 import { autoLink } from "./autoLinker.js";
+import { adaptiveLinkPolicyEnabled, linkPolicyEngine } from "./link-policy.js";
 import { ensureEmbedding } from "./embeddings.js";
 import { hybridSearch } from "./hybridSearch.js";
 import { applyEnrichment } from "./enrich.js";
+import { runContentTrustPipeline } from "../security/content-trust-pipeline.js";
+import { resolveTemporalDecisionSignal } from "../security/decision-lifecycle.js";
+import {
+  applyGraphPatch,
+  indexSignalAsEvidence,
+  type EvidenceNodeType,
+} from "../security/evidence-graph.js";
+import { computeOrganizationalTruth, scheduleOrganizationalTruthRecompute } from "../security/organizational-truth.js";
+import { resolveTenantContext } from "../security/tenant-context.js";
+import { patchOrganizationState } from "../state/organization-state.js";
 
 /**
  * Intelligence orchestrator — the single entry point the rest of the system
@@ -94,7 +105,8 @@ export interface ProcessSignalResult {
   skippedReason?:
     | "already-enriched"
     | "no-active-decision-and-noisy"
-    | "tiny-content";
+    | "tiny-content"
+    | "injection-blocked";
 }
 
 /**
@@ -196,7 +208,19 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
   }
 
   const context = fetchDecisionContext(userId);
+  const tenantCtx = resolveTenantContext(userId);
   const content = String(sig.content || "");
+  const trust = runContentTrustPipeline({
+    content,
+    sourceLabel: sig.source,
+    tenantId: tenantCtx.orgId,
+    actorId: sig.owner,
+    workspaceId: tenantCtx.workspaceId,
+  });
+  db.rawRun(`UPDATE external_signals SET injection_classification = ? WHERE id = ?`, [
+    trust.classification,
+    signalId,
+  ]);
   const tCount = tokenCount(content);
 
   /** Gate 2: Tiny content — heuristic only, no LLM, no embed. */
@@ -221,6 +245,7 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
 
   const heuristicSufficient =
     opts.noLlm ||
+    !trust.allowLlmReasoning ||
     !context.activeDecision ||
     (heuristic.risk === "high" && heuristic.signal_type === "execution");
 
@@ -248,6 +273,42 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
   /** Persist detector + enrichment output BEFORE linking — even if linking fails, the auditor and UI see it. */
   applyEnrichment(signalId, detected, detected.extras, null);
 
+  resolveTemporalDecisionSignal({
+    tenantId: tenantCtx.orgId,
+    userId,
+    signalId,
+    content,
+    opClassification: detected.extras?.op_classification ?? null,
+  });
+
+  try {
+    scheduleOrganizationalTruthRecompute(userId);
+  } catch {
+    /* non-blocking */
+  }
+
+  indexSignalAsEvidence({
+    tenantId: tenantCtx.orgId,
+    signalId,
+    label: detected.intent || content.slice(0, 200),
+    sourceType: sig.source,
+    confidence: detected.confidence,
+  });
+
+  wireSignalGraphOnIngest({
+    tenantId: tenantCtx.orgId,
+    userId,
+    signalId,
+    label: detected.intent || content.slice(0, 200),
+    relatedDecisionId: detected.related_decision_id ?? null,
+    affectedSystems: detected.extras?.affected_systems ?? [],
+  });
+
+  /** Malicious ingest: record only — never auto-link to executions. */
+  if (!trust.allowLlmReasoning) {
+    return { signalId, detected, linked: null, skippedReason: "injection-blocked" };
+  }
+
   /**
    * Gate 4: Embed only when linking has any chance. Noise signals and signals
    * arriving when the tenant has no active executions can never auto-link, so
@@ -264,17 +325,38 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
   if (canPossiblyLink) {
     try {
       const link = await autoLink({ signalId, userId, content, detected }, context);
-      if (link.shouldAutoApply && link.best) {
+      const policy = adaptiveLinkPolicyEnabled()
+        ? linkPolicyEngine.evaluate({ content, detected, candidate: link.best })
+        : {
+            tier: link.shouldAutoApply ? ("auto" as const) : ("manual" as const),
+            score: link.best?.fusedScore ?? 0,
+            method: "legacy",
+            provenance: {},
+            shouldAutoApply: link.shouldAutoApply,
+          };
+      if (policy.shouldAutoApply && link.best) {
         try {
-          db.linkExternalSignalToTask(signalId, link.best.taskId);
+          db.linkExternalSignalToTask(signalId, link.best.taskId, {
+            linkMethod: policy.method,
+            linkProvenance: policy.provenance,
+          });
           linked = { taskId: link.best.taskId, decisionId: link.best.decisionId };
+          wireSignalGraphOnIngest({
+            tenantId: tenantCtx.orgId,
+            userId,
+            signalId,
+            label: detected.intent || content.slice(0, 200),
+            relatedDecisionId: null,
+            affectedSystems: [],
+            linkedTaskId: link.best.taskId,
+          });
         } catch (e) {
           console.warn(`[intelligence] linkExternalSignalToTask failed for signal=${signalId}:`, e);
         }
       } else if (link.best) {
         /** Below auto-apply threshold — leave breadcrumb for ops review. */
         console.log(
-          `[intelligence] signal=${signalId.slice(0, 8)} top candidate=${link.best.taskId.slice(0, 8)} score=${link.best.fusedScore.toFixed(3)} (below auto-apply threshold)`,
+          `[intelligence] signal=${signalId.slice(0, 8)} top candidate=${link.best.taskId.slice(0, 8)} tier=${policy.tier} score=${policy.score.toFixed(3)}`,
         );
       }
     } catch (err) {
@@ -294,6 +376,94 @@ function parseJsonArray(s: string | null | undefined): string[] {
     return Array.isArray(v) ? v.map(String) : [];
   } catch {
     return [];
+  }
+}
+
+const ENTITY_EVIDENCE_TYPES = new Set<string>([
+  "decision",
+  "task",
+  "customer",
+  "competitor",
+  "metric",
+  "feature",
+  "commitment",
+  "project",
+  "person",
+  "company",
+  "team",
+]);
+
+function evidenceTypeForEntity(type: string): EvidenceNodeType | null {
+  if (ENTITY_EVIDENCE_TYPES.has(type)) return type as EvidenceNodeType;
+  return null;
+}
+
+/** Phase 2.1 — link signal evidence to known entities and patch org state. */
+function wireSignalGraphOnIngest(params: {
+  tenantId: string;
+  userId: string;
+  signalId: string;
+  label: string;
+  relatedDecisionId: string | null;
+  affectedSystems: string[];
+  linkedTaskId?: string | null;
+}): void {
+  const { tenantId, userId, signalId, label } = params;
+  let patched = false;
+
+  const link = (
+    linkToRefId: string,
+    linkToType: EvidenceNodeType,
+    edgeType: "SUPPORTS" | "OBSERVED_IN" = "SUPPORTS",
+  ) => {
+    try {
+      applyGraphPatch({
+        tenantId,
+        refType: "signal",
+        refId: signalId,
+        label,
+        linkToRefId,
+        linkToType,
+        edgeType,
+      });
+      patched = true;
+    } catch {
+      /* graph patch is best-effort */
+    }
+  };
+
+  if (params.relatedDecisionId) {
+    link(params.relatedDecisionId, "decision", "OBSERVED_IN");
+  }
+
+  if (params.linkedTaskId) {
+    link(params.linkedTaskId, "task", "SUPPORTS");
+  }
+
+  for (const sys of params.affectedSystems.slice(0, 8)) {
+    const token = String(sys).trim().toLowerCase();
+    if (!token) continue;
+    const ent = db
+      .rawGet(
+        `SELECT ref_id, type FROM entities
+         WHERE tenant_id IN (?, ?) AND ref_id IS NOT NULL
+           AND (ref_id = ? OR lower(label) = ?)
+         LIMIT 1`,
+        [tenantId, userId, token, token],
+      )
+      .at(0) as { ref_id: string; type: string } | undefined;
+    if (!ent?.ref_id) continue;
+    const nodeType = evidenceTypeForEntity(ent.type);
+    if (!nodeType) continue;
+    link(ent.ref_id, nodeType, "OBSERVED_IN");
+  }
+
+  if (patched) {
+    try {
+      patchOrganizationState(tenantId, userId, `graph_patch:signal:${signalId}`);
+    } catch {
+      /* non-blocking */
+    }
   }
 }
 

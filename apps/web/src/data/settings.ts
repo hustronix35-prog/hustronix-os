@@ -1,6 +1,7 @@
 export const settingsTabs = [
   "General",
   "Connections",
+  "Approvals",
   "Rules & Policies",
   "Capacity",
   "Notifications",

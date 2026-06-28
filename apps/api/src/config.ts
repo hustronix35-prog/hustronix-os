@@ -231,6 +231,10 @@ export const config = {
       llmCostSaver ? 2800 : 4000,
       12000,
     ),
+    /** Compiled organization state in coordinator prompt (default on; ORG_STATE_ENABLED=0 to disable). */
+    orgStateEnabled: !["0", "false", "off"].includes(
+      String(process.env.ORG_STATE_ENABLED ?? "1").toLowerCase(),
+    ),
     supervisorJsonBlobMaxChars: parsePositiveInt(
       process.env.SUPERVISOR_JSON_BLOB_MAX_CHARS,
       llmCostSaver ? 550 : 850,
