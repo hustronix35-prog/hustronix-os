@@ -7,6 +7,7 @@ import { config } from "./config.js";
 import cron from "node-cron";
 import { auditor } from "./auditor.js";
 import { onLedgerEventForState, rebuildOrganizationState } from "./state/organization-state.js";
+import { executionIntelligence } from "./execution-intelligence/index.js";
 import { v4 as uuidv4 } from "uuid";
 import { hashPassword } from "./auth/password.js";
 import { reprocessUnenrichedSignals } from "./intelligence/index.js";
@@ -29,6 +30,7 @@ export function initializeCore() {
 
   db.setLedgerAuditorHook((ctx) => {
     auditor.onWrite(ctx);
+    executionIntelligence.onLedgerEvent(ctx);
     onLedgerEventForState(ctx);
   });
 

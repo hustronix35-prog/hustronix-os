@@ -1,5 +1,11 @@
 import { isValidEmailFormat } from "../auth/password.js";
 import { db } from "../database.js";
+import {
+  computeDerivedCapacity,
+  computeTrustScore,
+  listBeliefsForEntity,
+} from "../execution-intelligence/derived-views.js";
+import type { BeliefView } from "../execution-intelligence/types.js";
 
 export type TeamEntrySource = "ledger" | "roster" | "workspace";
 
@@ -20,7 +26,40 @@ export type TeamEntry = {
   source: TeamEntrySource;
   /** Roster rows (and full profile fields) can be edited via PATCH /api/metrics/teams/roster/:id */
   editable: boolean;
+  /** EIE advisory summary (ledger owners only) */
+  intelligence?: TeamIntelligenceSummary;
 };
+
+export type TeamIntelligenceSummary = {
+  topBeliefs: BeliefView[];
+  trustScore: { mean: number; confidence: number; nObs: number };
+  derivedCapacity: number;
+  derivedConfidence: number;
+  uncertainty: number;
+  legacyCapacity: number;
+};
+
+export function enrichLedgerOwnerIntelligence(
+  tenantId: string,
+  owner: string,
+  legacyCapacity: number,
+): TeamIntelligenceSummary {
+  const beliefs = listBeliefsForEntity(tenantId, "person", owner);
+  const derived = computeDerivedCapacity(beliefs);
+  const trustScore = computeTrustScore(beliefs);
+  const topBeliefs = beliefs
+    .filter((b) => !b.beliefKey.startsWith("expertise:") && !b.beliefKey.startsWith("performance_at_load:"))
+    .sort((a, b) => b.mean * b.confidence - a.mean * a.confidence)
+    .slice(0, 3);
+  return {
+    topBeliefs,
+    trustScore,
+    derivedCapacity: derived.derivedCapacity,
+    derivedConfidence: derived.confidence,
+    uncertainty: derived.uncertainty,
+    legacyCapacity,
+  };
+}
 
 export function mapRosterRow(r: {
   id: string;
@@ -100,6 +139,7 @@ export function buildTeamEntries(userId: string): TeamEntry[] {
       canRemove: false,
       source: "ledger",
       editable: false,
+      intelligence: enrichLedgerOwnerIntelligence(userId, o.owner, capN),
     });
   }
 

@@ -13,7 +13,9 @@
     "start:unified": "node dist/unified-server.js",
     "smoke:intelligence": "tsx ../../ops/scripts/smoke-intelligence.ts",
     "test:security": "tsx --test ../../ops/scripts/security-redteam.test.ts",
-    "test:phase1": "tsx --test ../../ops/scripts/phase1-state.test.ts"
+    "test:phase1": "tsx --test ../../ops/scripts/phase1-state.test.ts",
+    "test:execution-intelligence": "tsx --test ../../ops/scripts/execution-intelligence.test.ts",
+    "test:github": "tsx --test ../../ops/scripts/github-integration.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.86.1",

@@ -264,6 +264,8 @@ export class HustronixDB {
     this.ensureTenantColumns();
     this.ensureOrgIdColumns();
     this.ensureOwnerReputationColumns();
+    this.ensureExecutionLedgerIntelligenceColumns();
+    this.ensureExecutionIntelligenceSchema();
     this.ensureOAuthTables();
     this.ensureSocialAuthTables();
     this.ensureEmailOtpTables();
@@ -1144,6 +1146,98 @@ export class HustronixDB {
       entityId: r.entity_id,
       vector: new Float32Array(r.vector.buffer, r.vector.byteOffset, r.dim),
     }));
+  }
+
+  /** execution_ledger columns for EIE duration / attribution features. */
+  private ensureExecutionLedgerIntelligenceColumns() {
+    try {
+      const cols = this.db.prepare("PRAGMA table_info(execution_ledger)").all() as { name: string }[];
+      if (cols.length === 0) return;
+      if (!cols.some((c) => c.name === "estimated_duration_hours")) {
+        this.db.exec("ALTER TABLE execution_ledger ADD COLUMN estimated_duration_hours REAL");
+      }
+      if (!cols.some((c) => c.name === "attribution")) {
+        this.db.exec("ALTER TABLE execution_ledger ADD COLUMN attribution TEXT");
+      }
+    } catch (e) {
+      console.warn("[DB] ensureExecutionLedgerIntelligenceColumns:", e);
+    }
+  }
+
+  /** Execution Intelligence Engine — evidence, features, beliefs, predictions. */
+  private ensureExecutionIntelligenceSchema() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS execution_evidence (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        subject_entity_type TEXT NOT NULL,
+        subject_entity_id TEXT NOT NULL,
+        source_entity_type TEXT,
+        source_entity_id TEXT,
+        payload_json TEXT NOT NULL DEFAULT '{}',
+        observed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        idempotency_key TEXT NOT NULL UNIQUE
+      );
+      CREATE INDEX IF NOT EXISTS idx_execution_evidence_tenant_subject
+        ON execution_evidence(tenant_id, subject_entity_type, subject_entity_id, observed_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_execution_evidence_event_type
+        ON execution_evidence(tenant_id, event_type);
+
+      CREATE TABLE IF NOT EXISTS execution_features (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        evidence_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        feature_version TEXT NOT NULL,
+        features_json TEXT NOT NULL DEFAULT '{}',
+        extracted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(evidence_id) REFERENCES execution_evidence(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_execution_features_entity
+        ON execution_features(tenant_id, entity_type, entity_id, feature_version);
+
+      CREATE TABLE IF NOT EXISTS entity_beliefs (
+        tenant_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        belief_key TEXT NOT NULL,
+        model_id TEXT NOT NULL,
+        mean REAL NOT NULL DEFAULT 0.5,
+        variance REAL NOT NULL DEFAULT 0.25,
+        n_obs INTEGER NOT NULL DEFAULT 0,
+        params_json TEXT NOT NULL DEFAULT '{}',
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (tenant_id, entity_type, entity_id, belief_key)
+      );
+      CREATE INDEX IF NOT EXISTS idx_entity_beliefs_tenant_entity
+        ON entity_beliefs(tenant_id, entity_type, entity_id);
+
+      CREATE TABLE IF NOT EXISTS execution_predictions (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        prediction_type TEXT NOT NULL,
+        predicted_value REAL NOT NULL,
+        actual_value REAL,
+        confidence REAL NOT NULL DEFAULT 0.5,
+        explanation_json TEXT NOT NULL DEFAULT '[]',
+        features_json TEXT NOT NULL DEFAULT '{}',
+        model_version TEXT NOT NULL,
+        feature_version TEXT NOT NULL,
+        algorithm_version TEXT NOT NULL,
+        evidence_id TEXT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        resolved_at DATETIME,
+        FOREIGN KEY(evidence_id) REFERENCES execution_evidence(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_execution_predictions_entity
+        ON execution_predictions(tenant_id, entity_type, entity_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_execution_predictions_algo
+        ON execution_predictions(tenant_id, algorithm_version, resolved_at);
+    `);
   }
 
   /** Older DBs may have owner_reputation without behavioral columns (CREATE TABLE IF NOT EXISTS skips upgrades). */
@@ -2768,6 +2862,9 @@ export class HustronixDB {
     }
     if (!skipAuditorHook) {
       this.invokeLedgerAuditor({ type: "execution", taskId });
+      void import("./execution-intelligence/index.js")
+        .then((m) => m.emitTaskSpawnedEvidence(taskId, data.owner || "system"))
+        .catch(() => undefined);
     }
     return taskId;
   }
@@ -2946,18 +3043,38 @@ export class HustronixDB {
     newState: string,
     reason: string = "State update",
     skipAuditorHook = false,
+    options?: { estimatedDurationHours?: number; attribution?: string },
   ) {
     const task = this.db.prepare("SELECT * FROM execution_ledger WHERE task_id = ?").get(taskId);
     if (!task) throw new Error("Task not found.");
 
+    if (options?.estimatedDurationHours != null || options?.attribution) {
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      if (options.estimatedDurationHours != null) {
+        sets.push("estimated_duration_hours = ?");
+        params.push(options.estimatedDurationHours);
+      }
+      if (options.attribution) {
+        sets.push("attribution = ?");
+        params.push(options.attribution);
+      }
+      if (sets.length) {
+        params.push(taskId);
+        this.db.prepare(`UPDATE execution_ledger SET ${sets.join(", ")} WHERE task_id = ?`).run(...params);
+      }
+    }
+
+    const refreshed = this.db.prepare("SELECT * FROM execution_ledger WHERE task_id = ?").get(taskId);
+    const taskRow = refreshed ?? task;
     if (newState === 'ACTIVE') {
-        const { capacity, is_locked } = this.getOwnerCapacity(task.owner);
+        const { capacity, is_locked } = this.getOwnerCapacity(taskRow.owner);
         const reasons = [];
 
         if (is_locked) reasons.push("owner_locked");
 
         // 1. Dependency Check
-        const deps = JSON.parse(task.dependencies || '[]');
+        const deps = JSON.parse(taskRow.dependencies || '[]');
         for (const depId of deps) {
             const depTask = this.db.prepare("SELECT status FROM execution_ledger WHERE task_id = ?").get(depId);
             if (!depTask || depTask.status !== 'DONE') {
@@ -2966,10 +3083,10 @@ export class HustronixDB {
         }
 
         // 2. Capacity Check (All ACTIVE tasks overlap)
-        const activeTasks = this.db.prepare("SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'").get(task.owner);
+        const activeTasks = this.db.prepare("SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'").get(taskRow.owner);
         const currentLoad = activeTasks?.total_weight || 0;
         
-        if (task.type !== 'KILL' && (currentLoad + task.weight) > capacity) {
+        if (taskRow.type !== 'KILL' && (currentLoad + taskRow.weight) > capacity) {
             reasons.push("capacity_exceeded");
         }
 
@@ -2999,20 +3116,20 @@ export class HustronixDB {
 
     // --- Reward/Penalty & Recovery Loop ---
     if (newState === 'DONE') {
-        this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(task.owner);
-        this.db.prepare("UPDATE owner_reputation SET successful_executions = successful_executions + 1 WHERE owner = ?").run(task.owner);
+        this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(taskRow.owner);
+        this.db.prepare("UPDATE owner_reputation SET successful_executions = successful_executions + 1 WHERE owner = ?").run(taskRow.owner);
         
         // Recovery: 3 successes -> reputation +0.1
-        const rep = this.db.prepare("SELECT successful_executions, reputation_modifier FROM owner_reputation WHERE owner = ?").get(task.owner);
+        const rep = this.db.prepare("SELECT successful_executions, reputation_modifier FROM owner_reputation WHERE owner = ?").get(taskRow.owner);
         if (rep && rep.successful_executions >= 3) {
-            this.db.prepare("UPDATE owner_reputation SET successful_executions = 0, reputation_modifier = MIN(1.0, reputation_modifier + 0.1), is_locked = 0 WHERE owner = ?").run(task.owner);
-            this.logAudit('REPUTATION_RECOVERED', '3 consecutive successes', task.owner);
+            this.db.prepare("UPDATE owner_reputation SET successful_executions = 0, reputation_modifier = MIN(1.0, reputation_modifier + 0.1), is_locked = 0 WHERE owner = ?").run(taskRow.owner);
+            this.logAudit('REPUTATION_RECOVERED', '3 consecutive successes', taskRow.owner);
         }
-    } else if (newState === 'KILLED' && task.status === 'ACTIVE') {
+    } else if (newState === 'KILLED' && taskRow.status === 'ACTIVE') {
         // Only ACTIVE tasks can be killed per rule 2.1
-        this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(task.owner);
-        this.db.prepare("UPDATE owner_reputation SET failed_executions = failed_executions + 1, reputation_modifier = MAX(0.2, reputation_modifier - 0.1) WHERE owner = ?").run(task.owner);
-        this.logAudit('REPUTATION_PENALIZED', 'Task killed', task.owner);
+        this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(taskRow.owner);
+        this.db.prepare("UPDATE owner_reputation SET failed_executions = failed_executions + 1, reputation_modifier = MAX(0.2, reputation_modifier - 0.1) WHERE owner = ?").run(taskRow.owner);
+        this.logAudit('REPUTATION_PENALIZED', 'Task killed', taskRow.owner);
     }
 
     if (!skipAuditorHook) {

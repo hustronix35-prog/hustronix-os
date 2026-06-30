@@ -13,6 +13,17 @@ import {
   extractTextFromPdfBuffer,
 } from "./teams/rosterImport.js";
 import { buildTeamEntries, mapRosterRow } from "./teams/teamsMembers.js";
+import {
+  listBeliefsForEntity,
+  computeDerivedCapacity,
+  buildOwnerProfile,
+  computeCalibration,
+  listPredictions,
+  listEvidenceForEntity,
+  listGraphNeighbors,
+  replayBeliefsForTenant,
+} from "./execution-intelligence/index.js";
+import { ALGORITHM_VERSION, FEATURE_VERSION, MODEL_VERSION } from "./execution-intelligence/config.js";
 import path from "path";
 import { transcribeBuffer } from "./audio.js";
 import { v4 as uuidv4 } from "uuid";
@@ -2213,12 +2224,124 @@ app.get("/api/chat/sidebar", authMiddleware, (req, res) => {
 
 app.get("/api/execution/capacity", authMiddleware, (req, res) => {
   try {
+    const userId = (req as any).userId as string;
     const owner = (req.query.owner as string) || "system";
     const capacity = db.getOwnerCapacity(owner);
     const activeTasks = db.rawGet("SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'", [owner]);
-    res.json({ ...capacity, currentLoad: activeTasks[0]?.total_weight || 0 });
+    const beliefs = listBeliefsForEntity(userId, "person", owner);
+    const derived = computeDerivedCapacity(beliefs);
+    const explanation = derived.loadCurve
+      .filter((p) => p.nObs > 0)
+      .map((p) => ({
+        factor: `performance_at_load:${p.bucket}`,
+        contribution: Math.round(p.successRate * p.confidence * 100) / 100,
+        active_load: p.bucket === "3+" ? 3.5 : Number(p.bucket.split("-")[1] ?? 1),
+      }));
+    res.json({
+      ...capacity,
+      currentLoad: activeTasks[0]?.total_weight || 0,
+      shadow: {
+        derivedCapacity: derived.derivedCapacity,
+        confidence: derived.confidence,
+        uncertainty: derived.uncertainty,
+        loadCurve: derived.loadCurve,
+        explanation,
+        legacyCapacity: capacity.capacity,
+        modelVersion: MODEL_VERSION,
+        featureVersion: FEATURE_VERSION,
+        algorithmVersion: ALGORITHM_VERSION,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch capacity" });
+  }
+});
+
+app.get("/api/intelligence/entities/:type/:id/beliefs", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const entityType = req.params.type;
+  const entityId = req.params.id;
+  try {
+    const beliefs = listBeliefsForEntity(userId, entityType, entityId);
+    res.json({ entityType, entityId, beliefs });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/intelligence/entities/:type/:id/predictions", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const entityType = req.params.type;
+  const entityId = req.params.id;
+  const limit = Math.min(50, parseInt(String(req.query.limit ?? "20"), 10) || 20);
+  try {
+    const predictions = listPredictions(userId, entityType, entityId, limit);
+    res.json({ entityType, entityId, predictions });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/intelligence/entities/:type/:id/calibration", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const entityType = req.params.type;
+  const entityId = req.params.id;
+  try {
+    const calibration = computeCalibration(userId, entityType, entityId);
+    res.json({ entityType, entityId, calibration });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/intelligence/replay", authMiddleware, requirePermission("audit:run"), (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const result = replayBeliefsForTenant(userId);
+    res.json({ ok: true, ...result });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/owners/profiles", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const entries = buildTeamEntries(userId).filter((e) => e.source === "ledger");
+    const profiles = entries.map((e) => {
+      const owner = e.id.replace(/^ledger:/, "");
+      const legacy = db.getOwnerCapacity(owner);
+      return buildOwnerProfile(userId, owner, legacy.capacity);
+    });
+    res.json({ profiles });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/owners/:owner/profile", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const owner = req.params.owner;
+  try {
+    const legacy = db.getOwnerCapacity(owner);
+    const profile = buildOwnerProfile(userId, owner, legacy.capacity);
+    const recentEvidence = listEvidenceForEntity(userId, "person", owner, 15);
+    const neighbors = listGraphNeighbors(userId, "person", owner, 15);
+    res.json({ ...profile, recentEvidence, graphNeighbors: neighbors });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/owners/:owner/calibration", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const owner = req.params.owner;
+  try {
+    const calibration = computeCalibration(userId, "person", owner);
+    const predictions = listPredictions(userId, "person", owner, 30);
+    res.json({ owner, calibration, predictions });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -3846,128 +3969,47 @@ app.get("/api/metrics/reports", authMiddleware, (req, res) => {
 app.get("/api/metrics/teams", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
   try {
+    const entries = buildTeamEntries(userId);
     const owners = db.rawGet(
       `SELECT e.owner as owner,
-          COUNT(*) as total_tasks,
-          SUM(CASE WHEN e.status = 'ACTIVE' THEN e.weight ELSE 0 END) as active_weight,
-          SUM(CASE WHEN e.status = 'BLOCKED' THEN 1 ELSE 0 END) as blocked_n,
-          SUM(CASE WHEN e.status = 'PENDING' THEN 1 ELSE 0 END) as pending_n
+          SUM(CASE WHEN e.status = 'ACTIVE' THEN e.weight ELSE 0 END) as active_weight
        FROM execution_ledger e
        INNER JOIN decision_ledger d ON e.decision_id = d.id
        WHERE d.user_id = ?
-       GROUP BY e.owner
-       ORDER BY e.owner`,
+       GROUP BY e.owner`,
       [userId],
-    ) as {
-      owner: string;
-      total_tasks: number;
-      active_weight: number;
-      blocked_n: number;
-      pending_n: number;
-    }[];
+    ) as { owner: string; active_weight: number }[];
 
-    const seenEmails = new Set<string>();
-    const members: {
-      id: string;
-      name: string;
-      email: string;
-      role: string;
-      team: string;
-      capacity: string;
-      loadPct: number;
-      utilization: number;
-      status: "Healthy" | "At Risk" | "Over Capacity";
-      slackId?: string;
-      talentTier?: string;
-      canRemove: boolean;
-      isOrgOwner?: boolean;
-    }[] = [];
-
-    for (let i = 0; i < owners.length; i++) {
-      const o = owners[i]!;
-      const cap = db.getOwnerCapacity(o.owner);
-      const load = Number(o.active_weight || 0);
-      const capN = cap.capacity || 3;
-      const loadPct = Math.min(100, Math.round((load / capN) * 100));
-      const utilization = Math.min(100, loadPct + (Number(o.blocked_n) > 0 ? 15 : 0));
-      let status: "Healthy" | "At Risk" | "Over Capacity" = "Healthy";
-      if (load > capN) status = "Over Capacity";
-      else if (load > capN * 0.85 || Number(o.blocked_n) > 0) status = "At Risk";
-      const email = `${o.owner}@owners.local`;
-      seenEmails.add(email.toLowerCase());
-      members.push({
-        id: String(i + 1),
-        name: o.owner === "system" ? "System" : o.owner,
-        email,
-        role: "Owner",
-        team: "Execution",
-        capacity: `${capN.toFixed(1)} wt`,
-        loadPct,
-        utilization,
-        status,
-        canRemove: false,
-      });
-    }
-
-    const rosterRows = db.listTeamRoster(userId);
-    for (const r of rosterRows) {
-      const em = (r.email || "").toLowerCase();
-      if (!em || seenEmails.has(em)) continue;
-      seenEmails.add(em);
-      members.push({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        role: r.role,
-        team: r.team,
-        capacity: r.capacity,
-        loadPct: 0,
-        utilization: 0,
-        status: "Healthy",
-        slackId: r.slack_id || undefined,
-        talentTier: r.talent_tier || undefined,
-        canRemove: true,
-      });
-    }
-
-    if (userId !== "system") {
-      const selfRow = db.getUserById(userId) as
-        | { id: string; username: string; email: string | null }
-        | undefined;
-      if (selfRow) {
-        const sColEmail = (selfRow.email && String(selfRow.email).trim()) || "";
-        const sProfileEmail = (db.getSetting(userId, "profile.email") || "").trim();
-        const sUsername = (selfRow.username || "").trim();
-        const sResolvedEmail =
-          sColEmail ||
-          (sUsername.includes("@") ? sUsername : "") ||
-          (sProfileEmail.length > 0 && isValidEmailFormat(sProfileEmail) ? sProfileEmail : "");
-        const ownerUid = (db.getSetting(userId, "org.owner_user_id") || "").trim();
-        const isOrgOwner = ownerUid === userId;
-        const profileRole = (db.getSetting(userId, "profile.role") || "").trim();
-        const displayRole = profileRole || (isOrgOwner ? "Owner" : "Member");
-        const displayName =
-          (db.getSetting(userId, "profile.display_name") || "").trim() || sUsername || userId;
-        const alreadyListed =
-          sResolvedEmail &&
-          members.some((m) => m.email.toLowerCase() === sResolvedEmail.toLowerCase());
-        if (sResolvedEmail && !alreadyListed) {
-          members.unshift({
-            id: "__self__",
-            name: displayName,
-            email: sResolvedEmail,
-            role: displayRole,
-            team: "Workspace",
-            capacity: "—",
-            loadPct: 0,
-            utilization: 0,
-            status: "Healthy",
-            canRemove: false,
-            isOrgOwner,
-          });
-        }
-      }
-    }
+    const members = entries.map((e) => {
+      const base = {
+        id: e.id,
+        name: e.name,
+        email: e.email,
+        role: e.role,
+        team: e.team,
+        capacity: e.capacity,
+        loadPct: e.loadPct,
+        utilization: e.utilization,
+        status: e.status,
+        slackId: e.slackId,
+        talentTier: e.talentTier,
+        canRemove: e.canRemove,
+        isOrgOwner: e.isOrgOwner,
+      };
+      if (!e.intelligence) return base;
+      return {
+        ...base,
+        beliefs: e.intelligence.topBeliefs,
+        derivedCapacity: {
+          value: e.intelligence.derivedCapacity,
+          confidence: e.intelligence.derivedConfidence,
+          uncertainty: e.intelligence.uncertainty,
+        },
+        legacyCapacity: e.intelligence.legacyCapacity,
+        trustScore: e.intelligence.trustScore,
+        intelligenceAdvisory: true,
+      };
+    });
 
     let totalCap = 0;
     let totalLoad = 0;

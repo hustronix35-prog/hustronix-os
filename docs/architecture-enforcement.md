@@ -113,7 +113,36 @@ Further caps (per-minute throttles, keyword gates) are backlog.
 
 ---
 
-## 10. One-line product rule
+## 10. Execution Intelligence Engine (EIE) — advisory learning loop
+
+V1 adds a **parallel learning path** that does not replace auditor enforcement:
+
+```text
+ledger mutations → execution_evidence (immutable)
+                → execution_features (versioned store)
+                → entity_beliefs (Beta/Gaussian posteriors)
+                → execution_predictions (shadow + explanations)
+                → prediction.calibration_error → evidence (closed loop)
+```
+
+| Layer | Role in V1 |
+|--------|------------|
+| **`owner_reputation` + `getOwnerCapacity`** | **Enforcement** — unchanged; auditor capacity checks still use this |
+| **`entity_beliefs`** | **Advisory** — probabilistic execution beliefs (`mean`, `variance`, `n_obs`, `model_id`) |
+| **`execution_predictions`** | **Shadow only** — logged with `model_version`, `feature_version`, `algorithm_version` + explanation JSON |
+| **`beliefs` (narrative)** | **Separate** — institutional/narrative beliefs stay in `beliefs` + `belief_evidence`; EIE does not merge them in V1 |
+
+**Hook wiring:** `bootstrap.ts` chains `executionIntelligence.onLedgerEvent(ctx)` beside `auditor.onWrite(ctx)` on every ledger write. Evidence also emits from `auditor.killExpiredSignal` (with `INSERT OR IGNORE INTO owner_reputation` before UPDATE), `outcome-evaluation.ts` (`decision.outcome`), and execution/signal paths via the auditor hook.
+
+**Derived capacity** is computed at read time from `performance_at_load:{bucket}` beliefs — not stored as `optimal_load`. Teams UI and `GET /api/execution/capacity` expose shadow capacity **next to** legacy capacity with an explicit advisory tooltip.
+
+**Replay:** `POST /api/intelligence/replay` rebuilds `entity_beliefs` from `execution_evidence` + `execution_features` (operator/admin via `audit:run`).
+
+**Key module:** `apps/api/src/execution-intelligence/` — distinct from narrative `apps/api/src/beliefs/`.
+
+---
+
+## 11. One-line product rule
 
 > **If enforcement is not deterministic, you have a suggestion engine, not a system.**  
 > The LLM **assists**; the **ledger + auditor** **decide** durable state.

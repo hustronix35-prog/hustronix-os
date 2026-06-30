@@ -6,6 +6,7 @@ import { resolveTenantContext } from "../security/tenant-context.js";
 import type { EpistemicState } from "../security/epistemics.js";
 import { requireEpistemicSupport } from "../security/epistemics.js";
 import { attachEpistemicDerivation, type EpistemicOrgContext } from "../epistemic-engine.js";
+import { emitDecisionOutcomeEvidence } from "../execution-intelligence/index.js";
 
 export interface OutcomeEvaluation {
   decisionId: string;
@@ -136,6 +137,20 @@ export function evaluateDecisionOutcome(decisionId: string): OutcomeEvaluation |
     `INSERT INTO audit_log (action, reason, affected_entity_id) VALUES (?, ?, ?)`,
     ["DECISION_OUTCOME_EVALUATED", `delta=${deltaScore.toFixed(2)}`, decisionId],
   );
+
+  const primaryOwner =
+    (
+      db.rawGet(
+        `SELECT owner FROM execution_ledger WHERE decision_id = ? ORDER BY weight DESC LIMIT 1`,
+        [decisionId],
+      ) as { owner: string }[]
+    )[0]?.owner || tenantId;
+  emitDecisionOutcomeEvidence({
+    tenantId,
+    decisionId,
+    owner: primaryOwner,
+    deltaScore,
+  });
 
   return { decisionId, deltaScore, expected, actual, learningNotes };
 }

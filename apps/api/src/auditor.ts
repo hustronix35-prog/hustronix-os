@@ -1,6 +1,7 @@
 import { db } from "./database.js";
 import type { AuditorWriteContext } from "./auditor-context.js";
 import { processSignalFireAndForget } from "./intelligence/index.js";
+import { emitSignalShadowKilledEvidence } from "./execution-intelligence/index.js";
 
 /**
  * Rule enforcement outside the LLM. Scoped runs fire on every ledger write; {@link evaluateAll}
@@ -144,6 +145,7 @@ export class AuditorEngine {
       ["SIGNAL_KILLED", `Shadow work exceeded grace window: ${signal.source}`, signal.id],
     );
 
+    db.rawRun("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)", [signal.owner]);
     db.rawRun(
       `
                 UPDATE owner_reputation 
@@ -153,6 +155,8 @@ export class AuditorEngine {
             `,
       [signal.owner],
     );
+
+    emitSignalShadowKilledEvidence(signal);
 
     console.log(`[Auditor] KILLED Shadow Work from ${signal.owner} (Source: ${signal.source})`);
   }

@@ -12,7 +12,7 @@
  * the UI can prompt for re-connection.
  */
 
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { authMiddleware } from "../middleware/auth.js";
 import {
   getGithubConnection,
@@ -48,8 +48,12 @@ async function withConnection(
   return { userId, connection };
 }
 
-export function mountGithubRoutes(app: Express): void {
-  app.get("/api/integrations/github/repos", authMiddleware, async (req, res) => {
+export function mountGithubRoutes(
+  app: Express,
+  opts?: { auth?: (req: Request, res: Response, next: NextFunction) => void },
+): void {
+  const guard = opts?.auth ?? authMiddleware;
+  app.get("/api/integrations/github/repos", guard, async (req, res) => {
     const ctx = await withConnection(req, res);
     if (!ctx) return;
     try {
@@ -61,7 +65,7 @@ export function mountGithubRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/integrations/github/monitored", authMiddleware, async (req, res) => {
+  app.get("/api/integrations/github/monitored", guard, async (req, res) => {
     const ctx = await withConnection(req, res);
     if (!ctx) return;
     res.json({ repos: listMonitoredRepos(ctx.connection.id) });
@@ -72,7 +76,7 @@ export function mountGithubRoutes(app: Express): void {
    * subscriptions and reconciles (creates new webhooks, deletes ones the user
    * unchecked). This is the call the Settings → GitHub picker fires.
    */
-  app.post("/api/integrations/github/repos/select", authMiddleware, async (req, res) => {
+  app.post("/api/integrations/github/repos/select", guard, async (req, res) => {
     const ctx = await withConnection(req, res);
     if (!ctx) return;
     const body = (req.body || {}) as { repos?: unknown };
@@ -120,7 +124,7 @@ export function mountGithubRoutes(app: Express): void {
     });
   });
 
-  app.post("/api/integrations/github/repos/add", authMiddleware, async (req, res) => {
+  app.post("/api/integrations/github/repos/add", guard, async (req, res) => {
     const ctx = await withConnection(req, res);
     if (!ctx) return;
     const repo = String((req.body as { repo?: unknown })?.repo || "").trim();
@@ -137,7 +141,7 @@ export function mountGithubRoutes(app: Express): void {
 
   app.delete(
     "/api/integrations/github/repos/:owner/:name",
-    authMiddleware,
+    guard,
     async (req, res) => {
       const ctx = await withConnection(req, res);
       if (!ctx) return;

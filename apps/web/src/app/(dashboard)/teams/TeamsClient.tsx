@@ -4,6 +4,7 @@ import {
   Download,
   FileUp,
   Filter,
+  Info,
   Pencil,
   RefreshCw,
   Search,
@@ -23,6 +24,7 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { SegmentTabs } from "@/components/ui/segment-tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { TeamMember } from "@/data/types";
+import type { PredictionExplanation } from "@hustronix/shared";
 import { TeamsEditMemberModal, TeamsImportModal } from "@/components/teams/TeamsRosterModals";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { ROLE_OPTIONS, TALENT_TIER_OPTIONS } from "@/lib/team-roster";
@@ -131,6 +133,160 @@ function isRosterRemovable(m: TeamMember) {
   return m.canRemove === true;
 }
 
+function isLedgerOwner(m: TeamMember) {
+  return m.id.startsWith("ledger:") || m.intelligenceAdvisory === true;
+}
+
+function BeliefBar({ mean, confidence }: { mean: number; confidence: number }) {
+  const pct = Math.round(mean * 100);
+  const band = Math.round((1 - confidence) * 50);
+  return (
+    <div className="min-w-[100px]" title={`μ=${mean.toFixed(2)} ±${(1 - confidence).toFixed(2)}`}>
+      <div className="relative h-2 overflow-hidden rounded-full bg-hx-surface-elevated">
+        <div
+          className="absolute inset-y-0 rounded-full bg-hx-accent/30"
+          style={{ left: `${Math.max(0, pct - band)}%`, width: `${Math.min(100, band * 2)}%` }}
+        />
+        <div className="h-full rounded-full bg-hx-accent" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-0.5 text-[10px] text-hx-muted">{pct}%</p>
+    </div>
+  );
+}
+
+function OwnerIntelligenceDrawer({
+  member,
+  onClose,
+}: {
+  member: TeamMember;
+  onClose: () => void;
+}) {
+  const ownerSlug = member.id.replace(/^ledger:/, "");
+  const [predictions, setPredictions] = useState<
+    { explanation: PredictionExplanation[]; predictionType: string; predictedValue: number; confidence: number }[]
+  >([]);
+  const [profile, setProfile] = useState<{
+    beliefs?: TeamMember["beliefs"];
+    derivedCapacity?: TeamMember["derivedCapacity"];
+    loadCurve?: { bucket: string; successRate: number }[];
+    recentEvidence?: { eventType: string; observedAt: string }[];
+  } | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [predRes, profRes] = await Promise.all([
+          apiGet<{ predictions: { explanation: PredictionExplanation[]; predictionType: string; predictedValue: number; confidence: number }[] }>(
+            `/api/intelligence/entities/person/${encodeURIComponent(ownerSlug)}/predictions?limit=5`,
+          ),
+          apiGet<{
+            beliefs: TeamMember["beliefs"];
+            derivedCapacity: TeamMember["derivedCapacity"] & { loadCurve?: { bucket: string; successRate: number }[] };
+            recentEvidence: { eventType: string; observedAt: string }[];
+          }>(`/api/owners/${encodeURIComponent(ownerSlug)}/profile`),
+        ]);
+        setPredictions(predRes.predictions ?? []);
+        setProfile({
+          beliefs: profRes.beliefs,
+          derivedCapacity: profRes.derivedCapacity,
+          loadCurve: profRes.derivedCapacity?.loadCurve,
+          recentEvidence: profRes.recentEvidence,
+        });
+      } catch {
+        setProfile(null);
+      }
+    })();
+  }, [ownerSlug]);
+
+  const beliefs = profile?.beliefs ?? member.beliefs ?? [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/60"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="scrollbar-hx h-full w-full max-w-md overflow-y-auto border-l border-hx-border bg-hx-surface p-6 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">{member.name}</h2>
+            <p className="text-xs text-hx-muted">Execution intelligence (advisory)</p>
+          </div>
+          <button type="button" className="text-hx-muted hover:text-hx-text" onClick={onClose} aria-label="Close">
+            <X className="size-5" />
+          </button>
+        </div>
+        <p className="mt-3 rounded-md border border-hx-border bg-hx-surface-elevated/50 p-2 text-xs text-hx-muted">
+          Advisory intelligence — enforcement still uses legacy owner reputation capacity.
+        </p>
+        {member.derivedCapacity && (
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase text-hx-muted">Derived capacity</p>
+            <p className="mt-1 text-2xl font-bold text-hx-accent">
+              {member.derivedCapacity.value.toFixed(1)} wt
+            </p>
+            <p className="text-xs text-hx-muted">
+              Legacy: {member.legacyCapacity?.toFixed(1) ?? "—"} wt · confidence{" "}
+              {Math.round(member.derivedCapacity.confidence * 100)}%
+            </p>
+          </div>
+        )}
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase text-hx-muted">Beliefs</p>
+          <ul className="mt-2 space-y-2">
+            {beliefs.map((b) => (
+              <li key={b.beliefKey} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-hx-muted">{b.beliefKey}</span>
+                <BeliefBar mean={b.mean} confidence={b.confidence} />
+              </li>
+            ))}
+            {beliefs.length === 0 && (
+              <li className="text-xs text-hx-muted">No beliefs yet — complete tasks to learn.</li>
+            )}
+          </ul>
+        </div>
+        {predictions.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase text-hx-muted">Prediction explanations</p>
+            {predictions.slice(0, 2).map((p) => (
+              <div key={p.predictionType} className="mt-2 rounded border border-hx-border p-2 text-xs">
+                <p className="font-medium">
+                  {p.predictionType}: {(p.predictedValue * 100).toFixed(0)}% (conf{" "}
+                  {(p.confidence * 100).toFixed(0)}%)
+                </p>
+                <ul className="mt-1 space-y-1 text-hx-muted">
+                  {p.explanation.map((ex) => (
+                    <li key={`${ex.factor}-${ex.contribution}`}>
+                      {ex.factor}: +{ex.contribution}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        {profile?.recentEvidence && profile.recentEvidence.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase text-hx-muted">Recent evidence</p>
+            <ul className="mt-2 space-y-1 text-xs text-hx-muted">
+              {profile.recentEvidence.slice(0, 6).map((ev, i) => (
+                <li key={`${ev.eventType}-${i}`}>
+                  {ev.eventType} · {new Date(ev.observedAt).toLocaleDateString()}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TeamsClient() {
   const { push } = useRouter();
   const legacyMigrated = useRef(false);
@@ -145,6 +301,7 @@ export function TeamsClient() {
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
+  const [intelMember, setIntelMember] = useState<TeamMember | null>(null);
   const [addForm, setAddForm] = useState({
     name: "",
     email: "",
@@ -564,6 +721,12 @@ export function TeamsClient() {
                     <th className="px-4 py-3 font-medium">Level</th>
                     <th className="px-4 py-3 font-medium">Scope</th>
                     <th className="px-4 py-3 font-medium">Capacity</th>
+                    <th
+                      className="px-4 py-3 font-medium"
+                      title="Advisory intelligence — enforcement uses legacy capacity"
+                    >
+                      Beliefs
+                    </th>
                     <th className="px-4 py-3 font-medium">Load index</th>
                     <th className="px-4 py-3 font-medium">Utilization</th>
                     <th className="px-4 py-3 font-medium">Status</th>
@@ -614,6 +777,73 @@ export function TeamsClient() {
                       </td>
                       <td className="px-4 py-3 text-hx-muted">{m.team}</td>
                       <td className="px-4 py-3 text-hx-muted">{m.capacity}</td>
+                      <td className="px-4 py-3">
+                        {m.intelligenceAdvisory && m.beliefs?.length ? (
+                          <button
+                            type="button"
+                            className="w-full max-w-[160px] text-left"
+                            title="Advisory intelligence — enforcement uses legacy capacity"
+                            onClick={() => setIntelMember(m)}
+                          >
+                            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-hx-muted">
+                              Advisory
+                              <Info className="size-3" />
+                            </div>
+                            <div className="mt-1 space-y-1">
+                              {m.beliefs.slice(0, 3).map((b) => (
+                                <div key={b.beliefKey} className="text-xs">
+                                  <div className="flex justify-between gap-2">
+                                    <span className="truncate text-hx-muted">{b.beliefKey}</span>
+                                    <span className="font-medium">{(b.mean * 100).toFixed(0)}%</span>
+                                  </div>
+                                  <div className="relative mt-0.5 h-1.5 overflow-hidden rounded-full bg-hx-surface-elevated">
+                                    <div
+                                      className="absolute inset-y-0 left-0 rounded-full bg-hx-accent/70"
+                                      style={{ width: `${Math.round(b.mean * 100)}%` }}
+                                    />
+                                    <div
+                                      className="absolute inset-y-0 rounded-full border border-hx-accent/40 bg-hx-accent/10"
+                                      style={{
+                                        left: `${Math.max(0, Math.round((b.mean - (1 - b.confidence) * 0.15) * 100))}%`,
+                                        width: `${Math.min(100, Math.round((1 - b.confidence) * 30 + 8))}%`,
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {m.derivedCapacity ? (
+                              <p className="mt-1 text-[10px] text-hx-muted">
+                                Shadow cap {m.derivedCapacity.value.toFixed(1)} vs legacy{" "}
+                                {m.legacyCapacity?.toFixed(1) ?? "—"}
+                              </p>
+                            ) : null}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-hx-muted">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isLedgerOwner(m) && m.beliefs && m.beliefs.length > 0 ? (
+                          <button
+                            type="button"
+                            className="space-y-1 text-left"
+                            title="Advisory intelligence — enforcement uses legacy capacity"
+                            onClick={() => setIntelMember(m)}
+                          >
+                            {m.beliefs.slice(0, 3).map((b) => (
+                              <div key={b.beliefKey} className="flex items-center gap-2">
+                                <span className="w-20 truncate text-[10px] text-hx-muted">
+                                  {b.beliefKey}
+                                </span>
+                                <BeliefBar mean={b.mean} confidence={b.confidence} />
+                              </div>
+                            ))}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-hx-muted">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="h-2 max-w-[120px] overflow-hidden rounded-full bg-hx-surface-elevated">
                           <div
@@ -744,6 +974,10 @@ export function TeamsClient() {
         onSaved={load}
         onError={(msg) => setErr(msg)}
       />
+
+      {intelMember && (
+        <OwnerIntelligenceDrawer member={intelMember} onClose={() => setIntelMember(null)} />
+      )}
 
       {addOpen && (
         <div

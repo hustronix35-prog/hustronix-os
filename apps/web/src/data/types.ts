@@ -52,4 +52,21 @@ export type TeamMember = {
   canRemove?: boolean;
   /** True when this member is the organization owner (rendered with an Owner badge) */
   isOrgOwner?: boolean;
+  /** EIE advisory beliefs (ledger owners only) */
+  beliefs?: {
+    beliefKey: string;
+    mean: number;
+    confidence: number;
+    variance: number;
+    nObs: number;
+    modelId: string;
+  }[];
+  derivedCapacity?: {
+    value: number;
+    confidence: number;
+    uncertainty: number;
+  };
+  legacyCapacity?: number;
+  trustScore?: { mean: number; confidence: number; nObs: number };
+  intelligenceAdvisory?: boolean;
 };
