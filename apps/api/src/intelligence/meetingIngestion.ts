@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../database.js";
 import * as llm from "../llm.js";
 import { ingestExternal } from "../integrations/ingestRouter.js";
+import { guessFeatureHint, withClaimReady } from "../integrations/claimReady.js";
 import { applyEnrichment, type EnrichmentExtras, type SignalUrgency } from "./enrich.js";
 import type { DetectedSignal, SignalRisk } from "./signalDetector.js";
 import { wrapUntrustedContent } from "../security/prompt-injection.js";
@@ -133,55 +134,61 @@ export async function ingestMeeting(input: MeetingIngestInput): Promise<MeetingI
   }
 
   /**
-   * Fan out: each operationally-relevant item becomes a tenant-scoped signal.
-   *
-   * Cost optimization: meeting items are ALREADY classified (by the meeting
-   * LLM extractor). We immediately call `applyEnrichment` after insert so
-   * the auditor's `processSignal` sees `intent_extracted_at` already set and
-   * short-circuits the per-item LLM detector call. Net effect: 1 LLM call
-   * per transcript instead of (1 + N).
+   * One ledger row per transcript. Extracted items live in ingest_meta —
+   * not extra UNVERIFIED signals. Pre-enrich from the strongest item so
+   * processSignal skips a second detector LLM call.
    */
   const signalIds: string[] = [];
-  for (const item of items) {
-    try {
-      const headLine = `[meeting:${item.kind}] ${input.title ? `meeting="${input.title.slice(0, 80)}" ` : ""}owner=${item.owner ?? "?"}${item.due ? ` due="${item.due}"` : ""}`;
-      const result = ingestExternal(
-        {
-          provider: "meeting",
-          subtype: `meeting.${item.kind}`,
-          userId,
-          tenantKey: input.title?.slice(0, 64) ?? "",
-          content: `${headLine}\n${item.text}`,
-          owner: item.owner ? `meeting:${normalizeOwner(item.owner)}` : "meeting:unknown",
-          externalId: `${meetingIngestionId}:${signalIds.length}`,
-          detectedAt: input.occurredAt,
-          meta: {
-            kind: item.kind,
-            owner: item.owner ?? null,
-            due: item.due ?? null,
-            confidence: item.confidence,
+  const titleBit = input.title ? `meeting="${input.title.slice(0, 80)}" ` : "";
+  const itemLines = items
+    .map(
+      (item) =>
+        `[${item.kind}] owner=${item.owner ?? "?"}${item.due ? ` due=${item.due}` : ""} ${item.text}`,
+    )
+    .join("\n");
+  const primaryOwner = items.find((i) => i.owner)?.owner;
+  try {
+    const result = ingestExternal(
+      {
+        provider: "meeting",
+        subtype: "meeting.transcript",
+        userId,
+        tenantKey: input.title?.slice(0, 64) ?? "",
+        content: [`[meeting] ${titleBit}attendees=${(input.attendees || []).join(",") || "?"}`, transcript.slice(0, 4000), itemLines ? `Extracted:\n${itemLines}` : ""]
+          .filter(Boolean)
+          .join("\n"),
+        owner: primaryOwner ? `meeting:${normalizeOwner(primaryOwner)}` : "meeting:unknown",
+        externalId: meetingIngestionId,
+        detectedAt: input.occurredAt,
+        meta: withClaimReady(
+          {
             meetingIngestionId,
             sourceSubtype,
+            extracted_items: items.slice(0, 30),
+            extracted_count: items.length,
           },
-        },
-        { allowSystemFallback: false },
-      );
-      signalIds.push(result.signalId);
-
-      /**
-       * Pre-enrich from the meeting extractor's already-known classification.
-       * This sets `intent_extracted_at` so the auditor's signal-pipeline
-       * (running on the next tick via setImmediate) trips the idempotency
-       * gate and skips its own detector LLM call. The auto-linker still runs
-       * and embeds if there's an active execution to link to.
-       */
-      if (!result.duplicate) {
-        const detected = synthesizeDetectedFromItem(item);
-        applyEnrichment(result.signalId, detected, detected.extras, null);
-      }
-    } catch (err) {
-      console.warn(`[meetingIngestion] failed to fan out ${item.kind} item:`, err);
+          {
+            entity_type: "meeting",
+            entity_id: `meeting:${meetingIngestionId}`,
+            event: "transcript",
+            previous: null,
+            current: "transcript",
+            owner: primaryOwner ? `meeting:${normalizeOwner(primaryOwner)}` : "meeting:unknown",
+            occurred_at: input.occurredAt,
+            feature_hint: guessFeatureHint(input.title, transcript, items[0]?.kind),
+            aliases: [`meeting:${meetingIngestionId}`],
+          },
+        ),
+      },
+      { allowSystemFallback: false },
+    );
+    signalIds.push(result.signalId);
+    if (!result.duplicate) {
+      const detected = synthesizeDetectedFromItems(items);
+      if (detected) applyEnrichment(result.signalId, detected, detected.extras, null);
     }
+  } catch (err) {
+    console.warn("[meetingIngestion] failed to ingest transcript:", err);
   }
 
   const counts = {
@@ -399,6 +406,14 @@ export const meetingKindToOpClass = KIND_TO_OP_CLASS;
  *   - constraint                           -> soon
  *   - default                              -> informational
  */
+function synthesizeDetectedFromItems(items: MeetingItem[]): DetectedSignal | null {
+  if (!items.length) return null;
+  const rank = (k: MeetingItemKind) =>
+    k === "decision" || k === "constraint" || k === "disagreement" ? 2 : k === "commitment" || k === "blocker" ? 1 : 0;
+  const top = [...items].sort((a, b) => rank(b.kind) - rank(a.kind) || b.confidence - a.confidence)[0];
+  return synthesizeDetectedFromItem(top);
+}
+
 function synthesizeDetectedFromItem(item: MeetingItem): DetectedSignal {
   let risk: SignalRisk;
   switch (item.kind) {

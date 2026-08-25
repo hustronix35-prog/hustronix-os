@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../database.js";
 import { ingestExternal, IngestError } from "./ingestRouter.js";
+import { guessFeatureHint, withClaimReady } from "./claimReady.js";
 
 const SLACK_SIG_VERSION = "v0";
 /** Slack docs: reject if timestamp older than 5 minutes. */
@@ -226,14 +227,25 @@ export function handleSlackEventsRequest(req: Request, res: Response) {
         tenantKey: teamId,
         content,
         owner,
-        meta: {
-          team_id: teamId,
-          channel: inner.channel ?? null,
-          ts: inner.ts ?? null,
-          thread_ts: inner.thread_ts ?? null,
-          channel_type: inner.channel_type ?? null,
-          event_id: cb.event_id ?? null,
-        },
+        meta: withClaimReady(
+          {
+            team_id: teamId,
+            channel: inner.channel ?? null,
+            ts: inner.ts ?? null,
+            thread_ts: inner.thread_ts ?? null,
+            channel_type: inner.channel_type ?? null,
+            event_id: cb.event_id ?? null,
+          },
+          {
+            entity_type: "message",
+            entity_id: `slack:${teamId}:${inner.channel ?? "ch"}:${inner.ts ?? eventId}`,
+            event: isThread ? "thread_reply" : "message",
+            previous: null,
+            current: isThread ? "thread_reply" : "message",
+            owner,
+            feature_hint: guessFeatureHint((inner as SlackMessageEvent).text, content),
+          },
+        ),
       },
       { allowSystemFallback: false },
     );

@@ -1,0 +1,10 @@
+{
+  "name": "hustronix-nango-integrations",
+  "private": true,
+  "type": "module",
+  "description": "Nango sync functions for Hustronix (Slack Message pilot). Deploy with Nango CLI; evidence lands in Hustronix external_signals.",
+  "dependencies": {
+    "nango": "^0.58.0",
+    "zod": "^3.23.0"
+  }
+}

@@ -191,7 +191,7 @@ export function emitShadowKilledEvidence(signal: {
     tenantId,
     eventType: "signal.shadow_killed",
     subjectEntityType: "person",
-    subjectEntityId: signal.owner,
+    subjectEntityId: signal.owner || tenantId,
     sourceEntityType: "task",
     sourceEntityId: signal.id,
     payload: { signal_id: signal.id, source: signal.source, grace_exceeded: true },

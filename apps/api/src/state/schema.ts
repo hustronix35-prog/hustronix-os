@@ -60,4 +60,58 @@ export function ensureStateSchema(dbExec: (sql: string) => void) {
     CREATE INDEX IF NOT EXISTS idx_decision_outcomes_decision
       ON decision_outcomes(decision_id);
   `);
+
+  try {
+    dbExec(`ALTER TABLE decision_outcomes ADD COLUMN result TEXT`);
+  } catch {
+    /* already present */
+  }
+
+  try {
+    dbExec(`ALTER TABLE decision_outcomes ADD COLUMN learning_applied INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* already present */
+  }
+
+  try {
+    dbExec(`ALTER TABLE decision_outcomes ADD COLUMN pattern_id TEXT`);
+  } catch {
+    /* already present */
+  }
+
+  try {
+    dbExec(`
+      DELETE FROM decision_outcomes
+      WHERE rowid NOT IN (SELECT MAX(rowid) FROM decision_outcomes GROUP BY decision_id)
+    `);
+  } catch {
+    /* empty or missing table */
+  }
+
+  try {
+    dbExec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_decision_outcomes_unique ON decision_outcomes(decision_id)`);
+  } catch {
+    /* duplicates remain or already unique */
+  }
+
+  dbExec(`
+    CREATE TABLE IF NOT EXISTS readiness_priors (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      pattern_id TEXT NOT NULL,
+      min_evidence_delta INTEGER NOT NULL DEFAULT 0,
+      min_distinct_days_delta INTEGER NOT NULL DEFAULT 0,
+      score_floor_delta REAL NOT NULL DEFAULT 0,
+      sample_count INTEGER NOT NULL DEFAULT 0,
+      successful_count INTEGER NOT NULL DEFAULT 0,
+      failed_count INTEGER NOT NULL DEFAULT 0,
+      partial_count INTEGER NOT NULL DEFAULT 0,
+      inconclusive_count INTEGER NOT NULL DEFAULT 0,
+      explanation TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, pattern_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_readiness_priors_user
+      ON readiness_priors(user_id, pattern_id);
+  `);
 }

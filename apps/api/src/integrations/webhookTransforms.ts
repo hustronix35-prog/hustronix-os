@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import type { IngestRecord } from "./ingestRouter.js";
+import { guessFeatureHint, withClaimReady } from "./claimReady.js";
 
 /**
  * Webhook Transforms — provider payload -> normalized IngestRecord(s).
@@ -81,37 +82,70 @@ export function transformGithubWebhook(
   const head = `[github:${event}${action ? `.${action}` : ""}] repo=${repo ?? "?"} actor=${sender ?? "?"}`;
 
   let body = "";
+  let entityType = "github_event";
+  let entityId = repo ? `github:${repo}:${event}` : `github:${event}`;
+  let current: string | null = action || event;
+  let titleHint = "";
+  let htmlUrl = "";
   switch (event) {
     case "push": {
       const commits = (payload.commits as { message?: string; author?: { name?: string } }[]) || [];
       const lines = commits.slice(0, 10).map((c) => `- ${c.message?.split("\n")[0] ?? "(no msg)"} (${c.author?.name ?? "?"})`);
-      body = `${commits.length} commit(s) on ${(payload.ref as string) ?? "?"}\n${lines.join("\n")}`;
+      const ref = String(payload.ref ?? "");
+      body = `${commits.length} commit(s) on ${ref || "?"}\n${lines.join("\n")}`;
+      entityType = "commit_batch";
+      entityId = repo ? `github:${repo}:${ref || "push"}` : entityId;
+      titleHint = commits.map((c) => c.message || "").join(" ");
       break;
     }
     case "pull_request": {
       const pr = payload.pull_request as Record<string, unknown> | undefined;
+      const number = pr?.number != null ? String(pr.number) : "";
+      const merged = Boolean(pr?.merged) || action === "merged";
       body = `PR #${pr?.number ?? "?"} ${action} :: ${pr?.title ?? ""}\n${(pr?.body as string)?.slice(0, 500) ?? ""}`;
+      entityType = "pull_request";
+      entityId = repo && number ? `github:${repo}#${number}` : entityId;
+      current = merged || action === "merged" ? "merged" : action || String(pr?.state ?? "open");
+      titleHint = `${pr?.title ?? ""} ${(pr?.body as string) ?? ""}`;
+      htmlUrl = typeof pr?.html_url === "string" ? pr.html_url : "";
       break;
     }
     case "issues": {
       const issue = payload.issue as Record<string, unknown> | undefined;
+      const number = issue?.number != null ? String(issue.number) : "";
       body = `Issue #${issue?.number ?? "?"} ${action} :: ${issue?.title ?? ""}\n${(issue?.body as string)?.slice(0, 500) ?? ""}`;
+      entityType = "issue";
+      entityId = repo && number ? `github:${repo}#${number}` : entityId;
+      current = action || String(issue?.state ?? "");
+      titleHint = `${issue?.title ?? ""} ${(issue?.body as string) ?? ""}`;
+      htmlUrl = typeof issue?.html_url === "string" ? issue.html_url : "";
       break;
     }
     case "issue_comment": {
       const comment = payload.comment as Record<string, unknown> | undefined;
       const issue = payload.issue as Record<string, unknown> | undefined;
+      const number = issue?.number != null ? String(issue.number) : "";
       body = `Comment on #${issue?.number ?? "?"}: ${(comment?.body as string)?.slice(0, 500) ?? ""}`;
+      entityType = "issue";
+      entityId = repo && number ? `github:${repo}#${number}` : entityId;
+      current = "commented";
+      titleHint = `${issue?.title ?? ""} ${(comment?.body as string) ?? ""}`;
+      htmlUrl = typeof comment?.html_url === "string" ? comment.html_url : typeof issue?.html_url === "string" ? issue.html_url : "";
       break;
     }
     case "deployment_status": {
       const ds = payload.deployment_status as Record<string, unknown> | undefined;
       body = `Deployment ${ds?.state ?? "?"} env=${(payload.deployment as Record<string, unknown> | undefined)?.environment ?? "?"}`;
+      entityType = "deployment";
+      current = String(ds?.state ?? action);
       break;
     }
     case "workflow_run": {
       const wr = payload.workflow_run as Record<string, unknown> | undefined;
       body = `Workflow ${wr?.name ?? "?"} ${wr?.status ?? "?"}/${wr?.conclusion ?? "?"} on ${wr?.head_branch ?? "?"}`;
+      entityType = "workflow";
+      current = String(wr?.conclusion ?? wr?.status ?? action);
+      titleHint = String(wr?.name ?? "");
       break;
     }
     default: {
@@ -119,6 +153,7 @@ export function transformGithubWebhook(
     }
   }
 
+  const owner = sender ? `github:${sender}` : "github:unknown";
   return [
     {
       provider: "github",
@@ -126,9 +161,20 @@ export function transformGithubWebhook(
       userId: ctx.userId,
       tenantKey: repo ?? "",
       content: trimContent(`${head}\n${body}`),
-      owner: sender ? `github:${sender}` : "github:unknown",
+      owner,
       externalId: ctx.deliveryId,
-      meta: { repo, event, action, sender },
+      meta: withClaimReady(
+        { repo, event, action, sender, number: entityId.includes("#") ? entityId.split("#")[1] : undefined, html_url: htmlUrl || undefined },
+        {
+          entity_type: entityType,
+          entity_id: entityId,
+          event: action || event,
+          previous: null,
+          current,
+          owner,
+          feature_hint: guessFeatureHint(titleHint, body),
+        },
+      ),
     },
   ];
 }
@@ -175,9 +221,18 @@ export function transformJiraWebhook(
   const status = (fields.status as Record<string, unknown> | undefined)?.name as string | undefined;
   const assignee = (fields.assignee as Record<string, unknown> | undefined)?.emailAddress as string | undefined;
   const reporter = (fields.reporter as Record<string, unknown> | undefined)?.emailAddress as string | undefined;
+  const self = typeof issue?.self === "string" ? issue.self : "";
+  const comment = payload.comment as Record<string, unknown> | undefined;
+  const commentId = comment?.id != null ? String(comment.id) : "";
+  const changelog = payload.changelog as
+    | { items?: Array<{ field?: string; fromString?: string; toString?: string }> }
+    | undefined;
+  const statusChange = changelog?.items?.find((i) => i.field === "status");
 
   const head = `[jira:${eventType}] ${issueKey} status=${status ?? "?"} assignee=${assignee ?? "?"}`;
   const body = `${summary}\n${(fields.description as string)?.slice(0, 500) ?? ""}`;
+  const owner = assignee ? `jira:${assignee}` : reporter ? `jira:${reporter}` : "jira:unknown";
+  const entityId = issueKey && issueKey !== "?" ? `jira:${issueKey}` : `jira:${eventType}`;
 
   return [
     {
@@ -186,9 +241,21 @@ export function transformJiraWebhook(
       userId: ctx.userId,
       tenantKey: issueKey.split("-")[0] ?? "",
       content: trimContent(`${head}\n${body}`),
-      owner: assignee ? `jira:${assignee}` : reporter ? `jira:${reporter}` : "jira:unknown",
+      owner,
       externalId: ctx.deliveryId ?? `${issueKey}:${eventType}:${(payload.timestamp as number | string) ?? Date.now()}`,
-      meta: { issueKey, eventType, status, assignee, reporter },
+      meta: withClaimReady(
+        { issueKey, eventType, status, assignee, reporter, self: self || undefined, commentId: commentId || undefined },
+        {
+          entity_type: "issue",
+          entity_id: entityId,
+          event: eventType || "updated",
+          previous: statusChange?.fromString ?? null,
+          current: status ?? statusChange?.toString ?? null,
+          owner,
+          feature_hint: guessFeatureHint(summary, body, issueKey),
+          aliases: issueKey && issueKey !== "?" ? [issueKey] : undefined,
+        },
+      ),
     },
   ];
 }
@@ -293,6 +360,8 @@ export function transformLinearWebhook(
     const state = (data.state as { name?: string } | undefined)?.name;
     const assignee = (data.assignee as { email?: string } | undefined)?.email;
     const team = (data.team as { key?: string } | undefined)?.key;
+    const identifier = String(data.identifier || id);
+    const owner = assignee ? `linear:${assignee}` : "linear:unassigned";
     return [
       {
         provider: "linear",
@@ -300,18 +369,31 @@ export function transformLinearWebhook(
         userId: ctx.userId,
         tenantKey: team ?? "",
         content: trimContent(
-          `[linear:issue.${action}] ${data.identifier ?? id} state=${state ?? "?"} assignee=${assignee ?? "?"}\nTitle: ${title}\n${desc}`,
+          `[linear:issue.${action}] ${identifier} state=${state ?? "?"} assignee=${assignee ?? "?"}\nTitle: ${title}\n${desc}`,
         ),
-        owner: assignee ? `linear:${assignee}` : "linear:unassigned",
+        owner,
         externalId: `linear:${id}:${action}`,
-        meta: {
-          issueId: id,
-          identifier: data.identifier,
-          team,
-          state,
-          assignee,
-          priority: data.priority,
-        },
+        meta: withClaimReady(
+          {
+            issueId: id,
+            identifier,
+            team,
+            state,
+            assignee,
+            priority: data.priority,
+            url: typeof data.url === "string" ? data.url : undefined,
+          },
+          {
+            entity_type: "issue",
+            entity_id: `linear:${identifier}`,
+            event: action,
+            previous: null,
+            current: state ?? null,
+            owner,
+            feature_hint: guessFeatureHint(title, desc, identifier),
+            aliases: identifier ? [identifier] : undefined,
+          },
+        ),
       },
     ];
   }
@@ -319,6 +401,7 @@ export function transformLinearWebhook(
     const body = String(data.body || "").slice(0, 600);
     const issueId = (data.issue as { id?: string; identifier?: string } | undefined)?.identifier ?? "";
     const user = (data.user as { email?: string } | undefined)?.email;
+    const owner = user ? `linear:${user}` : "linear:unknown";
     return [
       {
         provider: "linear",
@@ -326,9 +409,21 @@ export function transformLinearWebhook(
         userId: ctx.userId,
         tenantKey: issueId,
         content: trimContent(`[linear:comment.${action}] on ${issueId} by ${user ?? "?"}\n${body}`),
-        owner: user ? `linear:${user}` : "linear:unknown",
+        owner,
         externalId: `linear:comment:${id}:${action}`,
-        meta: { commentId: id, issueId, user },
+        meta: withClaimReady(
+          { commentId: id, issueId, user },
+          {
+            entity_type: "issue",
+            entity_id: issueId ? `linear:${issueId}` : `linear:comment:${id}`,
+            event: `comment.${action}`,
+            previous: null,
+            current: "commented",
+            owner,
+            feature_hint: guessFeatureHint(body, issueId),
+            aliases: issueId ? [issueId] : undefined,
+          },
+        ),
       },
     ];
   }
@@ -711,6 +806,6 @@ export function transformSlackEvent(args: {
     content: trimContent(`${head}\n${body}`),
     owner: args.user ? `slack:${args.user}` : "slack:unknown",
     externalId: args.eventId,
-    meta: { channel: args.channelId, threadTs: args.threadTs, ts: args.ts },
+    meta: { channel: args.channelId, threadTs: args.threadTs, ts: args.ts, teamId: args.teamId },
   };
 }

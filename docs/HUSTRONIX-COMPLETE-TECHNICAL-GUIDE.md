@@ -1,6 +1,6 @@
 # Hustronix OS — Complete Technical Guide
 
-**Version:** 1.0 · **Generated:** June 6, 2026  
+**Version:** 1.1 · **Generated:** June 30, 2026  
 **Audience:** Founders and operators who want every layer explained in plain language, with full technical detail for engineers.
 
 ---
@@ -17,11 +17,12 @@
 | Login, permissions, security | §10 Auth & Security |
 | AI chat and the coordinator | §11 Chat & AI |
 | Rules that enforce capacity and shadow work | §12 Auditor |
-| Search, signals, embeddings | §13 Intelligence |
-| Slack, GitHub, Google, etc. | §14 Integrations |
-| Where it runs in production | §16 Deployment |
-| All configuration knobs | §17 Environment Variables |
-| What's finished vs partial | §18 Product Maturity |
+| Owner execution beliefs, shadow predictions | §13 Execution Intelligence Engine |
+| Search, signals, embeddings | §14 Signal Intelligence |
+| Slack, GitHub, Google, etc. | §15 Integrations |
+| Where it runs in production | §17 Deployment |
+| All configuration knobs | §18 Environment Variables |
+| What's finished vs partial | §19 Product Maturity |
 
 **Core idea in one sentence:** Hustronix is an **operating system for decisions and execution** — external signals (Slack, GitHub, email, meetings) land in a **database ledger**, **deterministic rules** enforce capacity and policy, and an **AI chat interface** helps you draft and navigate that ledger without replacing it.
 
@@ -41,14 +42,19 @@ Hustronix is a **decision and execution platform** for teams that need to:
 
 Think of it as **Mission Control for organizational focus**: not another chatbot, but a system where the **database + auditor** are the source of truth and the LLM is an interface.
 
-### The three layers (most important mental model)
+### The four layers (most important mental model)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  LAYER 3 — INTERFACE (Next.js UI + WebSocket chat + LLM)   │
+│  LAYER 4 — INTERFACE (Next.js UI + WebSocket chat + LLM)   │
 │  What users see and talk to                                │
 └───────────────────────────┬─────────────────────────────────┘
                             │ reads/writes via API
+┌───────────────────────────▼─────────────────────────────────┐
+│  LAYER 3 — ADVISORY INTELLIGENCE (EIE — shadow mode in V1) │
+│  Evidence → features → beliefs → predictions (no enforcement)│
+└───────────────────────────┬─────────────────────────────────┘
+                            │ observes ledger writes (parallel)
 ┌───────────────────────────▼─────────────────────────────────┐
 │  LAYER 2 — ENFORCEMENT (Auditor + conflict gates)            │
 │  Deterministic rules — no AI guessing                        │
@@ -60,7 +66,9 @@ Think of it as **Mission Control for organizational focus**: not another chatbot
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**File anchors:** Ledger = `apps/api/src/database.ts` · Auditor = `apps/api/src/auditor.ts` · Coordinator = `apps/api/src/agent.ts` · UI = `apps/web/`
+**File anchors:** Ledger = `apps/api/src/database.ts` · Auditor = `apps/api/src/auditor.ts` · EIE = `apps/api/src/execution-intelligence/` · Coordinator = `apps/api/src/agent.ts` · UI = `apps/web/`
+
+**V1 rule:** The **Execution Intelligence Engine** learns from every ledger event and surfaces advisory beliefs on Teams and owner APIs. **Auditor enforcement still uses `owner_reputation` / `getOwnerCapacity`** until shadow predictions prove superior in calibration.
 
 ### Technology stack (simple glossary)
 
@@ -90,6 +98,7 @@ Hustronix OS/
 │   │       ├── database.ts         Schema, queries, migrations
 │   │       ├── agent.ts            Main AI coordinator
 │   │       ├── auditor.ts          Rule engine (shadow work, capacity)
+│   │       ├── execution-intelligence/  EIE: evidence, beliefs, shadow predictions
 │   │       ├── bootstrap.ts        Startup: seeds, cron, WS wiring
 │   │       ├── auth/               Login, OAuth, sessions, 2FA
 │   │       ├── integrations/       Slack, GitHub, Google, etc.
@@ -172,12 +181,12 @@ Express server.ts
         ▼  database.transitionDecisionState(ACTIVE)
         │     └── findOtherActiveDecision() — blocks if another ACTIVE exists
         │
-        ▼  auditor.runAfterLedgerMutation()
+        ▼  auditor.onWrite() + executionIntelligence.onLedgerEvent()
         │
         ▼  JSON response + optional WebSocket broadcast
 ```
 
-Every mutating API route follows this pattern: **authenticate → authorize → database → auditor → respond**.
+Every mutating API route follows this pattern: **authenticate → authorize → database → auditor + EIE (parallel) → respond**.
 
 ---
 
@@ -208,9 +217,13 @@ Meeting notes  ──API──────►       ▼
                                   ▼
                              Auditor checks shadow work,
                              capacity, grace periods
+                                  │
+                                  ▼
+                             EIE records evidence → beliefs
+                             (advisory; Teams / owner APIs)
 ```
 
-**Key principle:** Ingestion **never** silently creates execution work. Linking is **explicit** (user or high-confidence auto-linker).
+**Key principle:** Ingestion **never** silently creates execution work. Linking is **explicit** (user or high-confidence auto-linker). EIE **observes** outcomes but does **not** enforce capacity in V1.
 
 **Docs:** `docs/architecture-enforcement.md` · **Code:** `apps/api/src/intelligence/index.ts`
 
@@ -253,7 +266,7 @@ Wrapped in `(dashboard)/layout.tsx` — sidebar, auth gate, onboarding check.
 | `/signals` | `SignalsClient` | Signal triage by state, link to tasks |
 | `/chat` | `ChatClient` | WebSocket chat with AI coordinator |
 | `/reports` | `ReportsClient` | `GET /api/metrics/reports` — charts |
-| `/teams` | `TeamsClient` | Team roster, bar/donut charts |
+| `/teams` | `TeamsClient` | Team roster, load charts, **advisory execution beliefs** (drawer per owner) |
 | `/settings` | `SettingsClient` | Org settings, notifications, integration toggles |
 | `/profile` | `ProfileClient` | Profile, API keys, active sessions |
 | `/guide` | `GuideClient` | In-app product walkthrough |
@@ -336,8 +349,8 @@ Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission
 | POST | `/api/decisions` | write | Create DRAFT decision |
 | POST | `/api/decisions/commit` | `decision:commit` | Activate decision (conflict gate) |
 | GET | `/api/execution/ledger` | read | Task graph |
-| GET | `/api/execution/capacity` | read | Capacity utilization |
-| POST | `/api/execution/transition` | `execution:write` | Move task state |
+| GET | `/api/execution/capacity` | read | Capacity utilization (legacy + **shadow derived capacity**) |
+| POST | `/api/execution/transition` | `execution:write` | Move task state (optional `estimatedDurationHours`, `attribution`) |
 | GET | `/api/execution/signals` | read | Signals list |
 | GET | `/api/execution/signals/by-state` | read | Signals grouped by state |
 | POST | `/api/execution/link` | `signal:write` | Link signal → task |
@@ -350,8 +363,15 @@ Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission
 | --- | --- | --- |
 | GET | `/api/intelligence/context` | Decision context for UI/agent |
 | GET | `/api/intelligence/search` | Hybrid full-text + embedding search |
+| GET | `/api/intelligence/entities/:type/:id/beliefs` | Entity execution beliefs (`mean`, `confidence`, `n_obs`) |
+| GET | `/api/intelligence/entities/:type/:id/predictions` | Shadow predictions + explanations |
+| GET | `/api/intelligence/entities/:type/:id/calibration` | Prediction accuracy by `algorithm_version` |
+| POST | `/api/intelligence/replay` | Rebuild beliefs from evidence 🛡 `audit:run` |
 | POST | `/api/intelligence/relink` | Re-run auto-linker |
 | POST | `/api/intelligence/warm-embeddings` | Precompute embeddings |
+| GET | `/api/owners/profiles` | All ledger owners — belief summary + derived capacity |
+| GET | `/api/owners/:owner/profile` | Full owner profile, evidence, graph neighbors |
+| GET | `/api/owners/:owner/calibration` | Owner prediction calibration |
 | POST | `/api/ingest/manual` | Manual signal insert |
 | POST | `/api/ingest/meeting` | Meeting transcript → signals |
 | GET | `/api/operational/drift` | Execution drift query |
@@ -373,7 +393,7 @@ Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission
 | GET | `/api/settings/capacity-summary` | Capacity rollup |
 | GET/POST | `/api/billing` | Billing settings (stub) |
 | GET | `/api/metrics/reports` | Report metrics for charts |
-| GET | `/api/metrics/teams` | Team metrics |
+| GET | `/api/metrics/teams` | Team metrics + **advisory beliefs per owner** |
 | GET/POST/DELETE | `/api/metrics/teams/roster/*` | Roster CRUD, import |
 | GET | `/api/chat/sidebar` | Chat sidebar context |
 | GET | `/api/connections` | Connection capability cards |
@@ -411,11 +431,23 @@ Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission
 | Table | Purpose | Key columns |
 | --- | --- | --- |
 | `decision_ledger` | Strategic commitments | `id`, `user_id`, `vow`, `status` (DRAFT→ACTIVE→…), `outcomes`, `constraints` |
-| `execution_ledger` | Tasks under decisions | `task_id`, `decision_id`, `owner`, `status`, `priority`, `weight`, `dependencies` |
+| `execution_ledger` | Tasks under decisions | `task_id`, `decision_id`, `owner`, `status`, `priority`, `weight`, `dependencies`, `estimated_duration_hours`, `attribution` |
 | `external_signals` | Events from Slack/GitHub/etc. | `id`, `user_id`, `source`, `state` (UNVERIFIED→GRACE→LINKED/KILLED), `linked_execution_id` |
 | `audit_log` | Auditor actions | `action`, `entity_type`, `details`, `timestamp` |
 | `ledger_events` | Hash-chained tamper-evident log | Chained hashes for integrity |
-| `owner_reputation` | Behavioral reputation | Per-owner scores |
+| `owner_reputation` | **Enforcement** reputation (legacy) | `reputation_modifier`, `failed_executions`, `successful_executions` — drives `getOwnerCapacity` |
+
+### Execution Intelligence Engine (advisory — V1)
+
+| Table | Purpose | Key columns |
+| --- | --- | --- |
+| `execution_evidence` | Immutable event ledger | `event_type`, `subject_entity_type/id`, `payload_json`, `idempotency_key` |
+| `execution_features` | Versioned feature store | `evidence_id`, `feature_version`, `features_json` |
+| `entity_beliefs` | Probabilistic beliefs per entity | `entity_type`, `entity_id`, `belief_key`, `model_id`, `mean`, `variance`, `n_obs` |
+| `execution_predictions` | Shadow predictions + calibration | `prediction_type`, `predicted_value`, `actual_value`, `explanation_json`, version fields |
+| `entity_edges` | Lightweight knowledge graph | `from_type/id`, `to_type/id`, `edge_type`, `evidence_id` |
+
+**Note:** Narrative institutional beliefs remain in `beliefs` + `belief_evidence` (`apps/api/src/beliefs/`). EIE quantitative beliefs in `entity_beliefs` are separate.
 
 ### Identity & authentication
 
@@ -448,13 +480,15 @@ Legend: 🔓 public · 🔐 requires login · 🛡 requires specific permission
 | `learning_log` | Post-decision learning entries |
 | `security_events` | Security audit trail |
 
-### Intelligence
+### Intelligence (search & embeddings)
 
 | Table | Purpose |
 | --- | --- |
 | `signals_fts`, `executions_fts`, `decisions_fts` | Full-text search mirrors (FTS5) |
 | `entity_embeddings` | Vector embeddings for hybrid search |
 | `meeting_ingestions` | Meeting ingest metadata |
+| `beliefs`, `belief_evidence` | Narrative institutional beliefs (not EIE) |
+| `entities` | Entity registry (person, task, decision, …) |
 
 ### Key relationships
 
@@ -644,9 +678,80 @@ When activating a decision (`status → ACTIVE`):
 
 DRAFT creation is **not** conflict-checked — only activation.
 
+**Reputation vs EIE:** Task kills and shadow-work expiry still update `owner_reputation` (`reputation_modifier -= 0.1`, floor 0.2). The EIE records parallel evidence and updates `entity_beliefs` but does **not** change auditor capacity checks in V1.
+
 ---
 
-## 13. Intelligence Layer
+## 13. Execution Intelligence Engine (EIE)
+
+**Module:** `apps/api/src/execution-intelligence/`  
+**Wiring:** `bootstrap.ts` chains `executionIntelligence.onLedgerEvent(ctx)` beside `auditor.onWrite(ctx)` on every ledger write.
+
+EIE is **not AI**. It is a deterministic learning loop: immutable evidence → versioned features → Bayesian/Gaussian belief updates → shadow predictions. V1 is **advisory only** — it never blocks tasks or overrides the auditor.
+
+### The learning loop
+
+```
+ledger mutation
+      │
+      ▼
+execution_evidence (append-only, idempotent)
+      │
+      ├──► execution_features (feature_version v1)
+      │           │
+      │           ▼
+      │     entity_beliefs (Beta/Gaussian posteriors)
+      │           │
+      │           ▼
+      │     execution_predictions (shadow + explanations)
+      │           │
+      │           ▼
+      └──► prediction.calibration_error evidence (closed loop)
+```
+
+### What gets recorded (V1 event types)
+
+| Event | Source | Belief keys affected (examples) |
+| --- | --- | --- |
+| `task.completed` | `transitionExecutionState` → DONE | `reliability`, `execution_speed`, `planning_accuracy`, `performance_at_load:{bucket}` |
+| `task.killed` | ACTIVE → KILLED | `reliability`, `ownership` (skipped if `attribution=external_blocker`) |
+| `signal.shadow_killed` | Auditor grace expiry | `reliability`, `ownership` |
+| `signal.linked` | `POST /api/execution/link` | `collaboration` |
+| `decision.outcome` | Outcome evaluation on terminal decision | `decision_quality`, `learning_rate` |
+| `prediction.calibration_error` | Resolved shadow prediction | Model calibration feedback |
+
+### Belief keys (entity_type `person` in V1)
+
+`reliability`, `execution_speed`, `planning_accuracy`, `decision_quality`, `collaboration`, `learning_rate`, `ownership`, `focus`, `recovery_ability`, `consistency`, `risk_appetite`, `expertise:{domain}`, `performance_at_load:{bucket}`.
+
+**Derived at read time (not stored):** `trust_score` (weighted composite), `derived_capacity` (max load where success rate ≥ threshold from load-performance beliefs).
+
+### Shadow predictions
+
+Every prediction logs `model_version`, `feature_version`, `algorithm_version`, and an `explanation` array (feature attributions). Predictions are compared to outcomes for calibration; errors become new evidence.
+
+**Replay:** `POST /api/intelligence/replay` rebuilds all `entity_beliefs` from historical evidence (operator, `audit:run` permission).
+
+### Enforcement vs advisory (critical)
+
+| Mechanism | Role in V1 |
+| --- | --- |
+| `owner_reputation` + `getOwnerCapacity` | **Enforcement** — auditor capacity checks |
+| `entity_beliefs` + derived capacity | **Advisory** — Teams UI, `/api/owners/*`, shadow block on `/api/execution/capacity` |
+
+Teams shows beliefs with an explicit tooltip: enforcement still uses legacy capacity.
+
+### Tests
+
+```bash
+cd apps/api && npm run test:execution-intelligence
+```
+
+**Detail:** `docs/architecture-enforcement.md` §10
+
+---
+
+## 14. Signal Intelligence & Search
 
 **Orchestrator:** `apps/api/src/intelligence/index.ts`
 
@@ -681,7 +786,7 @@ Skips LLM enrichment when: signal too small/noisy, no active decision, already e
 
 ---
 
-## 14. Integrations
+## 15. Integrations
 
 **Registry:** `apps/api/src/auth/oauthProviders.ts`
 
@@ -715,7 +820,7 @@ All sources → `integrations/ingestRouter.ts` → `webhookTransforms.ts` → `e
 
 ---
 
-## 15. Notifications
+## 16. Notifications
 
 **Dispatcher:** `apps/api/src/notifications/dispatcher.ts`
 
@@ -733,7 +838,7 @@ When something important happens (decision committed, signal grace expiring, etc
 
 ---
 
-## 16. Deployment & Infrastructure
+## 17. Deployment & Infrastructure
 
 ### Production target: Azure Container Apps
 
@@ -782,7 +887,7 @@ Persistent volume for SQLite at `/app/data`.
 
 ---
 
-## 17. Environment Variables Reference
+## 18. Environment Variables Reference
 
 ### Root `.env` (API + server)
 
@@ -818,7 +923,7 @@ Full list: `.env.example` and `apps/web/.env.example`
 
 ---
 
-## 18. Product Maturity — What's Real vs Partial
+## 19. Product Maturity — What's Real vs Partial
 
 ### Fully wired (live API + UI)
 
@@ -828,6 +933,7 @@ Full list: `.env.example` and `apps/web/.env.example`
 - Auth: password, OTP, OAuth login, sessions, API keys, TOTP backend
 - Integrations: OAuth connect + webhook ingest for major providers
 - Auditor + conflict gate + intelligence pipeline
+- **Execution Intelligence Engine (V1):** evidence ledger, entity beliefs, shadow predictions, Teams advisory UI
 - Notifications: in-app + email/Slack/digest
 
 ### Partial / mock / backlog
@@ -841,12 +947,14 @@ Full list: `.env.example` and `apps/web/.env.example`
 | Coordinator direct DB writes | Works; target is propose→validate→commit |
 | Telegram bridges | Removed from repo |
 | Billing | Stub endpoints |
+| EIE enforcement switch | Shadow mode only; `owner_reputation` still drives auditor |
+| Auto-assign owner from predictions | Backlog — `POST /api/execution/suggest-owner` |
 
 **Scope doc:** `docs/product-scope.md` — direction is **demo-full** with enforcement kernel as truth.
 
 ---
 
-## 19. Glossary
+## 20. Glossary
 
 | Term | Definition |
 | --- | --- |
@@ -860,17 +968,21 @@ Full list: `.env.example` and `apps/web/.env.example`
 | **DRAFT decision** | Proposed decision not yet committed |
 | **Coordinator** | The main LLM agent in chat |
 | **Auditor** | Rule engine — not AI |
+| **EIE** | Execution Intelligence Engine — evidence → beliefs → shadow predictions (advisory in V1) |
+| **Entity belief** | Probabilistic score in `entity_beliefs` (e.g. reliability, planning_accuracy) |
+| **Shadow prediction** | Logged forecast with explanation; compared to outcome for calibration |
+| **Derived capacity** | Load limit inferred from `performance_at_load` beliefs (advisory, not enforcement) |
 | **Tenant** | One customer org, scoped by `user_id` |
 | **Unified server** | Single process serving API + UI + WebSocket |
 
 ---
 
-## 20. Key Documentation Index
+## 21. Key Documentation Index
 
 | Document | Topic |
 | --- | --- |
 | `README.md` | Quick start, commands, deploy |
-| `docs/architecture-enforcement.md` | Ledger vs LLM, auditor triggers |
+| `docs/architecture-enforcement.md` | Ledger vs LLM, auditor triggers, **EIE advisory loop** |
 | `docs/security-architecture.md` | Threat model, target hardening |
 | `docs/product-scope.md` | Demo-full vs minimal scope |
 | `docs/agents-and-slack-signals.md` | Agent + Slack flow |
@@ -906,6 +1018,7 @@ npm run build                        # Build shared + api + web
 npm run start:unified                # Production unified server
 npm run security:launch              # Security checklist
 npm run qa:ui                        # UI QA pass
+cd apps/api && npm run test:execution-intelligence   # EIE unit tests
 curl http://localhost:3000/api/health
 ```
 

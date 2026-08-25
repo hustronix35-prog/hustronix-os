@@ -251,8 +251,7 @@ export async function warmEmbeddingsForActiveLedger(userId: string, limit = 200)
   let decisions = 0;
   let failed = 0;
 
-  const decision = db.getActiveDecision(userId);
-  if (decision) {
+  for (const decision of db.getActiveDecisions(userId, 8)) {
     const text = `${decision.vow}\n${decision.expected_outcomes}\n${decision.constraints}`;
     const ok = await ensureEmbedding("decision", decision.id, userId, text);
     if (ok) decisions++;

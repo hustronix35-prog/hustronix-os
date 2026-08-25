@@ -342,6 +342,9 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
     if (searchParams.get("tour")) return;
     if (pathname !== "/mission-control") return;
     if (welcomeOpen || spotlightActive || finishOpen) return;
+    // Honor in-memory skip/complete immediately so a slow or failed persist
+    // cannot race and reopen the welcome modal after "Skip for now".
+    if (tourState.completed || tourState.skipped) return;
 
     void (async () => {
       const settings = await loadTourSettings();
@@ -349,7 +352,18 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
         setWelcomeOpen(true);
       }
     })();
-  }, [ready, pathname, searchParams, searchParamsKey, welcomeOpen, spotlightActive, finishOpen, loadTourSettings]);
+  }, [
+    ready,
+    pathname,
+    searchParams,
+    searchParamsKey,
+    welcomeOpen,
+    spotlightActive,
+    finishOpen,
+    loadTourSettings,
+    tourState.completed,
+    tourState.skipped,
+  ]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

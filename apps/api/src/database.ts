@@ -14,6 +14,17 @@ import { ensureStateSchema } from "./state/schema.js";
 import { ensureBeliefSchema } from "./beliefs/schema.js";
 import { ensureSimulationSchema } from "./simulation/schema.js";
 import { onDecisionTerminalState } from "./evaluation/outcome-evaluation.js";
+import { ensureReconciliationSchema } from "./reconciliation/schema.js";
+import { seedGlobalAuthorityRules } from "./reconciliation/authority.js";
+import { ensureClarificationSchema } from "./clarification/schema.js";
+import { ensureActionLedgerSchema } from "./execution/orchestrator/schema.js";
+import { ensureOrgIntelligenceSchema } from "./org/schema.js";
+import { ensureSituationSchema, migrateSituationIdentity, migrateSituationFingerprint } from "./intelligence/situation-schema.js";
+import { ensureSituationGraphSchema } from "./intelligence/situation-graph.js";
+import { ensureSignalProcessingSchema } from "./intelligence/signal-processing.js";
+import { ensureOsEngineRunsSchema } from "./intelligence/os-observability.js";
+import { ensureTalkObservabilitySchema } from "./intelligence/talk/talk-observability.js";
+import { availableHours, evaluateHoursActivation, hoursUntilDue, taskEffortHours } from "./execution/capacity-hours.js";
 
 function resolveSqlitePath(): string {
   const configured = config.storage.dbPath.trim();
@@ -153,11 +164,12 @@ export class HustronixDB {
       CREATE TABLE IF NOT EXISTS external_signals (
         id TEXT PRIMARY KEY,
         user_id TEXT DEFAULT 'system',
-        source TEXT CHECK(source IN ('GITHUB', 'SLACK', 'JIRA', 'MICROSOFT', 'GOOGLE', 'GMAIL', 'NOTION', 'LINEAR', 'MANUAL')),
+        source TEXT CHECK(source IN ('GITHUB', 'SLACK', 'JIRA', 'MICROSOFT', 'GOOGLE', 'GMAIL', 'NOTION', 'LINEAR', 'MANUAL', 'CRM', 'MEETING', 'INCIDENT', 'HRIS', 'FINANCE')),
         content TEXT,
         owner TEXT,
         detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        grace_expires_at DATETIME, -- Deterministic countdown
+        received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        grace_expires_at DATETIME, -- Deterministic countdown from received_at
         linked_execution_id TEXT,
         state TEXT DEFAULT 'UNVERIFIED' CHECK(state IN ('UNVERIFIED', 'GRACE', 'LINKED', 'KILLED')),
         FOREIGN KEY(linked_execution_id) REFERENCES execution_ledger(task_id)
@@ -265,6 +277,7 @@ export class HustronixDB {
     this.ensureOrgIdColumns();
     this.ensureOwnerReputationColumns();
     this.ensureExecutionLedgerIntelligenceColumns();
+    this.ensureLearningLogColumns();
     this.ensureExecutionIntelligenceSchema();
     this.ensureOAuthTables();
     this.ensureSocialAuthTables();
@@ -274,10 +287,38 @@ export class HustronixDB {
     this.ensureSessionSecurityColumns();
     this.ensureIntelligenceSchema();
     this.ensureTeamRosterSchema();
+    ensureOrgIntelligenceSchema((sql) => this.db.exec(sql));
+    ensureSituationSchema((sql) => this.db.exec(sql));
+    ensureSituationGraphSchema((sql) => this.db.exec(sql));
+    ensureSignalProcessingSchema((sql) => this.db.exec(sql));
+    ensureOsEngineRunsSchema((sql) => this.db.exec(sql));
+    ensureTalkObservabilitySchema((sql) => this.db.exec(sql));
+    migrateSituationIdentity(this.db);
+    migrateSituationFingerprint(this.db);
+    this.ensureHardeningIndexes();
     this.ensureNotificationsSchema();
+    ensureClarificationSchema((sql) => this.db.exec(sql));
+    ensureActionLedgerSchema((sql) => this.db.exec(sql));
     this.ensureEarlyAccessSchema();
     this.ensureMarketingContactSchema();
     this.ensureSecuritySchemaV7();
+  }
+
+  private ensureHardeningIndexes() {
+    const stmts = [
+      `CREATE INDEX IF NOT EXISTS idx_signals_user_received ON external_signals(user_id, received_at)`,
+      `CREATE INDEX IF NOT EXISTS idx_signals_user_detected ON external_signals(user_id, detected_at)`,
+      `CREATE INDEX IF NOT EXISTS idx_situation_evidence_sit_sig ON situation_evidence(situation_id, signal_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_situations_user_pattern_entity ON situations(user_id, pattern_id, primary_entity_key)`,
+      `CREATE INDEX IF NOT EXISTS idx_org_deps_user_teams ON org_dependencies(user_id, from_team, to_team)`,
+    ];
+    for (const sql of stmts) {
+      try {
+        this.db.exec(sql);
+      } catch {
+        /* table may not exist yet */
+      }
+    }
   }
 
   private ensureSecuritySchemaV7() {
@@ -297,6 +338,12 @@ export class HustronixDB {
     ensureSimulationSchema((sql) => this.db.exec(sql));
     ensureEntitySchema((sql) => this.db.exec(sql));
     ensureStateSchema((sql) => this.db.exec(sql));
+    ensureReconciliationSchema((sql) => this.db.exec(sql));
+    try {
+      seedGlobalAuthorityRules();
+    } catch {
+      /* seed best-effort on boot */
+    }
 
     /** Backfill lifecycle_state from legacy status. */
     try {
@@ -391,6 +438,7 @@ export class HustronixDB {
           capacity TEXT NOT NULL DEFAULT '40h / week',
           slack_id TEXT,
           talent_tier TEXT,
+          reports_to TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(user_id, email)
         );
@@ -447,25 +495,48 @@ export class HustronixDB {
         this.db.exec("ALTER TABLE external_signals ADD COLUMN external_id TEXT");
       if (!haveCol("ingest_meta"))
         this.db.exec("ALTER TABLE external_signals ADD COLUMN ingest_meta TEXT");
+      if (!haveCol("received_at")) {
+        this.db.exec("ALTER TABLE external_signals ADD COLUMN received_at DATETIME");
+        this.db.exec("UPDATE external_signals SET received_at = CURRENT_TIMESTAMP WHERE received_at IS NULL");
+        /** Recompute grace from ingest clock; unkill HSOG replay rows killed by event-time grace. */
+        this.db.exec(
+          `UPDATE external_signals SET grace_expires_at = NULL WHERE state IN ('UNVERIFIED', 'GRACE')`,
+        );
+        this.db.exec(
+          `UPDATE external_signals
+           SET state = 'UNVERIFIED', grace_expires_at = NULL
+           WHERE state = 'KILLED'
+             AND json_extract(ingest_meta, '$.integration_runtime') IN ('hsog', 'hsog-provider')`,
+        );
+      }
+      /**
+       * Corpus evidence re-killed after received_at grace: restore so Signals UI / HSOG grade
+       * keep ledger rows. Auditor holds these as GRACE instead of KILLED going forward.
+       */
+      this.db.exec(
+        `UPDATE external_signals
+         SET state = 'GRACE', grace_expires_at = COALESCE(grace_expires_at, CURRENT_TIMESTAMP)
+         WHERE state = 'KILLED'
+           AND (
+             json_extract(ingest_meta, '$.integration_runtime') LIKE 'hsog%'
+             OR json_extract(ingest_meta, '$.hsog_scenario_id') IS NOT NULL
+             OR IFNULL(external_id, '') LIKE 'hsog:%'
+           )`,
+      );
       this.db.exec(
         `CREATE INDEX IF NOT EXISTS idx_signals_external_id ON external_signals(source, external_id)`,
       );
 
       /**
-       * Phase 5 migration: expand the `source` CHECK constraint to include
-       * MICROSOFT, GOOGLE, GMAIL, NOTION, LINEAR. SQLite doesn't support
-       * altering CHECK constraints, so we rebuild the table when the old
-       * constraint is detected.
-       *
-       * Detection: query `sql` from `sqlite_master` and look for the legacy
-       * 4-source check. Rebuild is fully transactional.
+       * Source CHECK expansion. SQLite can't ALTER CHECK; rebuild when CRM/MEETING
+       * buckets are missing. Copies every existing column (including org_id / received_at).
        */
       const masterRow = this.db
         .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='external_signals'")
         .get() as { sql?: string } | undefined;
       const ddl = String(masterRow?.sql || "");
-      const hasNewEnum = /'MICROSOFT'/.test(ddl) && /'GOOGLE'/.test(ddl) && /'NOTION'/.test(ddl) && /'LINEAR'/.test(ddl);
-      if (ddl && !hasNewEnum) {
+      const hasOpsBuckets = /'CRM'/.test(ddl) && /'MEETING'/.test(ddl);
+      if (ddl && !hasOpsBuckets) {
         this.rebuildExternalSignalsForExpandedSourceEnum();
       }
     } catch (e) {
@@ -553,54 +624,25 @@ export class HustronixDB {
    */
   private rebuildExternalSignalsForExpandedSourceEnum() {
     console.log("[DB] migrating external_signals to expanded source enum...");
+    const sourceIn =
+      `'GITHUB', 'SLACK', 'JIRA', 'MICROSOFT', 'GOOGLE', 'GMAIL', 'NOTION', 'LINEAR', 'MANUAL', 'CRM', 'MEETING', 'INCIDENT', 'HRIS', 'FINANCE'`;
     const tx = this.db.transaction(() => {
       const cols = this.db
         .prepare("PRAGMA table_info(external_signals)")
-        .all() as { name: string; notnull?: number; dflt_value?: string | null; type: string }[];
+        .all() as { name: string; notnull?: number; dflt_value?: string | null; type: string; pk?: number }[];
       const colNames = cols.map((c) => c.name);
-      const colsCsv = colNames.join(", ");
+      const colDefs = cols.map((c) => {
+        if (c.name === "source") return `source TEXT CHECK(source IN (${sourceIn}))`;
+        const type = c.type || "TEXT";
+        if (c.pk) return `${c.name} ${type} PRIMARY KEY`;
+        let def = `${c.name} ${type}`;
+        if (c.notnull) def += " NOT NULL";
+        if (c.dflt_value != null && String(c.dflt_value) !== "") def += ` DEFAULT ${c.dflt_value}`;
+        return def;
+      });
 
-      this.db.exec(`
-        CREATE TABLE external_signals__new (
-          id TEXT PRIMARY KEY,
-          user_id TEXT DEFAULT 'system',
-          source TEXT CHECK(source IN ('GITHUB', 'SLACK', 'JIRA', 'MICROSOFT', 'GOOGLE', 'GMAIL', 'NOTION', 'LINEAR', 'MANUAL')),
-          content TEXT,
-          owner TEXT,
-          detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          grace_expires_at DATETIME,
-          linked_execution_id TEXT,
-          state TEXT DEFAULT 'UNVERIFIED' CHECK(state IN ('UNVERIFIED', 'GRACE', 'LINKED', 'KILLED')),
-          intent TEXT,
-          risk TEXT,
-          intent_confidence REAL,
-          related_decision_id TEXT,
-          intent_extracted_at DATETIME,
-          intelligence_error TEXT,
-          urgency TEXT,
-          affected_systems TEXT,
-          op_classification TEXT,
-          source_subtype TEXT,
-          external_id TEXT,
-          ingest_meta TEXT
-        );
-      `);
-
-      /**
-       * Copy by intersection of columns we know about. Anything custom that
-       * was added later will surface as a missing-column error on the next
-       * deploy — preferable to silently dropping it.
-       */
-      const targetCols = [
-        "id", "user_id", "source", "content", "owner", "detected_at",
-        "grace_expires_at", "linked_execution_id", "state",
-        "intent", "risk", "intent_confidence", "related_decision_id",
-        "intent_extracted_at", "intelligence_error", "urgency",
-        "affected_systems", "op_classification", "source_subtype",
-        "external_id", "ingest_meta",
-      ].filter((c) => colNames.includes(c));
-      const copyCols = targetCols.join(", ");
-
+      this.db.exec(`CREATE TABLE external_signals__new (\n  ${colDefs.join(",\n  ")}\n);`);
+      const copyCols = colNames.join(", ");
       this.db.exec(
         `INSERT INTO external_signals__new (${copyCols}) SELECT ${copyCols} FROM external_signals;`,
       );
@@ -776,24 +818,28 @@ export class HustronixDB {
   // --- Intelligence: context engine reads ---
 
   /** Single ACTIVE decision per user (deterministic conflict rule). null if none. */
-  getActiveDecision(userId: string) {
+  getActiveDecisions(userId: string, limit = 12) {
     return this.db
       .prepare(
         `SELECT id, vow, expected_outcomes, constraints, reversal_conditions, confidence, status, created_at
-           FROM decision_ledger WHERE user_id = ? AND status = 'ACTIVE' LIMIT 1`,
+           FROM decision_ledger WHERE user_id = ? AND status = 'ACTIVE'
+           ORDER BY created_at DESC LIMIT ?`,
       )
-      .get(userId) as
-      | {
-          id: string;
-          vow: string;
-          expected_outcomes: string;
-          constraints: string;
-          reversal_conditions: string | null;
-          confidence: number;
-          status: string;
-          created_at: string;
-        }
-      | undefined;
+      .all(userId, limit) as {
+      id: string;
+      vow: string;
+      expected_outcomes: string;
+      constraints: string;
+      reversal_conditions: string | null;
+      confidence: number;
+      status: string;
+      created_at: string;
+    }[];
+  }
+
+  /** Most recently created ACTIVE vow (compat). Prefer {@link getActiveDecisions}. */
+  getActiveDecision(userId: string) {
+    return this.getActiveDecisions(userId, 1)[0];
   }
 
   getActiveExecutions(userId: string, limit = 50) {
@@ -804,7 +850,8 @@ export class HustronixDB {
                 d.vow as decision_vow
            FROM execution_ledger e
            INNER JOIN decision_ledger d ON e.decision_id = d.id
-           WHERE d.user_id = ? AND e.status IN ('PENDING', 'ACTIVE', 'BLOCKED')
+           WHERE d.user_id = ? AND d.status != 'DRAFT'
+             AND e.status IN ('PENDING', 'ACTIVE', 'BLOCKED')
            ORDER BY CASE e.status WHEN 'ACTIVE' THEN 0 WHEN 'BLOCKED' THEN 1 ELSE 2 END,
                     e.last_update DESC
            LIMIT ?`,
@@ -907,9 +954,21 @@ export class HustronixDB {
     }
   }
 
-  /** One-shot backfill — safe to call on startup. */
+  /** One-shot backfill — skip when already populated so boot/auth are not blocked. */
   rebuildFtsFromLedger() {
     try {
+      const force = process.env.HUSTRONIX_REBUILD_FTS === "1";
+      const signalCount = (
+        this.db
+          .prepare(`SELECT count(*) as c FROM external_signals WHERE content IS NOT NULL`)
+          .get() as { c: number }
+      ).c;
+      const ftsCount = (this.db.prepare(`SELECT count(*) as c FROM signals_fts`).get() as { c: number }).c;
+      // Full truncate+rebuild blocks SQLite (and sign-in) on large ledgers. Incremental
+      // upserts keep FTS current; only rebuild when empty and small, or when forced.
+      if (!force && (ftsCount > 0 || signalCount > 2000)) {
+        return { skipped: true, ftsCount, signalCount };
+      }
       this.db.exec("DELETE FROM signals_fts; DELETE FROM executions_fts; DELETE FROM decisions_fts;");
       const sigs = this.db
         .prepare(
@@ -1159,8 +1218,29 @@ export class HustronixDB {
       if (!cols.some((c) => c.name === "attribution")) {
         this.db.exec("ALTER TABLE execution_ledger ADD COLUMN attribution TEXT");
       }
+      if (!cols.some((c) => c.name === "due_at")) {
+        this.db.exec("ALTER TABLE execution_ledger ADD COLUMN due_at TEXT");
+      }
     } catch (e) {
       console.warn("[DB] ensureExecutionLedgerIntelligenceColumns:", e);
+    }
+  }
+
+  private ensureLearningLogColumns() {
+    try {
+      const cols = this.db.prepare("PRAGMA table_info(learning_log)").all() as { name: string }[];
+      if (cols.length === 0) return;
+      if (!cols.some((c) => c.name === "kind")) {
+        this.db.exec("ALTER TABLE learning_log ADD COLUMN kind TEXT");
+      }
+      if (!cols.some((c) => c.name === "idempotency_key")) {
+        this.db.exec("ALTER TABLE learning_log ADD COLUMN idempotency_key TEXT");
+      }
+      this.db.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_log_idem ON learning_log(user_id, idempotency_key)",
+      );
+    } catch (e) {
+      console.warn("[DB] ensureLearningLogColumns:", e);
     }
   }
 
@@ -1695,6 +1775,31 @@ export class HustronixDB {
         UNIQUE(user_id, provider, external_team_id)
       );
 
+      CREATE TABLE IF NOT EXISTS nango_connections (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        integration_id TEXT NOT NULL,
+        connection_id TEXT NOT NULL,
+        connection_name TEXT,
+        last_sync_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, provider)
+      );
+      CREATE INDEX IF NOT EXISTS idx_nango_connections_user
+        ON nango_connections(user_id);
+      CREATE INDEX IF NOT EXISTS idx_nango_connections_cid
+        ON nango_connections(connection_id);
+
+      CREATE TABLE IF NOT EXISTS nango_sync_cursors (
+        connection_pk TEXT NOT NULL,
+        model TEXT NOT NULL,
+        cursor TEXT NOT NULL,
+        updated_at DATETIME NOT NULL,
+        PRIMARY KEY (connection_pk, model)
+      );
+
       CREATE TABLE IF NOT EXISTS slack_event_receipts (
         event_id TEXT PRIMARY KEY,
         team_id TEXT,
@@ -2167,10 +2272,15 @@ export class HustronixDB {
       | "GMAIL"
       | "NOTION"
       | "LINEAR"
-      | "MANUAL";
+      | "MANUAL"
+      | "CRM"
+      | "MEETING"
+      | "INCIDENT"
+      | "HRIS"
+      | "FINANCE";
     content: string;
     owner: string;
-    /** Optional ISO or SQLite datetime; default `CURRENT_TIMESTAMP`. */
+    /** Event time (when it happened). Grace uses `received_at`, not this. */
     detectedAt?: string;
     /** Provider-specific subtype: meeting / crm.hubspot / github.issues / etc. */
     sourceSubtype?: string;
@@ -2184,9 +2294,9 @@ export class HustronixDB {
     this.db
       .prepare(
         `INSERT INTO external_signals
-            (id, user_id, org_id, source, content, owner, detected_at, state,
+            (id, user_id, org_id, source, content, owner, detected_at, received_at, state,
              source_subtype, external_id, ingest_meta)
-         VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), 'UNVERIFIED', ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, 'UNVERIFIED', ?, ?, ?)`,
       )
       .run(
         row.id,
@@ -2360,16 +2470,86 @@ export class HustronixDB {
     return { decisions, executions, signals };
   }
 
+  private normalizeConstraint(s: string): string {
+    return String(s || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** Shared NO-list item, or null if the vows are orthogonal. */
+  private constraintListsOverlap(aJson: string | null | undefined, bJson: string | null | undefined): string | null {
+    let a: unknown[] = [];
+    let b: unknown[] = [];
+    try {
+      a = JSON.parse(aJson || "[]");
+    } catch {
+      a = [];
+    }
+    try {
+      b = JSON.parse(bJson || "[]");
+    } catch {
+      b = [];
+    }
+    if (!Array.isArray(a) || !Array.isArray(b)) return null;
+    const bNorm = b.map((x) => this.normalizeConstraint(String(x))).filter((x) => x.length >= 8);
+    for (const item of a) {
+      const n = this.normalizeConstraint(String(item));
+      if (n.length < 8) continue;
+      const hit = bNorm.find((x) => x === n || (n.length >= 20 && x.includes(n)) || (x.length >= 20 && n.includes(x)));
+      if (hit) return String(item);
+    }
+    return null;
+  }
+
   /**
-   * Deterministic ACTIVE conflict rule: at most one ACTIVE decision per org_id.
+   * Conflict class: another ACTIVE vow in the org whose NO-list overlaps this one.
+   * Orthogonal bets (launch hold vs hiring freeze) may both be ACTIVE; capacity
+   * still gates owners at execution time.
    */
-  private findOtherActiveDecision(orgId: string, excludeDecisionId: string) {
-    return this.db
+  private findConflictingActiveDecision(
+    orgId: string,
+    excludeDecisionId: string,
+    constraintsJson: string | null | undefined,
+  ) {
+    const others = this.db
+      .prepare(
+        `SELECT id, vow, constraints FROM decision_ledger
+         WHERE org_id = ? AND status = 'ACTIVE' AND id != ?`,
+      )
+      .all(orgId, excludeDecisionId) as { id: string; vow: string; constraints: string | null }[];
+    for (const other of others) {
+      const overlap = this.constraintListsOverlap(constraintsJson, other.constraints);
+      if (overlap) return { id: other.id, vow: other.vow, overlap };
+    }
+    return undefined;
+  }
+
+  /** Same-vow conflict: two ACTIVE decisions with identical vow text in one org. */
+  private findActiveDuplicateVow(
+    orgId: string,
+    excludeDecisionId: string,
+    vow: string | null | undefined,
+  ) {
+    const needle = String(vow || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    if (!needle) return undefined;
+    const others = this.db
       .prepare(
         `SELECT id, vow FROM decision_ledger
          WHERE org_id = ? AND status = 'ACTIVE' AND id != ?`,
       )
-      .get(orgId, excludeDecisionId) as { id: string; vow: string } | undefined;
+      .all(orgId, excludeDecisionId) as { id: string; vow: string }[];
+    for (const other of others) {
+      const otherVow = String(other.vow || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+      if (otherVow && otherVow === needle) return { id: other.id, vow: other.vow };
+    }
+    return undefined;
   }
 
   /** Non-terminal decisions for supervisor context (DRAFT / ACTIVE / UNDER_REVIEW). */
@@ -2709,18 +2889,29 @@ export class HustronixDB {
   saveDecisionEvent(userId: string, data: any) {
     const id = uuidv4();
     const ir = data.institutional_reasoning;
-    // Semantic Fingerprint: Vow + Expected Outcomes + reasoning payload (before server-only epistemic_derivation).
-    const fingerprintStr =
+    const orgIdForFp = this.resolveOrgIdForUser(userId);
+    // Semantic Fingerprint: org + vow + outcomes + reasoning (before server-only epistemic_derivation).
+    const payloadFp =
       (data.vow || "") +
       JSON.stringify(data.expected_outcomes || {}) +
       (ir ? JSON.stringify(ir) : "");
-    const fingerprint = crypto.createHash('sha256').update(fingerprintStr).digest('hex');
+    const fingerprint = crypto.createHash("sha256").update(`org:${orgIdForFp}\n${payloadFp}`).digest("hex");
+    const legacyFingerprint = crypto.createHash("sha256").update(payloadFp).digest("hex");
 
-    // DEDUPLICATION Check
-    const existing = this.db.prepare("SELECT id FROM decision_ledger WHERE fingerprint = ?").get(fingerprint);
-    if (existing) {
-        this.log(userId, "Database", `Deduplicated decision attempt for fingerprint ${fingerprint.slice(0,8)}`);
-        return existing.id;
+    const hit = (fp: string) =>
+      this.db.prepare("SELECT id, user_id, org_id FROM decision_ledger WHERE fingerprint = ?").get(fp) as
+        | { id: string; user_id: string; org_id: string | null }
+        | undefined;
+    const sameTenant = (row: { user_id: string; org_id: string | null }) =>
+      row.user_id === userId || (row.org_id || this.resolveOrgIdForUser(row.user_id)) === orgIdForFp;
+
+    const existing = hit(fingerprint) || (() => {
+      const legacy = hit(legacyFingerprint);
+      return legacy && sameTenant(legacy) ? legacy : undefined;
+    })();
+    if (existing && sameTenant(existing)) {
+      this.log(userId, "Database", `Deduplicated decision attempt for fingerprint ${fingerprint.slice(0, 8)}`);
+      return existing.id;
     }
 
     if (ir && typeof ir === "object" && Number(ir.institutional_version) >= 3) {
@@ -2779,21 +2970,35 @@ export class HustronixDB {
 
   transitionDecisionState(id: string, newState: string, reason: string = 'System state change') {
     const current = this.db.prepare("SELECT * FROM decision_ledger WHERE id = ?").get(id) as
-      | { user_id: string; org_id: string | null; status: string }
+      | { user_id: string; org_id: string | null; status: string; vow?: string | null; constraints?: string | null }
       | undefined;
     if (!current) throw new Error("Decision not found.");
 
     if (newState === "ACTIVE") {
+      if (current.status === "ACTIVE") {
+        throw new Error("Decision is already ACTIVE.");
+      }
       const orgId = current.org_id || this.resolveOrgIdForUser(current.user_id || "system");
-      const other = this.findOtherActiveDecision(orgId, id);
+      const sameVow = this.findActiveDuplicateVow(orgId, id, current.vow);
+      if (sameVow) {
+        this.logAudit(
+          "DECISION_DUPLICATE_VOW_BLOCKED",
+          `Duplicate ACTIVE vow blocked vs ${sameVow.id}`,
+          id,
+        );
+        throw new Error(
+          `CONFLICT: Cannot activate — vow already ACTIVE on decision ${sameVow.id}.`,
+        );
+      }
+      const other = this.findConflictingActiveDecision(orgId, id, current.constraints);
       if (other) {
         this.logAudit(
           "DECISION_CONFLICT_BLOCKED",
-          `Another ACTIVE decision exists (${other.id}); at most one ACTIVE decision per organization.`,
-          id
+          `NO-list overlap with ACTIVE ${other.id}: ${other.overlap}`,
+          id,
         );
         throw new Error(
-          `CONFLICT: Cannot activate while decision ${other.id} is ACTIVE for this organization.`
+          `CONFLICT: Cannot activate while decision ${other.id} is ACTIVE — shared NO-list: "${other.overlap}".`,
         );
       }
     }
@@ -2847,6 +3052,22 @@ export class HustronixDB {
       JSON.stringify(data.dependencies || []),
       data.success_condition || null, data.failure_condition || null
     );
+    if (data.estimated_duration_hours != null || data.due_at) {
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      if (data.estimated_duration_hours != null) {
+        sets.push("estimated_duration_hours = ?");
+        params.push(data.estimated_duration_hours);
+      }
+      if (data.due_at) {
+        sets.push("due_at = ?");
+        params.push(data.due_at);
+      }
+      if (sets.length) {
+        params.push(taskId);
+        this.db.prepare(`UPDATE execution_ledger SET ${sets.join(", ")} WHERE task_id = ?`).run(...params);
+      }
+    }
     this.logAudit('TASK_SPAWNED', `Type: ${data.type || 'ACTION'}`, taskId);
     {
       const tenantRow = this.db
@@ -2870,17 +3091,128 @@ export class HustronixDB {
   }
 
   // --- Reputation & Capacity ---
-  getOwnerCapacity(owner: string) {
-    const rep = this.db.prepare("SELECT * FROM owner_reputation WHERE owner = ?").get(owner);
-    if (!rep) return { capacity: 3.0, reputation_modifier: 1.0, is_locked: false };
-
+  /**
+   * Load budget = roster weekly hours / 8 (one person-day ≈ 1.0 weight), times
+   * reputation_modifier. No roster → 3.0 (legacy default).
+   * ponytail: lookup without userId is first matching roster row across tenants.
+   */
+  getOwnerCapacity(owner: string, userId?: string) {
+    const rep = this.db.prepare("SELECT * FROM owner_reputation WHERE owner = ?").get(owner) as
+      | {
+          reputation_modifier: number;
+          is_locked: number;
+          failed_executions: number;
+          successful_executions: number;
+        }
+      | undefined;
+    const modifier = rep ? Number(rep.reputation_modifier) || 1.0 : 1.0;
+    const hours = this.lookupRosterWeeklyHours(owner, userId);
+    const base = hours != null && hours > 0 ? Math.max(1, hours / 8) : 3.0;
     return {
-       capacity: 3.0 * rep.reputation_modifier,
-       reputation_modifier: rep.reputation_modifier,
-       is_locked: rep.is_locked === 1,
-       failed: rep.failed_executions,
-       success: rep.successful_executions
+      capacity: base * modifier,
+      reputation_modifier: modifier,
+      is_locked: rep ? rep.is_locked === 1 : false,
+      roster_hours: hours,
+      failed: rep?.failed_executions,
+      success: rep?.successful_executions,
     };
+  }
+
+  /**
+   * ACTIVE execution weight for an owner, scoped to one decision tenant when userId is set.
+   * Global owner names (Ethan, Imani, …) are shared across sim/prod tenants — capacity must
+   * not bleed load from other users' ledgers.
+   */
+  getOwnerActiveWeight(owner: string, userId?: string): number {
+    if (userId) {
+      const row = this.db
+        .prepare(
+          `SELECT COALESCE(SUM(e.weight), 0) AS w
+           FROM execution_ledger e
+           INNER JOIN decision_ledger d ON d.id = e.decision_id
+           WHERE e.owner = ? AND e.status = 'ACTIVE' AND d.user_id = ?`,
+        )
+        .get(owner, userId) as { w: number } | undefined;
+      return Number(row?.w ?? 0);
+    }
+    const row = this.db
+      .prepare(
+        `SELECT COALESCE(SUM(weight), 0) AS w FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'`,
+      )
+      .get(owner) as { w: number } | undefined;
+    return Number(row?.w ?? 0);
+  }
+
+  /** Remaining effort hours on ACTIVE tasks (full estimate — conservative). */
+  getOwnerActiveHours(owner: string, userId?: string, excludeTaskId?: string): number {
+    const rows = (
+      userId
+        ? this.db
+            .prepare(
+              `SELECT e.task_id, e.estimated_duration_hours, e.weight, e.status
+               FROM execution_ledger e
+               INNER JOIN decision_ledger d ON d.id = e.decision_id
+               WHERE e.owner = ? AND e.status = 'ACTIVE' AND d.user_id = ?`,
+            )
+            .all(owner, userId)
+        : this.db
+            .prepare(
+              `SELECT task_id, estimated_duration_hours, weight, status
+               FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'`,
+            )
+            .all(owner)
+    ) as Array<{
+      task_id: string;
+      estimated_duration_hours: number | null;
+      weight: number | null;
+      status: string;
+    }>;
+    return rows
+      .filter((r) => !excludeTaskId || r.task_id !== excludeTaskId)
+      .reduce((n, r) => n + taskEffortHours(r), 0);
+  }
+
+  private lookupRosterWeeklyHours(owner: string, userId?: string): number | null {
+    const ownerTrim = String(owner || "").trim();
+    if (!ownerTrim) return null;
+    const first = ownerTrim.split(/\s+/)[0];
+    const row = (
+      userId
+        ? this.db
+            .prepare(
+              `SELECT capacity FROM team_roster
+               WHERE user_id = ?
+                 AND (
+                   slack_id = ? OR slack_id = ?
+                   OR name = ? OR name = ?
+                   OR name LIKE ? OR name LIKE ?
+                   OR lower(substr(name, 1, instr(name || ' ', ' ') - 1)) = lower(?)
+                 )
+               ORDER BY created_at DESC LIMIT 1`,
+            )
+            .get(
+              userId,
+              ownerTrim,
+              first,
+              ownerTrim,
+              first,
+              `${ownerTrim}%`,
+              `${first}%`,
+              first,
+            )
+        : this.db
+            .prepare(
+              `SELECT capacity FROM team_roster
+               WHERE slack_id = ? OR slack_id = ?
+                  OR name = ? OR name = ?
+                  OR name LIKE ? OR name LIKE ?
+               ORDER BY created_at DESC LIMIT 1`,
+            )
+            .get(ownerTrim, first, ownerTrim, first, `${ownerTrim}%`, `${first}%`)
+    ) as { capacity: string } | undefined;
+    if (!row?.capacity) return null;
+    const m = String(row.capacity).match(/(\d+(?:\.\d+)?)/);
+    return m ? Number(m[1]) : null;
   }
 
   /** Sum of ACTIVE execution weights for decisions owned by this user (Settings capacity usage). */
@@ -2900,7 +3232,7 @@ export class HustronixDB {
   listTeamRoster(userId: string) {
     return this.db
       .prepare(
-        `SELECT id, user_id, name, email, role, team, capacity, slack_id, talent_tier, created_at
+        `SELECT id, user_id, name, email, role, team, capacity, slack_id, talent_tier, reports_to, created_at
          FROM team_roster WHERE user_id = ? ORDER BY created_at ASC`,
       )
       .all(userId) as {
@@ -2913,6 +3245,7 @@ export class HustronixDB {
       capacity: string;
       slack_id: string | null;
       talent_tier: string | null;
+      reports_to: string | null;
       created_at: string;
     }[];
   }
@@ -3043,12 +3376,12 @@ export class HustronixDB {
     newState: string,
     reason: string = "State update",
     skipAuditorHook = false,
-    options?: { estimatedDurationHours?: number; attribution?: string },
+    options?: { estimatedDurationHours?: number; attribution?: string; dueAt?: string },
   ) {
     const task = this.db.prepare("SELECT * FROM execution_ledger WHERE task_id = ?").get(taskId);
     if (!task) throw new Error("Task not found.");
 
-    if (options?.estimatedDurationHours != null || options?.attribution) {
+    if (options?.estimatedDurationHours != null || options?.attribution || options?.dueAt) {
       const sets: string[] = [];
       const params: unknown[] = [];
       if (options.estimatedDurationHours != null) {
@@ -3059,6 +3392,10 @@ export class HustronixDB {
         sets.push("attribution = ?");
         params.push(options.attribution);
       }
+      if (options.dueAt) {
+        sets.push("due_at = ?");
+        params.push(options.dueAt);
+      }
       if (sets.length) {
         params.push(taskId);
         this.db.prepare(`UPDATE execution_ledger SET ${sets.join(", ")} WHERE task_id = ?`).run(...params);
@@ -3067,8 +3404,33 @@ export class HustronixDB {
 
     const refreshed = this.db.prepare("SELECT * FROM execution_ledger WHERE task_id = ?").get(taskId);
     const taskRow = refreshed ?? task;
-    if (newState === 'ACTIVE') {
-        const { capacity, is_locked } = this.getOwnerCapacity(taskRow.owner);
+    const current = String(taskRow.status || "PENDING").toUpperCase();
+    const target = String(newState || "").toUpperCase();
+    const LEGAL: Record<string, string[]> = {
+      PENDING: ["ACTIVE", "BLOCKED", "KILLED"],
+      ACTIVE: ["DONE", "BLOCKED", "KILLED"],
+      BLOCKED: ["ACTIVE", "KILLED"],
+      DONE: [],
+      KILLED: [],
+    };
+    if (current === target) {
+      this.logAudit("TASK_TRANSITION", `No-op ${current} | ${reason}`, taskId);
+      if (!skipAuditorHook) {
+        this.invokeLedgerAuditor({ type: "execution", taskId });
+      }
+      return { status: current, noop: true };
+    }
+    const allowed = LEGAL[current];
+    if (!allowed || !allowed.includes(target)) {
+      this.logAudit("TASK_TRANSITION_REJECTED", `Illegal ${current} → ${target} | ${reason}`, taskId);
+      throw new Error(`Illegal execution transition: ${current} → ${target}`);
+    }
+
+    if (target === 'ACTIVE') {
+        const decisionOwner = this.db
+          .prepare(`SELECT user_id FROM decision_ledger WHERE id = ?`)
+          .get(taskRow.decision_id) as { user_id: string } | undefined;
+        const { is_locked, roster_hours, reputation_modifier } = this.getOwnerCapacity(taskRow.owner, decisionOwner?.user_id);
         const reasons = [];
 
         if (is_locked) reasons.push("owner_locked");
@@ -3082,23 +3444,34 @@ export class HustronixDB {
             }
         }
 
-        // 2. Capacity Check (All ACTIVE tasks overlap)
-        const activeTasks = this.db.prepare("SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'").get(taskRow.owner);
-        const currentLoad = activeTasks?.total_weight || 0;
-        
-        if (taskRow.type !== 'KILL' && (currentLoad + taskRow.weight) > capacity) {
-            reasons.push("capacity_exceeded");
+        // 2. Hours capacity — available roster hours minus ACTIVE remaining minus this task
+        const avail = availableHours(roster_hours, reputation_modifier);
+        const remainingActiveHours = this.getOwnerActiveHours(taskRow.owner, decisionOwner?.user_id, taskId);
+        const newTaskHours = taskEffortHours(taskRow);
+        const dueHours = hoursUntilDue(taskRow.due_at);
+        const hoursGate = evaluateHoursActivation({
+          availableHours: avail,
+          remainingActiveHours,
+          newTaskHours,
+          incompleteDeps: reasons.filter((r) => String(r).startsWith("dependency_incomplete")).length,
+          hoursUntilDue: dueHours,
+          pathHoursUntilDue: newTaskHours,
+        });
+        if (taskRow.type !== "KILL") {
+          for (const r of hoursGate.reasons) {
+            if (r !== "dependency_incomplete" && !reasons.includes(r)) reasons.push(r);
+          }
         }
 
         if (reasons.length > 0) {
             this.db.prepare(
               "UPDATE execution_ledger SET status = 'BLOCKED', blocked_reasons = ?, last_update = CURRENT_TIMESTAMP WHERE task_id = ?",
             ).run(JSON.stringify(reasons), taskId);
-            this.logAudit('TASK_BLOCKED', reasons.join(', '), taskId);
+            this.logAudit('TASK_BLOCKED', hoursGate.message || reasons.join(', '), taskId);
             if (!skipAuditorHook) {
               this.invokeLedgerAuditor({ type: "execution", taskId });
             }
-            return { status: 'BLOCKED', reasons };
+            return { status: 'BLOCKED', reasons, message: hoursGate.message };
         }
 
         // Pass: Move to ACTIVE
@@ -3106,16 +3479,16 @@ export class HustronixDB {
           "UPDATE execution_ledger SET status = 'ACTIVE', started_at = CURRENT_TIMESTAMP, last_update = CURRENT_TIMESTAMP WHERE task_id = ?",
         ).run(taskId);
     } else {
-        this.db.prepare("UPDATE execution_ledger SET status = ?, last_update = CURRENT_TIMESTAMP WHERE task_id = ?").run(newState, taskId);
-        if (newState === 'DONE') {
+        this.db.prepare("UPDATE execution_ledger SET status = ?, last_update = CURRENT_TIMESTAMP WHERE task_id = ?").run(target, taskId);
+        if (target === 'DONE') {
             this.db.prepare("UPDATE execution_ledger SET completed_at = CURRENT_TIMESTAMP WHERE task_id = ?").run(taskId);
         }
     }
 
-    this.logAudit('TASK_TRANSITION', `New State: ${newState} | ${reason}`, taskId);
+    this.logAudit('TASK_TRANSITION', `New State: ${target} | ${reason}`, taskId);
 
     // --- Reward/Penalty & Recovery Loop ---
-    if (newState === 'DONE') {
+    if (target === 'DONE') {
         this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(taskRow.owner);
         this.db.prepare("UPDATE owner_reputation SET successful_executions = successful_executions + 1 WHERE owner = ?").run(taskRow.owner);
         
@@ -3125,8 +3498,7 @@ export class HustronixDB {
             this.db.prepare("UPDATE owner_reputation SET successful_executions = 0, reputation_modifier = MIN(1.0, reputation_modifier + 0.1), is_locked = 0 WHERE owner = ?").run(taskRow.owner);
             this.logAudit('REPUTATION_RECOVERED', '3 consecutive successes', taskRow.owner);
         }
-    } else if (newState === 'KILLED' && taskRow.status === 'ACTIVE') {
-        // Only ACTIVE tasks can be killed per rule 2.1
+    } else if (target === 'KILLED' && current === 'ACTIVE') {
         this.db.prepare("INSERT OR IGNORE INTO owner_reputation (owner) VALUES (?)").run(taskRow.owner);
         this.db.prepare("UPDATE owner_reputation SET failed_executions = failed_executions + 1, reputation_modifier = MAX(0.2, reputation_modifier - 0.1) WHERE owner = ?").run(taskRow.owner);
         this.logAudit('REPUTATION_PENALIZED', 'Task killed', taskRow.owner);
@@ -3135,7 +3507,7 @@ export class HustronixDB {
     if (!skipAuditorHook) {
       this.invokeLedgerAuditor({ type: "execution", taskId });
     }
-    return { status: newState };
+    return { status: target };
   }
 
   // --- Interaction Persistence ---

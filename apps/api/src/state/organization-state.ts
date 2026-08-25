@@ -106,7 +106,7 @@ export function compileOrganizationState(orgId: string, userId: string): Organiz
   const activeRows = db.rawGet(
     `SELECT id, vow, confidence, last_update FROM decision_ledger
      WHERE ${tf.sql} AND status = 'ACTIVE'
-     ORDER BY last_update DESC LIMIT 5`,
+     ORDER BY last_update DESC LIMIT 12`,
     tf.params,
   ) as { id: string; vow: string; confidence: number; last_update: string }[];
 
@@ -130,18 +130,84 @@ export function compileOrganizationState(orgId: string, userId: string): Organiz
     entity_id: b.task_id,
   }));
 
-  const risks = db.rawGet(
-    `SELECT id, content, risk, detected_at FROM external_signals
-     WHERE (org_id = ? OR user_id IN (?, ?)) AND state IN ('UNVERIFIED', 'GRACE')
-       AND risk IN ('high', 'medium')
-     ORDER BY detected_at DESC LIMIT 15`,
-    [orgId, orgId, userId],
-  ) as { id: string; content: string; risk: string; detected_at: string }[];
+  const snapBlockers = db.rawGet(
+    `SELECT entity_id, dimension, state, value, confidence FROM entity_state_snapshots
+     WHERE tenant_id = ? AND dimension IN ('DEPENDENCY','CUSTOMER_READINESS','TASK_STATUS')
+       AND upper(state) = 'BLOCKED'
+     ORDER BY last_updated_at DESC LIMIT 20`,
+    [orgId],
+  ) as Array<{ entity_id: string; dimension: string; state: string; value: string | null; confidence: number }>;
+  for (const s of snapBlockers) {
+    blockerItems.push({
+      id: `${s.entity_id}:${s.dimension}`,
+      entity_id: s.entity_id,
+      label: `${s.dimension} blocked (${s.entity_id})`,
+      severity: "high",
+      confidence: s.confidence,
+      type: s.dimension,
+    });
+  }
 
-  const riskItems: StateItem[] = risks.map((r) => ({
-    id: r.id,
-    label: r.content.slice(0, 200),
-    severity: r.risk,
+  const conflictRisks = db.rawGet(
+    `SELECT id, entity_id, dimension, severity, status, confidence FROM conflicts
+     WHERE tenant_id = ? AND status IN ('OPEN','ESCALATED') AND severity IN ('HIGH','CRITICAL')
+     ORDER BY updated_at DESC LIMIT 20`,
+    [orgId],
+  ) as Array<{
+    id: string;
+    entity_id: string;
+    dimension: string;
+    severity: string;
+    status: string;
+    confidence: number;
+  }>;
+  const snapRisks = db.rawGet(
+    `SELECT entity_id, dimension, state, value, confidence FROM entity_state_snapshots
+     WHERE tenant_id = ? AND dimension IN ('LAUNCH_READINESS','CUSTOMER_READINESS','DEADLINE')
+       AND upper(state) IN ('AT_RISK','BLOCKED')
+     ORDER BY last_updated_at DESC LIMIT 20`,
+    [orgId],
+  ) as Array<{ entity_id: string; dimension: string; state: string; value: string | null; confidence: number }>;
+
+  const riskItems: StateItem[] = [
+    ...conflictRisks.map((c) => ({
+      id: c.id,
+      entity_id: c.entity_id,
+      label: `${c.dimension} conflict (${c.status.toLowerCase()}) on ${c.entity_id}`,
+      severity: c.severity.toLowerCase(),
+      confidence: c.confidence,
+      type: "conflict",
+    })),
+    ...snapRisks.map((s) => ({
+      id: `${s.entity_id}:${s.dimension}`,
+      entity_id: s.entity_id,
+      label: `${s.dimension}=${s.state} (${s.entity_id})`,
+      severity: s.state.toLowerCase() === "blocked" ? "high" : "medium",
+      confidence: s.confidence,
+      type: s.dimension,
+    })),
+  ];
+
+  const commitmentRows = db.rawGet(
+    `SELECT id, entity_id, entity_label, value, state, confidence, last_seen_at FROM claims
+     WHERE tenant_id = ? AND intent = 'COMMITMENT' AND status = 'ACTIVE'
+     ORDER BY last_seen_at DESC LIMIT 20`,
+    [orgId],
+  ) as Array<{
+    id: string;
+    entity_id: string;
+    entity_label: string | null;
+    value: string;
+    state: string | null;
+    confidence: number;
+  }>;
+  const commitmentItems: StateItem[] = commitmentRows.map((c) => ({
+    id: c.id,
+    entity_id: c.entity_id,
+    label: `${c.entity_label || c.entity_id}: ${c.value}`.slice(0, 240),
+    statement: c.value,
+    confidence: c.confidence,
+    type: c.state || "COMMITMENT",
   }));
 
   const facts = db.rawGet(
@@ -169,7 +235,7 @@ export function compileOrganizationState(orgId: string, userId: string): Organiz
 
   const worldEntities = db.rawGet(
     `SELECT id, type, label, confidence FROM entities
-     WHERE tenant_id IN (?, ?) AND type IN ('competitor', 'customer', 'metric')
+     WHERE tenant_id IN (?, ?) AND type IN ('competitor', 'customer', 'metric', 'feature')
      ORDER BY freshness_at DESC LIMIT 20`,
     [orgId, userId],
   ) as { id: string; type: string; label: string; confidence: number }[];
@@ -218,7 +284,11 @@ export function compileOrganizationState(orgId: string, userId: string): Organiz
       confidence: sectionConfidence(blockerItems, 0.65),
       freshness_at: now,
     },
-    commitments: { items: [], confidence: 0.4, freshness_at: now },
+    commitments: {
+      items: commitmentItems,
+      confidence: sectionConfidence(commitmentItems, 0.6),
+      freshness_at: now,
+    },
     risks: {
       items: riskItems,
       confidence: sectionConfidence(riskItems, 0.6),

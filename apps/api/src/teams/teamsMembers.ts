@@ -116,7 +116,7 @@ export function buildTeamEntries(userId: string): TeamEntry[] {
 
   for (let i = 0; i < owners.length; i++) {
     const o = owners[i]!;
-    const cap = db.getOwnerCapacity(o.owner);
+    const cap = db.getOwnerCapacity(o.owner, userId);
     const load = Number(o.active_weight || 0);
     const capN = cap.capacity || 3;
     const loadPct = Math.min(100, Math.round((load / capN) * 100));

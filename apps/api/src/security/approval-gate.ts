@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
+import type { AuthKind } from "../middleware/auth.js";
 import { db } from "../database.js";
 import { roleForUser, userHasPermission, type HustronixRole } from "./authorization.js";
 import { recordSecurityEventV8 } from "./security-observability.js";
@@ -9,6 +10,8 @@ export const HIGH_RISK_ACTIONS = new Set([
   "remember_fact",
   "transition_execution",
   "commit_decision",
+  "complete_decision",
+  "reverse_decision",
   "bulk_update",
 ]);
 
@@ -28,8 +31,14 @@ function argsHash(toolName: string, args: Record<string, unknown>): string {
     .digest("hex");
 }
 
-/** V9: all high-risk actions require independent approval — no role bypass. */
-export function requiresHumanApproval(_role: HustronixRole, toolName: string): boolean {
+/** Dual-control for agents/keys. A logged-in UI click is the human approval. */
+export function requiresHumanApproval(
+  _role: HustronixRole,
+  toolName: string,
+  authKind?: AuthKind | string,
+): boolean {
+  // ponytail: solo/session commit would deadlock (can't self-approve). Ceiling: org setting security.ui_dual_control=1.
+  if (authKind === "session" || authKind === "legacy_cookie") return false;
   return HIGH_RISK_ACTIONS.has(toolName);
 }
 
@@ -229,6 +238,7 @@ export function validateApprovalForAction(params: {
 
 export function enforceHighRiskApproval(params: {
   userId: string;
+  authKind?: AuthKind | string;
   tenantId: string;
   workspaceId?: string | null;
   toolName: string;
@@ -238,7 +248,9 @@ export function enforceHighRiskApproval(params: {
   emergencyOverride?: boolean;
   emergencyReason?: string;
 }): void {
-  if (!requiresHumanApproval(roleForUser(params.userId), params.toolName)) return;
+  if (!requiresHumanApproval(roleForUser(params.userId, params.authKind), params.toolName, params.authKind)) {
+    return;
+  }
 
   const approvalId = (params.toolArgs.approval_id ??
     params.toolArgs.approvalId ??

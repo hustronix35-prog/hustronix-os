@@ -119,7 +119,6 @@ export function buildOrgDigest(values: OrgContextForm): string {
 /** Settings patch for bulk save (includes agent digest keys). */
 export function orgFormToSettingsPatch(form: OrgContextForm): Record<string, string> {
   const digest = sliceText(buildOrgDigest(form), 12000);
-  const core = sliceText(digest, 4000);
   return {
     "org.name": sliceText(form.orgName, 500),
     "org.value_prop_one_liner": sliceText(form.oneLiner, 2000),
@@ -134,7 +133,6 @@ export function orgFormToSettingsPatch(form: OrgContextForm): Record<string, str
     "org.stack_snapshot": sliceText(form.stackSnapshot, 4000),
     "org.constraints_notes": sliceText(form.constraintsNotes, 4000),
     "org.agent_context_digest": digest,
-    "core_memory.organization": core,
   };
 }
 

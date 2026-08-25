@@ -45,7 +45,25 @@ The user enabled **Plan mode**. Treat this turn as discovery, not execution.
 **After the user answers**, normal coordinator rules apply on subsequent turns.
 `.trim();
 
-export function formatPlanModePrompt(planMode: boolean): string {
+/** Chat console: reason and recommend; Approve & Execute is the only mutation path. */
+export const CONSOLE_MODE_TURN_ADDENDUM = `
+### Decision & Execution Console (this turn)
+You are the interaction layer with the Hustronix intelligence system — not a Slack/Teams clone and not an unsupervised agent.
+
+The product loop the user can see: **Understanding → Recommendation → Proposed actions → Approval → Execution → Monitoring.**
+
+**Required behavior:**
+1. Answer from Decision context, ledger, and linked signals. If you claim a dependency or risk, name the evidence (Slack, Jira, meeting, or ledger status). If evidence is missing, say so.
+2. Infer intent from natural language (ask / investigate / decide / execute / update / brief). Do **not** ask the user to pick a mode.
+3. Recommend. Do **not** execute. Do **not** call mutating tools (\`log_strategic_decision\`, \`transition_execution\`, \`remember_fact\`, \`update_domain_state\`).
+4. Read-only tools are allowed.
+5. Never invent Jira tickets, meetings, Slack messages, or owners. Never claim you created them.
+6. When work should move, describe the actions and tell the user to click **Approve & Execute** on the Recommended Execution rail. That is the only mutation path from this screen.
+7. Keep the reply structured: situation, why (with evidence), recommendation, what approval will do.
+`.trim();
+
+export function formatPlanModePrompt(planMode: boolean, consoleMode = false): string {
+  if (consoleMode) return `${CLARIFICATION_DISCIPLINE}\n\n${CONSOLE_MODE_TURN_ADDENDUM}`;
   if (!planMode) return CLARIFICATION_DISCIPLINE;
   return `${CLARIFICATION_DISCIPLINE}\n\n${PLAN_MODE_TURN_ADDENDUM}`;
 }

@@ -25,14 +25,13 @@ Sub-agents (**Marketing**, **Research**) today only receive **web search** tools
 
 ## 3. Coordinator tools that mutate state (known risk)
 
-These tools call the DB **directly** from the LLM tool path:
+These tools go through the **mutation gateway** (`mutation-handlers.ts`), same as HTTP:
 
-- `log_strategic_decision` → `db.saveDecisionEvent` (DRAFT decision + tasks)
-- `transition_execution` → `db.transitionExecutionState`
+- `log_strategic_decision` → `mutationCreateDraftDecision` (DRAFT + tenant checks)
+- `transition_execution` → `mutationTransitionExecution` (tenant + capacity gate)
 - Plus memory tools
 
-**Design intent (target):** *propose* → **validated API / auditor** → **commit**.  
-**Current state:** tools **execute** transitions immediately, which is convenient for demos but **strengthens the “agent as controller” risk** the product must not ship at scale without guardrails.
+**Design intent:** *propose* → **validated API / auditor** → **commit**. Chat cannot bypass Mission Control tenant/capacity rules.
 
 **Mitigations to consider (backlog):** tool handlers enqueue **intents**; only **HTTP routes** or a single **enforcement service** commit; or require **auditor pre-check** token for sensitive tools.
 
@@ -42,8 +41,9 @@ These tools call the DB **directly** from the LLM tool path:
 
 **Implemented** in the database layer, not in the doc only:
 
-- `database.ts` → `transitionDecisionState`: when `newState === "ACTIVE"`, `findOtherActiveDecision` enforces **at most one ACTIVE decision per `user_id`**.  
-- Conflict → audit `DECISION_CONFLICT_BLOCKED` + **throws** `CONFLICT: Cannot activate while decision … is ACTIVE`.
+- `database.ts` → `transitionDecisionState`: when `newState === "ACTIVE"`, `findConflictingActiveDecision` blocks only if another ACTIVE vow in the org has an **overlapping NO-list**. Orthogonal bets (launch hold vs hiring freeze) may both be ACTIVE.  
+- Conflict → audit `DECISION_CONFLICT_BLOCKED` + **throws** `CONFLICT: … shared NO-list: "…"`.  
+- Owner overload is still enforced at **execution** time (`getOwnerCapacity` from roster hours / 8 × reputation).
 
 So “commit to ACTIVE” via Mission Control / `POST /api/decisions/commit` / WebSocket `COMMIT_DECISION` goes through this gate. **DRAFT creation** does not; only **activation** is conflict-checked.
 
@@ -98,14 +98,16 @@ Further caps (per-minute throttles, keyword gates) are backlog.
 | Deduplication + signing secret | Richer **signal → execution** matching service |
 | Grace + auditor KILLED | Throttles + keyword / team policies |
 | Multi-tenant `team_id` → `user_id` | — |
-| ACTIVE conflict in DB | — |
+| ACTIVE conflict classes (NO-list overlap) in DB | — |
 | `POST /api/execution/link` as the link contract | Optional automation **calling the same contract** |
 
 ---
 
 ## 9. Related files
 
+- `docs/database-consistency-and-context.md` — SQLite schema, consistency gates, working-set vs retrieval, cost-saver caps  
 - `docs/agents-and-slack-signals.md` — agents + Slack ingestion detail  
+- `docs/signal-conflict-reconciliation-phase1.md` — claim/conflict/snapshot layer on top of `processSignal` (does not replace this spine)
 - `src/auditor.ts` — rules  
 - `src/integrations/slackEvents.ts` — Events API + filters  
 - `apps/api/src/server.ts` — link, transition, commit, OAuth
@@ -146,3 +148,28 @@ ledger mutations → execution_evidence (immutable)
 
 > **If enforcement is not deterministic, you have a suggestion engine, not a system.**  
 > The LLM **assists**; the **ledger + auditor** **decide** durable state.
+
+---
+
+## 12. Clarification (exception channel)
+
+Clarification is **not chat** and **not a standing update ping**. It opens only when execution reality is insufficiently known.
+
+```text
+Normal:     Signal → Ledger → Auditor → Decision → Execution
+Exception:  Ledger/Signals → Auditor → Clarification Request → Owner →
+            extract claims → validate → allowed mutation → Ledger/Signal → Auditor
+```
+
+| Layer | Responsibility |
+|--------|----------------|
+| **Ask** | User voluntarily asks Hustronix |
+| **ClarificationRequest** | Workflow object: question, reason, claims, resolution |
+| **Messages / Slack / email** | Transport only |
+| **Execution ledger + signals + audit_log** | Source of truth |
+
+**Invariant:** Chat/messages are transport. Clarification Requests are workflow objects. The ledger remains truth.
+
+**V1:** `clarification_requests` table; auditor opens at most one `OPEN` request per task (`BLOCKED`, `STALE`, `MISSING_FIELD`, `DEPENDENCY_UNCLEAR`, `OWNER_UNCLEAR`). Owner-facing copy always includes a **reason for asking**. Answer path: LLM/heuristic extraction → deterministic validation → `mutationTransitionExecution` / signal link / meta patch. Same fingerprint does not re-open after commit.
+
+**APIs:** `GET /api/execution/clarifications`, `POST .../answer`, `POST .../dismiss`. UI: Execute rail “Needs clarification.”

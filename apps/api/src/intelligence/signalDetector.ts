@@ -106,16 +106,20 @@ export function detectSignalHeuristic(input: SignalInput, context: DecisionConte
   let bestExecutionOverlap = 0;
   let intent = "";
 
-  if (context.activeDecision) {
-    related = context.activeDecision.id;
-    for (const c of context.activeDecision.constraints) {
+  const actives =
+    context.activeDecisions?.length ? context.activeDecisions : context.activeDecision ? [context.activeDecision] : [];
+  for (const d of actives) {
+    if (!related) related = d.id;
+    for (const c of d.constraints) {
       const ct = tokens(c);
       if (overlapCount(sigTokens, ct) > 0) {
         risk = "high";
         intent = `potential constraint violation: ${c}`;
+        related = d.id;
         break;
       }
     }
+    if (risk === "high") break;
   }
 
   if (risk !== "high") {
@@ -159,12 +163,17 @@ export function detectSignalHeuristic(input: SignalInput, context: DecisionConte
  * shortlisted execution summaries (capped to 6) are included.
  */
 function buildDetectorPrompt(input: SignalInput, context: DecisionContext): { system: string; user: string } {
-  const decision = context.activeDecision
-    ? `ACTIVE_DECISION:
-  id: ${context.activeDecision.id}
-  vow: ${context.activeDecision.vow}
-  constraints (NO list): ${JSON.stringify(context.activeDecision.constraints)}`
-    : "ACTIVE_DECISION: (none)";
+  const actives =
+    context.activeDecisions?.length ? context.activeDecisions : context.activeDecision ? [context.activeDecision] : [];
+  const decision =
+    actives.length === 0
+      ? "ACTIVE_DECISIONS: (none)"
+      : actives
+          .map(
+            (d, i) =>
+              `ACTIVE_DECISION ${i + 1}/${actives.length}:\n  id: ${d.id}\n  vow: ${d.vow}\n  constraints (NO list): ${JSON.stringify(d.constraints)}`,
+          )
+          .join("\n");
 
   const execLines = context.activeExecutions.slice(0, 6).map((e) =>
     `  - ${e.taskId.slice(0, 8)} [${e.status}] decision=${e.decisionId.slice(0, 8)} owner=${e.owner} :: ${(e.successCondition || "").slice(0, 100)}`,

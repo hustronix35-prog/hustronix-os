@@ -1,0 +1,123 @@
+{
+  "username": "founder_5f629382",
+  "userId": "founder_5f629382",
+  "rows": [
+    {
+      "step": "Login / tenant ready",
+      "expected": "Fresh owner tenant with onboarding complete",
+      "actual": "user=founder_5f629382 role=owner",
+      "classification": "PASS",
+      "ms": 0
+    },
+    {
+      "step": "Home / What needs attention",
+      "expected": "Useful ranked problems without jargon",
+      "actual": "Acme: customer health · Northstar: customer health · Meridian: customer health",
+      "classification": "PASS",
+      "ms": 11,
+      "notes": "8 attention items"
+    },
+    {
+      "step": "Ask — What's going wrong?",
+      "expected": "Plain-language summary of real problems",
+      "actual": "Here's what's developing in the company:\n\n1. Feature quality / flag regression — FlowOps — decision-ready, worsening (95% confidence).\n2. Forecast / coverage miss — Northstar — decision-ready, worsening (95% confidence).\n3. Security incident / audit exception — decision-ready, worsening (95% confidence).\n4. Infrastructure / ingestion outage — SignalGrid — decision-ready, worsening (83% confidence)",
+      "classification": "PASS",
+      "ms": 4,
+      "notes": "focus=04ead4c9…"
+    },
+    {
+      "step": "Why?",
+      "expected": "Causal explanation with evidence references",
+      "actual": "Feature quality / flag regression — FlowOps is currently decision-ready. It developed from connected signals across the company. Confidence is 95% and the trajectory is worsening. Involves FlowOps (product).",
+      "classification": "PASS",
+      "ms": 1
+    },
+    {
+      "step": "Show evidence",
+      "expected": "Concrete snippets / sources",
+      "actual": "Feature quality / flag regression — FlowOps is currently decision-ready. It developed from connected signals across the company. Confidence is 95% and the trajectory is worsening. Involves FlowOps (product).",
+      "classification": "PASS",
+      "ms": 1
+    },
+    {
+      "step": "Who is affected?",
+      "expected": "Teams / customers / owners",
+      "actual": "Who is affected by Feature quality / flag regression — FlowOps:\nEntity: FlowOps.\nAffected teams: qa support, product.\nDependency: engineering is waiting on product for inferred from signals (AT_RISK).\nBottleneck: engineering is waiting on product for inferred from signals.\n\nEvidence:\n• FlowOps tickets spiking after feature flag accidentally enabled for GA customers.\n• FlowOps nested approval regre",
+      "classification": "PASS",
+      "ms": 3
+    },
+    {
+      "step": "What should we do?",
+      "expected": "Actionable recommendation",
+      "actual": "Recommended next steps for Feature quality / flag regression — FlowOps:\n\n1. Nested approval groups covered by tests\n2. Feature flag remains off outside beta\n\nThis is decision-ready. Create the decision, validate competing explanations and instrumentation in Talk, then execute.",
+      "classification": "PASS",
+      "ms": 1
+    },
+    {
+      "step": "What else could be true?",
+      "expected": "Alternative hypotheses",
+      "actual": "Competing explanations for Feature quality / flag regression — FlowOps:\n\n• 62% — Feature quality / flag regression — FlowOps is a real organizational issue that requires a governed decision.\n• 19% — The observed signals may reflect instrumentation or process noise rather than the stated risk.\n• 19% — The cluster may be coincidental and not yet decision-worthy.\n\nStill PENDING: Operator confirmed ev",
+      "classification": "UX",
+      "ms": 7
+    },
+    {
+      "step": "Validate",
+      "expected": "Clear validation checks",
+      "actual": "Recorded: Operator confirmed evidence instrumentation is trustworthy..\n\nThis decision is still DRAFT. Talk must satisfy governance before execute.\n\n• Done — Operator reviewed competing explanations (what else could be true).\n• Done — Operator confirmed evidence instrumentation is trustworthy.\n• Instrumentation: not confirmed\n\nNext: confirm instrumentation is trustworthy.",
+      "classification": "PASS",
+      "ms": 1090
+    },
+    {
+      "step": "Can we execute?",
+      "expected": "Honest capacity / feasibility",
+      "actual": "Yes — this is feasible.\n\nNo governed tasks to size yet.",
+      "classification": "PASS",
+      "ms": 1
+    },
+    {
+      "step": "Create decision",
+      "expected": "Draft decision from situation",
+      "actual": "A decision already exists for Feature quality / flag regression — FlowOps. Next: validate it in Talk, then execute.\n\nThis decision is still DRAFT. Talk must satisfy governance before execute.\n\n• Done — Operator reviewed competing explanations (what else could be true).\n• Done — Operator confirmed evidence instrumentation is trustworthy.\n• Instrumentation: not confirmed\n\nNext: confirm instrumentati",
+      "classification": "PASS",
+      "ms": 1,
+      "notes": "decision=7c878b4d…"
+    },
+    {
+      "step": "Execute",
+      "expected": "Governed commit + tasks",
+      "actual": "Executed. The decision for Feature quality / flag regression — FlowOps is ACTIVE with 2 governed tasks on the execution ledger.",
+      "classification": "PASS",
+      "ms": 908
+    },
+    {
+      "step": "Tasks",
+      "expected": "Visible execution ledger rows",
+      "actual": "Skye:PENDING, Chris:PENDING",
+      "classification": "PASS",
+      "ms": 0
+    },
+    {
+      "step": "Complete",
+      "expected": "Outcome path exists",
+      "actual": "Cannot complete yet.\n\nNot eligible for COMPLETED — 2 still open.\n\nThe decision stays ACTIVE until every governed task is DONE. I will not auto-complete.",
+      "classification": "PASS",
+      "ms": 2
+    },
+    {
+      "step": "Did it work? / Outcome",
+      "expected": "Business outcome assessment",
+      "actual": "Not yet. The decision for Feature quality / flag regression — FlowOps is still ACTIVE. Task completion is not business success — mark it done when the work is finished, then I will compare expected vs actual.",
+      "classification": "PASS",
+      "ms": 2
+    },
+    {
+      "step": "Learn",
+      "expected": "Calibration / learning explanation",
+      "actual": "What we learned from Feature quality / flag regression — FlowOps:\nNo evaluated decision outcome yet.\n\nNo bounded readiness prior yet — need 5 successful/failed outcomes on this pattern before the floor moves.",
+      "classification": "PASS",
+      "ms": 3
+    }
+  ],
+  "pass": 15,
+  "total": 16
+}

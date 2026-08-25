@@ -2,6 +2,7 @@ import { db } from "./database.js";
 import type { AuditorWriteContext } from "./auditor-context.js";
 import { processSignalFireAndForget } from "./intelligence/index.js";
 import { emitSignalShadowKilledEvidence } from "./execution-intelligence/index.js";
+import { scanClarificationForTask, scanClarifications } from "./clarification/index.js";
 
 /**
  * Rule enforcement outside the LLM. Scoped runs fire on every ledger write; {@link evaluateAll}
@@ -50,6 +51,11 @@ export class AuditorEngine {
       if (!row) return;
       this.evaluateTasksForOwner(row.owner);
       this.evaluateDecisionsForDecision(row.decision_id);
+      try {
+        scanClarificationForTask(ctx.taskId);
+      } catch (e) {
+        console.error("[Auditor] clarification scan failed:", e);
+      }
       return;
     }
     if (ctx.type === "signal_link") {
@@ -72,6 +78,12 @@ export class AuditorEngine {
     this.evaluateShadowWork();
     this.evaluateTasks();
     this.evaluateDecisions();
+    try {
+      const { opened } = scanClarifications();
+      if (opened > 0) console.log(`[Auditor] Opened ${opened} clarification request(s).`);
+    } catch (e) {
+      console.error("[Auditor] clarification sweep failed:", e);
+    }
   }
 
   /** @deprecated prefer {@link onWrite} after signal insert; hook covers ingest. */
@@ -89,7 +101,7 @@ export class AuditorEngine {
   private evaluateShadowWork() {
     db.rawRun(`
             UPDATE external_signals 
-            SET grace_expires_at = datetime(detected_at, CASE 
+            SET grace_expires_at = datetime(COALESCE(received_at, detected_at), CASE 
                 WHEN source = 'SLACK' THEN '+2 hours'
                 WHEN source = 'GITHUB' THEN '+12 hours'
                 WHEN source = 'JIRA' THEN '+12 hours'
@@ -99,7 +111,8 @@ export class AuditorEngine {
         `);
 
     const expiredSignals = db.rawGet(`
-            SELECT id, source, owner, content, grace_expires_at 
+            SELECT id, source, owner, content, grace_expires_at, risk, op_classification, urgency,
+                   external_id, ingest_meta
             FROM external_signals 
             WHERE state = 'UNVERIFIED' AND grace_expires_at < CURRENT_TIMESTAMP
         `);
@@ -113,7 +126,7 @@ export class AuditorEngine {
     db.rawRun(
       `
             UPDATE external_signals 
-            SET grace_expires_at = datetime(detected_at, CASE 
+            SET grace_expires_at = datetime(COALESCE(received_at, detected_at), CASE 
                 WHEN source = 'SLACK' THEN '+2 hours'
                 WHEN source = 'GITHUB' THEN '+12 hours'
                 WHEN source = 'JIRA' THEN '+12 hours'
@@ -126,7 +139,8 @@ export class AuditorEngine {
 
     const expiredSignals = db.rawGet(
       `
-            SELECT id, source, owner, content, grace_expires_at 
+            SELECT id, source, owner, content, grace_expires_at, risk, op_classification, urgency,
+                   external_id, ingest_meta
             FROM external_signals 
             WHERE id = ? AND state = 'UNVERIFIED' AND grace_expires_at < CURRENT_TIMESTAMP
         `,
@@ -138,7 +152,51 @@ export class AuditorEngine {
     }
   }
 
+  /**
+   * HSOG / corpus replay is evidence for accuracy & demos — not live shadow work.
+   * Killing it after 2–12h obliterates the ledger the grader and Signals UI need.
+   */
+  private isCorpusEvidence(signal: {
+    external_id?: string | null;
+    ingest_meta?: string | null;
+  }): boolean {
+    if (String(signal.external_id || "").startsWith("hsog:")) return true;
+    if (!signal.ingest_meta) return false;
+    try {
+      const meta = JSON.parse(signal.ingest_meta) as Record<string, unknown>;
+      const runtime = String(meta.integration_runtime || "");
+      if (runtime.startsWith("hsog")) return true;
+      if (meta.hsog_scenario_id != null && String(meta.hsog_scenario_id).trim()) return true;
+    } catch {
+      /* ignore */
+    }
+    return false;
+  }
+
+  private holdPastGrace(signal: { id: string; source: string }, reason: string) {
+    db.rawRun("UPDATE external_signals SET state = 'GRACE' WHERE id = ? AND state = 'UNVERIFIED'", [
+      signal.id,
+    ]);
+    db.rawRun("INSERT INTO audit_log (action, reason, affected_entity_id) VALUES (?, ?, ?)", [
+      "SIGNAL_GRACE_HELD",
+      reason,
+      signal.id,
+    ]);
+  }
+
   private killExpiredSignal(signal: any) {
+    if (
+      signal.risk === "high" ||
+      signal.op_classification === "incident" ||
+      signal.urgency === "immediate"
+    ) {
+      this.holdPastGrace(signal, `High-risk/incident held past grace: ${signal.source}`);
+      return;
+    }
+    if (this.isCorpusEvidence(signal)) {
+      this.holdPastGrace(signal, `Corpus/evidence held past grace: ${signal.source}`);
+      return;
+    }
     db.rawRun("UPDATE external_signals SET state = 'KILLED' WHERE id = ?", [signal.id]);
     db.rawRun(
       "INSERT INTO audit_log (action, reason, affected_entity_id) VALUES (?, ?, ?)",
@@ -173,11 +231,29 @@ export class AuditorEngine {
   }
 
   private evaluateTasksForOwner(owner: string) {
-    const { capacity } = db.getOwnerCapacity(owner);
-    const activeTasks = db.rawGet(
-      "SELECT task_id, weight, priority FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'",
-      [owner],
-    ) as { task_id: string; weight: number; priority: number }[];
+    const tenant = (
+      db.rawGet(
+        `SELECT d.user_id FROM execution_ledger e
+         INNER JOIN decision_ledger d ON d.id = e.decision_id
+         WHERE e.owner = ? LIMIT 1`,
+        [owner],
+      ) as { user_id: string }[]
+    )[0];
+    const { capacity } = db.getOwnerCapacity(owner, tenant?.user_id);
+    const activeTasks = (
+      tenant?.user_id
+        ? (db.rawGet(
+            `SELECT e.task_id, e.weight, e.priority
+             FROM execution_ledger e
+             INNER JOIN decision_ledger d ON d.id = e.decision_id
+             WHERE e.owner = ? AND e.status = 'ACTIVE' AND d.user_id = ?`,
+            [owner, tenant.user_id],
+          ) as { task_id: string; weight: number; priority: number }[])
+        : (db.rawGet(
+            "SELECT task_id, weight, priority FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'",
+            [owner],
+          ) as { task_id: string; weight: number; priority: number }[])
+    );
     const currentLoad = activeTasks.reduce((acc: number, t: { weight: number }) => acc + t.weight, 0);
 
     if (currentLoad > capacity) {

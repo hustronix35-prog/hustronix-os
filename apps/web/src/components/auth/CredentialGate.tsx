@@ -17,10 +17,17 @@ function resolveUserId(me: MePayload): string | undefined {
   return undefined;
 }
 
+/** TEMP: skip set-password modal so Mission Control loads without the form. */
+const SKIP_PASSWORD_GATE = true;
+
 export function CredentialGate({ children }: { children: ReactNode }) {
   const [needsPassword, setNeedsPassword] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (SKIP_PASSWORD_GATE) {
+      setNeedsPassword(false);
+      return;
+    }
     try {
       const me = await apiGet<MePayload>("/api/me");
       const uid = resolveUserId(me);

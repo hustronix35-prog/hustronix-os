@@ -1,0 +1,106 @@
+.wrap {
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+}
+
+.newBtn {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 7px;
+  background: var(--signal-gold);
+  color: #12110c;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: var(--shadow-gold);
+}
+
+.newBtn:hover {
+  filter: brightness(1.05);
+}
+
+.scroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  height: 38px;
+  transition: background 140ms ease-out;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background: rgb(var(--c-gold) / 0.04) !important;
+}
+
+.table td:first-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pages {
+  display: flex;
+  gap: 6px;
+}
+
+.pages button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.pageActive {
+  border-color: var(--border-gold) !important;
+  color: var(--signal-gold) !important;
+  background: rgb(var(--c-gold) / 0.12) !important;
+}

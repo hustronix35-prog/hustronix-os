@@ -106,6 +106,8 @@ There are **no Telegram or Slack tools** in these bundles (by design in `tools/i
 
 ## Related docs
 
+- `**docs/nango-to-signals-architecture.md**` — **Canonical** Nango → `external_signals` → intelligence contract. This Slack Events path is **transitional** until the Nango Slack pilot is proven.
+- `**docs/database-consistency-and-context.md**` — How SQLite stays the source of truth and why the LLM context window is not the memory.
 - `**docs/architecture-enforcement.md`** — Agent vs auditor, conflict gate, signal linking APIs, event-driven auditor + cron, backpressure env vars.
 - `**docs/integration-backlog.md**` — Broader ingestion roadmap (GitHub, Jira, etc.).
 - `**.cursor/rules/hustronix-stack.mdc**` — Stack and API overview.

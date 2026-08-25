@@ -3,11 +3,11 @@ import { db } from "../database.js";
 /**
  * Context Engine — the "always fetch decision context before reasoning" layer.
  *
- * Hustronix already enforces "one ACTIVE decision per tenant" in the database
- * layer, so the Context Engine returns at most one active decision plus its
- * live execution surface and a small recent-signals window. Everything here is
- * synchronous SQLite reads — the engine is on the hot path of every agent
- * turn and every signal write, so no LLM, no remote calls.
+ * Multiple ACTIVE vows are allowed when NO-lists do not overlap. The engine
+ * returns all active decisions (capped) plus live executions and a small
+ * recent-signals window. Everything here is synchronous SQLite reads — the
+ * engine is on the hot path of every agent turn and every signal write, so no
+ * LLM, no remote calls.
  *
  * The output is consumed in two places:
  *   1. {@link formatForPrompt} — embedded into the supervisor system prompt
@@ -16,17 +16,21 @@ import { db } from "../database.js";
  *      slice to score candidate signal→execution links.
  */
 
+export type ActiveDecisionSlice = {
+  id: string;
+  vow: string;
+  expectedOutcomes: unknown;
+  constraints: string[];
+  reversalConditions: string | null;
+  confidence: number;
+  createdAt: string;
+};
+
 export interface DecisionContext {
   userId: string;
-  activeDecision: {
-    id: string;
-    vow: string;
-    expectedOutcomes: unknown;
-    constraints: string[];
-    reversalConditions: string | null;
-    confidence: number;
-    createdAt: string;
-  } | null;
+  /** Newest ACTIVE vow (compat). Prefer {@link activeDecisions}. */
+  activeDecision: ActiveDecisionSlice | null;
+  activeDecisions: ActiveDecisionSlice[];
   activeExecutions: {
     taskId: string;
     decisionId: string;
@@ -74,24 +78,28 @@ function safeJsonArray(raw: unknown): string[] {
  * `userId === "system"` returns the system tenant's view (which is also the
  * "everything" view per the multi-tenant rules in `database.ts`).
  */
+function mapActiveDecision(decision: NonNullable<ReturnType<typeof db.getActiveDecision>>): ActiveDecisionSlice {
+  return {
+    id: decision.id,
+    vow: decision.vow,
+    expectedOutcomes: parseExpectedOutcomes(decision.expected_outcomes),
+    constraints: safeJsonArray(decision.constraints),
+    reversalConditions: decision.reversal_conditions ?? null,
+    confidence: decision.confidence,
+    createdAt: decision.created_at,
+  };
+}
+
 export function fetchDecisionContext(userId: string, recentLimit = 12): DecisionContext {
-  const decision = db.getActiveDecision(userId);
+  const decisions = db.getActiveDecisions(userId, 8);
   const executions = db.getActiveExecutions(userId, 50);
   const signals = db.getRecentSignals(userId, recentLimit);
+  const activeDecisions = decisions.map(mapActiveDecision);
 
   return {
     userId,
-    activeDecision: decision
-      ? {
-          id: decision.id,
-          vow: decision.vow,
-          expectedOutcomes: parseExpectedOutcomes(decision.expected_outcomes),
-          constraints: safeJsonArray(decision.constraints),
-          reversalConditions: decision.reversal_conditions ?? null,
-          confidence: decision.confidence,
-          createdAt: decision.created_at,
-        }
-      : null,
+    activeDecision: activeDecisions[0] ?? null,
+    activeDecisions,
     activeExecutions: executions.map((e) => ({
       taskId: e.task_id,
       decisionId: e.decision_id,
@@ -116,7 +124,7 @@ export function fetchDecisionContext(userId: string, recentLimit = 12): Decision
       relatedDecisionId: (s.related_decision_id as string | null) ?? null,
       linkedExecutionId: (s.linked_execution_id as string | null) ?? null,
     })),
-    hasActiveCommitment: !!decision,
+    hasActiveCommitment: activeDecisions.length > 0,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -154,32 +162,34 @@ export function formatForPrompt(
   const maxExpectedOutcomesChars = opts.maxExpectedOutcomesChars ?? 560;
   const signalContentChars = opts.signalContentChars ?? 140;
 
-  const decisionBlock = ctx.activeDecision
-    ? [
-        `### ACTIVE DECISION (id=${ctx.activeDecision.id})`,
-        `VOW: ${
-          ctx.activeDecision.vow.length > maxVowChars
-            ? `${ctx.activeDecision.vow.slice(0, maxVowChars)}…`
-            : ctx.activeDecision.vow
-        }`,
-        `EXPECTED_OUTCOMES: ${(() => {
-          let s = JSON.stringify(ctx.activeDecision.expectedOutcomes);
-          if (s.length > maxExpectedOutcomesChars) s = `${s.slice(0, maxExpectedOutcomesChars)}…`;
-          return s;
-        })()}`,
-        `CONSTRAINTS (NO list): ${JSON.stringify(ctx.activeDecision.constraints)}`,
-        ctx.activeDecision.reversalConditions
-          ? `REVERSAL_CONDITIONS: ${
-              ctx.activeDecision.reversalConditions.length > 320
-                ? `${ctx.activeDecision.reversalConditions.slice(0, 320)}…`
-                : ctx.activeDecision.reversalConditions
-            }`
-          : null,
-        `CONFIDENCE: ${ctx.activeDecision.confidence}`,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : "### ACTIVE DECISION\n(none — no enforcement floor right now; new tracked work requires log_strategic_decision first)";
+  const actives = ctx.activeDecisions?.length ? ctx.activeDecisions : ctx.activeDecision ? [ctx.activeDecision] : [];
+  const decisionBlock =
+    actives.length === 0
+      ? "### ACTIVE DECISIONS\n(none — no enforcement floor right now; new tracked work requires log_strategic_decision first)"
+      : actives
+          .map((d, i) =>
+            [
+              `### ACTIVE DECISION ${i + 1}/${actives.length} (id=${d.id})`,
+              `VOW: ${d.vow.length > maxVowChars ? `${d.vow.slice(0, maxVowChars)}…` : d.vow}`,
+              `EXPECTED_OUTCOMES: ${(() => {
+                let s = JSON.stringify(d.expectedOutcomes);
+                if (s.length > maxExpectedOutcomesChars) s = `${s.slice(0, maxExpectedOutcomesChars)}…`;
+                return s;
+              })()}`,
+              `CONSTRAINTS (NO list): ${JSON.stringify(d.constraints)}`,
+              d.reversalConditions
+                ? `REVERSAL_CONDITIONS: ${
+                    d.reversalConditions.length > 320
+                      ? `${d.reversalConditions.slice(0, 320)}…`
+                      : d.reversalConditions
+                  }`
+                : null,
+              `CONFIDENCE: ${d.confidence}`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          )
+          .join("\n\n");
 
   const execLines = ctx.activeExecutions.slice(0, maxExecutions).map((e) => {
     const cond = (e.successCondition || "").slice(0, 120);

@@ -70,10 +70,10 @@ export function findDriftSignals(userId: string, opts: DriftQueryOptions = {}): 
   const rows = db.rawGet(
     `SELECT id, source, source_subtype, content, owner, detected_at, intent, risk,
             intent_confidence, related_decision_id, urgency, op_classification, state,
-            CAST((julianday('now') - julianday(detected_at)) * 24 * 60 AS INTEGER) AS age_minutes
+            CAST((julianday('now') - julianday(COALESCE(received_at, detected_at))) * 24 * 60 AS INTEGER) AS age_minutes
        FROM external_signals
       WHERE state IN ('UNVERIFIED', 'GRACE')
-        AND CAST((julianday('now') - julianday(detected_at)) * 24 * 60 AS INTEGER) >= ?
+        AND CAST((julianday('now') - julianday(COALESCE(received_at, detected_at))) * 24 * 60 AS INTEGER) >= ?
         ${riskFilter}
         ${tenantSql}
       ORDER BY risk DESC, age_minutes DESC
@@ -187,16 +187,18 @@ export interface ConflictingExecution {
  * the kind of structural conflict a human would miss.
  */
 export function findConflictingExecutions(userId: string, limit = 100): ConflictingExecution[] {
-  const dec = db.getActiveDecision(userId);
-  if (!dec) return [];
+  const decisions = db.getActiveDecisions(userId, 12);
+  if (!decisions.length) return [];
 
-  let constraints: string[] = [];
-  try {
-    constraints = JSON.parse(dec.constraints || "[]") as string[];
-  } catch {
-    constraints = [];
-  }
-  if (!Array.isArray(constraints) || constraints.length === 0) return [];
+  const constraintByDecision = decisions.map((dec) => {
+    let constraints: string[] = [];
+    try {
+      constraints = JSON.parse(dec.constraints || "[]") as string[];
+    } catch {
+      constraints = [];
+    }
+    return { id: dec.id, constraints: Array.isArray(constraints) ? constraints : [] };
+  });
 
   const execs = db.getActiveExecutions(userId, 500);
 
@@ -204,20 +206,25 @@ export function findConflictingExecutions(userId: string, limit = 100): Conflict
   for (const exec of execs) {
     const text = `${exec.success_condition ?? ""} ${exec.failure_condition ?? ""}`.toLowerCase();
     if (!text.trim()) continue;
-    for (const c of constraints) {
-      const tokens = String(c).toLowerCase().split(/\s+/).filter((t) => t.length >= 4);
-      const hits = tokens.filter((t) => text.includes(t)).length;
-      if (hits >= Math.max(1, Math.floor(tokens.length / 3))) {
-        out.push({
-          taskId: exec.task_id,
-          decisionId: exec.decision_id,
-          owner: exec.owner,
-          status: exec.status,
-          successCondition: exec.success_condition,
-          matchedConstraint: String(c),
-        });
-        break;
+    let matched = false;
+    for (const dec of constraintByDecision) {
+      for (const c of dec.constraints) {
+        const tokens = String(c).toLowerCase().split(/\s+/).filter((t) => t.length >= 4);
+        const hits = tokens.filter((t) => text.includes(t)).length;
+        if (hits >= Math.max(1, Math.floor(tokens.length / 3))) {
+          out.push({
+            taskId: exec.task_id,
+            decisionId: exec.decision_id,
+            owner: exec.owner,
+            status: exec.status,
+            successCondition: exec.success_condition,
+            matchedConstraint: String(c),
+          });
+          matched = true;
+          break;
+        }
       }
+      if (matched) break;
     }
     if (out.length >= limit) break;
   }

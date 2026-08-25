@@ -65,10 +65,18 @@ const ALLOWED_EXACT = new Set([
   "ui.auto_assign_executions",
   "ui.smart_notifications",
   "ui.ai_insights_reports",
+  "ui.autonomy_level",
   "ui.notify_decision_updates",
   "ui.notify_execution_milestones",
   "ui.notify_signal_digest",
   "ui.notify_weekly_summary",
+  "product.tour.completed",
+  "product.tour.skipped",
+  "product.tour.last_step",
+  "product.tour.completed_at",
+  "product.tour.dismissed_at",
+  "data.train_on_customer_data",
+  "data.retention_days",
 ]);
 
 const ALLOWED_PREFIXES = ["profile."] as const;

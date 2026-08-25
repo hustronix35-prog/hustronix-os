@@ -8,7 +8,8 @@ alwaysApply: true
 ## Architecture
 
 - **Backend**: Node + Express + WebSocket in [`apps/api/src/server.ts`](../../apps/api/src/server.ts), SQLite via [`apps/api/src/database.ts`](../../apps/api/src/database.ts). Default HTTP port **3005** (`PORT`).
-- **Frontend**: Next.js App Router in [`apps/web/`](../../apps/web/). Default dev port **3000**. Production = unified process (API + WS + Next) unless deliberately split behind a reverse proxy.
+- **Frontend (default)**: Next.js App Router in [`apps/os-ui/`](../../apps/os-ui/) — the Decision OS shell (“new ui”). Default dev port **3000**. Unified process uses `config.paths.webRoot` → `apps/os-ui` (override with `HUSTRONIX_WEB_ROOT`).
+- **Legacy UI**: [`apps/web/`](../../apps/web/) kept for marketing/auth reference — `npm run dev:web:legacy`.
 
 ## Environment
 
@@ -16,11 +17,11 @@ alwaysApply: true
 
 **Anthropic routing (server):** Coordinator uses **premium** tier (`ANTHROPIC_MODEL_PREMIUM` or legacy `ANTHROPIC_MODEL`; default **`claude-sonnet-4-6`**). Sub-agents / intelligence use **fast** tier (`ANTHROPIC_MODEL_FAST`; default **`claude-haiku-4-5-20251001`**). Optional **`LLM_COORDINATOR_HAIKU=1`** forces the main coordinator onto the fast Haiku model (much cheaper). Retired snapshot ids redirect at runtime; fast tier rejects non-Haiku ids. SQLite `anthropicModel` overrides premium when env omits premium/legacy model. **`GET /api/health`** returns `llmConfigured`, `anthropicPremiumModel`, and `anthropicFastModel` (no secrets). **Cost-saver mode is default** (tighter history/iterations/caps); disable with `LLM_COST_SAVER=0`. OpenAI default chat model is **`gpt-4o-mini`** (`OPENAI_CHAT_MODEL`).
 
-**UI (`apps/web/.env.local`):**
+**UI (`apps/os-ui/.env.local`):**
 
 - **`NEXT_PUBLIC_API_URL`** — Absolute API origin (e.g. `http://127.0.0.1:3005`) **or leave unset / empty** so browser calls same-origin `/api/*` (recommended with cookies).
 - **`API_PROXY_TARGET`** (server-only, Next rewrites) — Where Next proxies `/api/:path*` when using same-origin mode; default `http://127.0.0.1:3005`.
-- **`NEXT_PUBLIC_WS_URL`** — Chat WebSocket (e.g. `ws://127.0.0.1:3005`). On localhost, [`api.ts`](../../apps/web/src/lib/api.ts) can fall back to port 3005 when HTTP base is empty.
+- **`NEXT_PUBLIC_WS_URL`** — Chat WebSocket (e.g. `ws://127.0.0.1:3005`). On localhost, [`api.ts`](../../apps/os-ui/src/lib/api.ts) can fall back to port 3005 when HTTP base is empty.
 - Optional **`NEXT_PUBLIC_API_KEY`** + stored **`hustronix_userId`** (automation only; sent as **`x-api-key` + `x-user-id`**). Normal UI auth uses the session cookie only.
 
 ## Auth contract
@@ -31,22 +32,24 @@ alwaysApply: true
 - **`POST /api/auth/logout`** revokes the session matching the cookie. Sessions + API keys: **`GET/POST/DELETE /api/auth/api-keys`**, **`GET/DELETE /api/auth/sessions`**, **`POST /api/auth/sessions/revoke-all`**. Profile updates: **`PATCH /api/me`** → `settings` keys **`profile.*`** (writable keys allowlisted in [`settings-keys.ts`](../../apps/api/src/security/settings-keys.ts)).
 - **`external_signals.user_id`** scopes per-tenant signals; **`system`** automation principal does not receive cross-tenant signal reads.
 - WebSocket: session cookie; optional **`?session=`** when **`ALLOW_WS_SESSION_QUERY=1`**; loopback **`?userId=`** only with **`ALLOW_LOOPBACK_AUTH=1`** + API key ([`resolveWsAuth`](../../apps/api/src/middleware/auth.ts)).
-- UI **`credentials: "include"`** ([`api.ts`](../../apps/web/src/lib/api.ts)); **`hustronix_userId`** in localStorage is optional dev automation pairing with **`NEXT_PUBLIC_API_KEY`** only.
+- UI **`credentials: "include"`** ([`api.ts`](../../apps/os-ui/src/lib/api.ts)); **`hustronix_userId`** in localStorage is optional dev automation pairing with **`NEXT_PUBLIC_API_KEY`** only.
 
 **Proxy note:** Same-origin `/api` rewrites help cookies; if `Set-Cookie` is dropped by a proxy, align cookie `Domain`/`Path` or terminate auth at the edge.
 
-## Wired UI routes (live API)
+## Wired UI routes (live API) — `apps/os-ui`
 
 | Route | Behavior |
 |-------|----------|
-| `/mission-control` | `GET /api/mission-control/summary`, `GET /api/decisions`, `POST /api/decisions/commit`, WebSocket `COMMIT_DECISION` |
-| `/execute` | `GET /api/execution/ledger?scope=all`, `GET /api/execution/capacity`, `POST /api/execution/transition` |
-| `/signals` | `GET /api/execution/signals/by-state`, `POST /api/execution/link` |
-| `/chat` | WebSocket: `text`, `text_chunk`, `history`, `new_session` |
-| `/reports` | `GET /api/metrics/reports` |
-| `/teams` | `GET /api/metrics/teams` |
-| `/profile` | `GET/PATCH /api/me`, `GET /api/activity`, `GET/POST/DELETE /api/auth/api-keys`, sessions endpoints |
-| `/settings` | `GET /api/settings`, `POST /api/settings/bulk` (General + Notifications toggles mapped to `PREF.*`) |
+| `/` (Home) | `GET /api/mission-control/summary` (+ mock fallback) |
+| `/decide` | `GET /api/decisions`, `POST /api/decisions/commit` (approve) |
+| `/execute` | `GET /api/execution/ledger`, `GET /api/execution/capacity`, transitions |
+| `/alerts` | `GET /api/notifications`, mark-read ≈ ack/dismiss |
+| `/analytics` | `GET /api/analytics/summary` (+ mock fallback) |
+| `/settings/*` | `GET/PATCH /api/me`, `GET /api/settings`, `POST /api/settings/bulk` |
+| `/login`, `/signup` | `POST /api/auth/login`, OTP + `POST /api/auth/register` |
+| Ask composer | live summary context; full agent = WebSocket `/ws` |
+
+Legacy dashboard routes (`/mission-control`, `/chat`, …) remain on `apps/web` via `dev:web:legacy`.
 
 ## Public marketing API
 
@@ -56,18 +59,19 @@ alwaysApply: true
 
 ## Marketing surfaces
 
-- **Product landing** (`/`, Next) — Sign in / Get Started → `/login`, `/signup`; hero and pricing CTAs point at the app.
+- **Product landing** — prefer `netlify-landing/` for demand validation; legacy marketing also in `apps/web`.
 - **Demand-validation static site** (`netlify-landing/`) — early-access + contact forms only; no product app links. Regenerate with `node scripts/export-netlify-landing.mjs` (sanitizes after export). API: **`POST /api/early-access`**, **`POST /api/contact`** (SQLite + optional SMTP).
 
 ## Still mock / partial
 
-- Profile **Security** password form UI (backend **`POST /api/auth/password`** exists).
-- Settings **Organization** free-text and some tabs (Rules/Capacity in UI only).
-- **Live ingestion** into `external_signals` is via API/UI/seeding only (Telegram/Slack bridges removed from this repo).
+- Brain entity catalogs (people/projects/docs tables) still fixture-heavy until domain APIs are mapped.
+- Ask composer is not full WS agent chat yet.
+- Profile **Security** MFA UX is minimal on os-ui (legacy web has full OTP/TOTP UI).
+- **Live ingestion** into `external_signals` is via API/UI/seeding only.
 
 ## Implementation rules
 
-1. **New UI data** — Prefer `apiGet`/`apiPost` from [`apps/web/src/lib/api.ts`](../../apps/web/src/lib/api.ts); map DB shapes in [`mappers.ts`](../../apps/web/src/lib/mappers.ts).
-2. **New API** — Use `authMiddleware`; scope by `(req as any).userId`; keep responses JSON-stable for the UI.
+1. **New UI data** — Prefer `apiGet`/`apiPost` from [`apps/os-ui/src/lib/api.ts`](../../apps/os-ui/src/lib/api.ts); keep mock fixtures as unauthenticated fallback.
+2. **New API** — Use `authMiddleware`; scope by `(req as any).userId`; keep responses JSON-stable for the UI. Do not fork a second backend for os-ui.
 3. **CORS** — Add every browser origin that hosts the UI to `ALLOWED_ORIGINS`; use `credentials: true` + explicit origins when cookies matter.
 4. **Product positioning** — Ledger + auditor = source of truth; LLM/chat is an interface into that system, not a replacement for enforcement rules.

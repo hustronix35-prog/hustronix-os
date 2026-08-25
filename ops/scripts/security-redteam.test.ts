@@ -266,6 +266,10 @@ describe("V8 — Approval gate", () => {
     assert.equal(requiresHumanApproval("strategist", "remember_fact"), true);
     assert.equal(requiresHumanApproval("owner", "remember_fact"), true);
     assert.equal(requiresHumanApproval("admin", "remember_fact"), true);
+    assert.equal(requiresHumanApproval("owner", "commit_decision"), true);
+    assert.equal(requiresHumanApproval("owner", "commit_decision", "session"), false);
+    assert.equal(requiresHumanApproval("owner", "commit_decision", "legacy_cookie"), false);
+    assert.equal(requiresHumanApproval("owner", "commit_decision", "api_token"), true);
   });
 });
 

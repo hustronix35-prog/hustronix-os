@@ -16,6 +16,28 @@ import {
 import { computeOrganizationalTruth, scheduleOrganizationalTruthRecompute } from "../security/organizational-truth.js";
 import { resolveTenantContext } from "../security/tenant-context.js";
 import { patchOrganizationState } from "../state/organization-state.js";
+import { runReconciliationForSignal } from "../reconciliation/index.js";
+import { scheduleSituationDetection, runSituationDetection } from "./situation-detect.js";
+
+export { runSituationDetection, scheduleSituationDetection, purgeDraftSituationExecutionTasks, SITUATION_PATTERNS } from "./situation-detect.js";
+export { listSituationsForUser, getSituationDetail, runProgressiveSituationEngine } from "./situation-engine.js";
+export { findSituationsForQuestion, talkSituationKernel } from "./situation-chat.js";
+export {
+  talkToHustronix,
+  talkToHustronixAsync,
+  runTalkTurn,
+  runTalkTurnAsync,
+} from "./talk/talk-orchestrator.js";
+export type { TalkActionId } from "./situation-chat.js";
+export type { TalkMode } from "./talk/talk-intent.js";
+export { extractEntities } from "./entity-resolver.js";
+export { computeReadiness } from "./readiness.js";
+export { buildEvidenceCluster } from "./evidence-cluster.js";
+export { inferDependenciesFromSignals } from "./dependency-infer.js";
+export { runEmergentSituationEngine, EMERGENT_THEMES } from "./emergent-situations.js";
+export { buildTeamsIntelligence } from "./teams-intelligence.js";
+export { inferDependenciesFromWorkflow } from "./workflow-deps.js";
+export { recordSituationLearnings, situationCalibration } from "./situation-learning.js";
 
 /**
  * Intelligence orchestrator — the single entry point the rest of the system
@@ -246,13 +268,13 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
   const heuristicSufficient =
     opts.noLlm ||
     !trust.allowLlmReasoning ||
-    !context.activeDecision ||
+    !context.hasActiveCommitment ||
     (heuristic.risk === "high" && heuristic.signal_type === "execution");
 
   let detected: ReturnType<typeof detectSignalHeuristic>;
   if (heuristicSufficient) {
     detected = heuristic;
-    if (!context.activeDecision && heuristic.signal_type === "noise") {
+    if (!context.hasActiveCommitment && heuristic.signal_type === "noise") {
       /** No decision + noisy chatter — record + bail before any embed/link. */
       applyEnrichment(signalId, detected, detected.extras, null);
       return { signalId, detected, linked: null, skippedReason: "no-active-decision-and-noisy" };
@@ -285,6 +307,16 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
     scheduleOrganizationalTruthRecompute(userId);
   } catch {
     /* non-blocking */
+  }
+
+  /** Claim reconciliation — fail independently of enrich / truth / link. */
+  try {
+    runReconciliationForSignal(signalId);
+  } catch (err) {
+    console.warn(
+      `[intelligence] reconciliation failed for signal=${signalId}:`,
+      err instanceof Error ? err.message : err,
+    );
   }
 
   indexSignalAsEvidence({
@@ -366,6 +398,7 @@ export async function processSignal(signalId: string, opts: ProcessSignalOptions
     }
   }
 
+  scheduleSituationDetection(userId);
   return { signalId, detected, linked };
 }
 
@@ -473,7 +506,8 @@ function wireSignalGraphOnIngest(params: {
  * synchronous insert returns before this kicks off.
  */
 export function processSignalFireAndForget(signalId: string): void {
-  processSignal(signalId).catch((err) => {
+  const noLlm = process.env.HUSTRONIX_INTEL_NO_LLM === "1" || process.env.HUSTRONIX_INTEL_NO_LLM === "true";
+  processSignal(signalId, noLlm ? { noLlm: true } : undefined).catch((err) => {
     console.error(`[intelligence] processSignal(${signalId}) crashed:`, err);
   });
 }
@@ -499,6 +533,13 @@ export async function reprocessUnenrichedSignals(userId: string, limit = 50): Pr
   for (const r of rows) {
     const res = await processSignal(r.id, { noLlm: true });
     if (res) processed++;
+  }
+  if (userId && userId !== "system" && processed > 0) {
+    try {
+      runSituationDetection(userId);
+    } catch {
+      /* non-blocking */
+    }
   }
   return processed;
 }

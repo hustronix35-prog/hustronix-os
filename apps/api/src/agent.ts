@@ -20,7 +20,11 @@ import { formatPlanModePrompt } from "./plan-mode.js";
 import type { AuthKind } from "./middleware/auth.js";
 import { secureAuthorizeToolExecution } from "./security/agent-tool-gate.js";
 import { gateUserChatInput, executeSecuredTool, formatSecurityError } from "./security/security-gateway.js";
-import { agentToolArgsForGateway } from "./security/mutation-handlers.js";
+import {
+  agentToolArgsForGateway,
+  mutationCreateDraftDecision,
+  mutationTransitionExecution,
+} from "./security/mutation-handlers.js";
 import { assertSubAgentToolAllowed } from "./security/tool-permissions.js";
 import { getMcpToolsAsOpenAIFormat } from "./mcp.js";
 import { executeSecuredMcpTool, isMcpToolName } from "./mcp-gateway.js";
@@ -35,6 +39,8 @@ import {
 export type RunAgentOptions = {
   /** Cursor-style plan turn: clarifying questions before mutating tools. */
   planMode?: boolean;
+  /** Chat console: recommend from ledger; never mutate. */
+  consoleMode?: boolean;
   authKind?: AuthKind | string;
 };
 
@@ -270,7 +276,7 @@ async function runSubAgent(
 function buildSupervisorPrompt(
   userId: string,
   worldModel: Record<string, unknown>,
-  options?: { planMode?: boolean },
+  options?: { planMode?: boolean; consoleMode?: boolean },
 ): string {
   const pendingDecisions = db.getPendingDecisions(userId);
   const recentOutcomes = db.getRecentOutcomes(userId, config.agent.supervisorRecentAuditOutcomes);
@@ -308,7 +314,7 @@ function buildSupervisorPrompt(
     }
   }
 
-  const planModeBlock = formatPlanModePrompt(Boolean(options?.planMode));
+  const planModeBlock = formatPlanModePrompt(Boolean(options?.planMode), Boolean(options?.consoleMode));
 
   return `
 ### HUX-COORDINATOR | LEDGER MODE
@@ -423,10 +429,10 @@ function buildCoordinatorTools(userId: string, authKind?: AuthKind | string): an
         required: ["vow", "expected_outcomes", "constraints", "reversal_conditions", "tasks", "institutional_reasoning"],
       },
       handler: async (data: any) => {
-        const id = db.saveDecisionEvent(userId, data);
+        const created = mutationCreateDraftDecision(userId, data);
         return {
           success: true,
-          decision_id: id,
+          decision_id: created.id,
           message:
             "Decision recorded as DRAFT. Server attaches epistemic_derivation for v3. Activation requires causal_validation.complete, all validation_requirements SATISFIED, derived confidence ≥ floor, per institutional contract.",
         };
@@ -444,7 +450,12 @@ function buildCoordinatorTools(userId: string, authKind?: AuthKind | string): an
         },
         required: ["task_id", "newState", "reason"],
       },
-      handler: async (data: any) => db.transitionExecutionState(data.task_id, data.newState, data.reason),
+      handler: async (data: any) =>
+        mutationTransitionExecution(userId, {
+          taskId: data.task_id,
+          newState: data.newState,
+          reason: data.reason,
+        }),
     },
     ...memoryTools,
   ];
@@ -530,34 +541,47 @@ export async function runAgent(
   }
 
   const planMode = Boolean(options?.planMode);
-  const supervisorPrompt = buildSupervisorPrompt(userId, worldModel, { planMode });
+  const consoleMode = Boolean(options?.consoleMode);
+  const supervisorPrompt = buildSupervisorPrompt(userId, worldModel, { planMode, consoleMode });
   const routerContext = routing.contextBlock ? `\n${routing.contextBlock}\n` : "";
-  const coordinatorTools = buildCoordinatorTools(userId, authKind);
+  const mutatingToolNames = new Set([
+    "log_strategic_decision",
+    "transition_execution",
+    "remember_fact",
+    "update_domain_state",
+  ]);
+  const coordinatorTools = buildCoordinatorTools(userId, authKind).filter(
+    (t: { name?: string }) => !(consoleMode && mutatingToolNames.has(String(t.name || ""))),
+  );
   try {
-    const mcpTools = await getMcpToolsAsOpenAIFormat();
-    for (const t of mcpTools) {
-      if (t?.function?.name) {
-        coordinatorTools.push({
-          name: t.function.name,
-          description: t.function.description,
-          parameters: t.function.parameters,
-          handler: async (args: Record<string, unknown>) =>
-            executeSecuredMcpTool({
-              userId,
-              authKind,
-              toolName: t.function.name,
-              toolArgs: args,
-            }),
-        });
+    if (!consoleMode) {
+      const mcpTools = await getMcpToolsAsOpenAIFormat();
+      for (const t of mcpTools) {
+        if (t?.function?.name) {
+          coordinatorTools.push({
+            name: t.function.name,
+            description: t.function.description,
+            parameters: t.function.parameters,
+            handler: async (args: Record<string, unknown>) =>
+              executeSecuredMcpTool({
+                userId,
+                authKind,
+                toolName: t.function.name,
+                toolArgs: args,
+              }),
+          });
+        }
       }
     }
   } catch (e) {
     console.warn("[Coordinator] MCP tools unavailable:", e);
   }
 
-  const perfHint = planMode
-    ? "\n\nPlan mode: prioritize clarifying questions over tool calls this turn; keep prose short."
-    : "\n\nPerformance & cost: Prefer short user-visible prose (headline + bullets); put depth inside tools (e.g. institutional_reasoning), not long narrative before tool calls. Skip redundant tool rounds. When the request is ambiguous, ask clarifying questions before mutating tools.";
+  const perfHint = consoleMode
+    ? "\n\nConsole mode: recommend from ledger evidence; do not mutate. Point the user to Approve & Execute."
+    : planMode
+      ? "\n\nPlan mode: prioritize clarifying questions over tool calls this turn; keep prose short."
+      : "\n\nPerformance & cost: Prefer short user-visible prose (headline + bullets); put depth inside tools (e.g. institutional_reasoning), not long narrative before tool calls. Skip redundant tool rounds. When the request is ambiguous, ask clarifying questions before mutating tools.";
 
   let messages: llm.Message[] = [
     { role: "system", content: `${coreSystemPrompt}\n\n${supervisorPrompt}${routerContext}${perfHint}` },
@@ -727,12 +751,15 @@ export async function runAgent(
           if (args.email) args.email = preservedLiteralEmail(args.email, userInput);
 
           const gatewayArgs = agentToolArgsForGateway(tc.name, args as Record<string, unknown>);
-          const mutatingTools = new Set([
-            "log_strategic_decision",
-            "transition_execution",
-            "remember_fact",
-            "update_domain_state",
-          ]);
+          const mutatingTools = mutatingToolNames;
+          if (consoleMode && mutatingTools.has(tc.name)) {
+            return {
+              tool_call_id: tc.id,
+              name: tc.name,
+              content:
+                "Blocked in console mode. Recommend the action and tell the user to click Approve & Execute.",
+            };
+          }
 
           db.log(userId, "Coordinator Execute", `${tc.name}`);
           let resultStr: string;

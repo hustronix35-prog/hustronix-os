@@ -24,6 +24,8 @@ hustronix.db*
 
 # Legacy UI path after monorepo migration
 hustronix-ui/
+# Nested duplicate of apps/os-ui (do not commit; product UI is apps/os-ui)
+/new ui/
 
 # Local dev data
 leads.csv

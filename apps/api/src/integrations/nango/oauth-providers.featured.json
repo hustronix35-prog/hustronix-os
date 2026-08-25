@@ -1,0 +1,342 @@
+﻿[
+    {
+        "slug":  "slack",
+        "name":  "Slack",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/slack.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/slack"
+    },
+    {
+        "slug":  "github",
+        "name":  "GitHub (User OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/github.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/github"
+    },
+    {
+        "slug":  "notion",
+        "name":  "Notion",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/notion.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/notion"
+    },
+    {
+        "slug":  "jira",
+        "name":  "Jira (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jira.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jira"
+    },
+    {
+        "slug":  "linear",
+        "name":  "Linear",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linear.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linear"
+    },
+    {
+        "slug":  "asana",
+        "name":  "Asana",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/asana.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/asana"
+    },
+    {
+        "slug":  "salesforce",
+        "name":  "Salesforce",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesforce.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesforce"
+    },
+    {
+        "slug":  "hubspot",
+        "name":  "HubSpot",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/hubspot.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/hubspot"
+    },
+    {
+        "slug":  "zoom",
+        "name":  "Zoom",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoom.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoom"
+    },
+    {
+        "slug":  "google-mail",
+        "name":  "Gmail",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-mail.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-mail"
+    },
+    {
+        "slug":  "google-drive",
+        "name":  "Google Drive",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-drive.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-drive"
+    },
+    {
+        "slug":  "google-calendar",
+        "name":  "Google Calendar",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-calendar.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-calendar"
+    },
+    {
+        "slug":  "microsoft-teams",
+        "name":  "Microsoft Teams",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-teams.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-teams"
+    },
+    {
+        "slug":  "microsoft",
+        "name":  "Microsoft",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft"
+    },
+    {
+        "slug":  "calendly",
+        "name":  "Calendly",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/calendly.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/calendly"
+    },
+    {
+        "slug":  "confluence",
+        "name":  "Confluence",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/confluence.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/confluence"
+    },
+    {
+        "slug":  "airtable",
+        "name":  "Airtable",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/airtable.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/airtable"
+    },
+    {
+        "slug":  "shopify",
+        "name":  "Shopify (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/shopify.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/shopify"
+    },
+    {
+        "slug":  "stripe",
+        "name":  "Stripe Connect",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stripe.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stripe"
+    },
+    {
+        "slug":  "xero",
+        "name":  "Xero",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/xero.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/xero"
+    },
+    {
+        "slug":  "quickbooks",
+        "name":  "Quickbooks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/quickbooks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/quickbooks"
+    },
+    {
+        "slug":  "zendesk",
+        "name":  "Zendesk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zendesk.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zendesk"
+    },
+    {
+        "slug":  "intercom",
+        "name":  "Intercom",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/intercom.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/intercom"
+    },
+    {
+        "slug":  "gitlab",
+        "name":  "GitLab",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gitlab.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gitlab"
+    },
+    {
+        "slug":  "bitbucket",
+        "name":  "Bitbucket",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bitbucket.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bitbucket"
+    },
+    {
+        "slug":  "dropbox",
+        "name":  "Dropbox",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dropbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dropbox"
+    },
+    {
+        "slug":  "box",
+        "name":  "Box",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/box.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/box"
+    },
+    {
+        "slug":  "figma",
+        "name":  "Figma",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/figma.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/figma"
+    },
+    {
+        "slug":  "discord",
+        "name":  "Discord",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/discord.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/discord"
+    },
+    {
+        "slug":  "twitter",
+        "name":  "Twitter (v1)",
+        "authMode":  "OAUTH1",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twitter.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twitter"
+    },
+    {
+        "slug":  "linkedin",
+        "name":  "LinkedIn",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linkedin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linkedin"
+    },
+    {
+        "slug":  "outlook",
+        "name":  "Outlook",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/outlook.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/outlook"
+    },
+    {
+        "slug":  "google",
+        "name":  "Google",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google"
+    },
+    {
+        "slug":  "atlassian",
+        "name":  "Atlassian",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/atlassian.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/atlassian"
+    }
+]

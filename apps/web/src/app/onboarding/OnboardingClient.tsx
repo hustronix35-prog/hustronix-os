@@ -205,7 +205,6 @@ export function OnboardingClient() {
     setLoading(true);
     try {
       const digest = slice(buildDigest(form), 12000);
-      const core = slice(digest, 4000);
       await apiPost("/api/settings/bulk", {
         settings: {
           "org.onboarding.completed": "1",
@@ -222,7 +221,6 @@ export function OnboardingClient() {
           "org.stack_snapshot": slice(form.stackSnapshot, 4000),
           "org.constraints_notes": slice(form.constraintsNotes, 4000),
           "org.agent_context_digest": digest,
-          "core_memory.organization": core,
         },
       });
       try {

@@ -7,14 +7,26 @@ import { apiGet, clearAuthSession } from "@/lib/api";
 /**
  * Sends authenticated users without org onboarding to `/onboarding`.
  * Skips for `system` (local automation) and when already on the onboarding route.
+ *
+ * TEMP: `SKIP_ONBOARDING_GATE` lets dashboard routes (e.g. Mission Control) load
+ * without completing the org setup form. Re-enable by setting to false.
  */
+const SKIP_ONBOARDING_GATE = true;
+
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [gate, setGate] = useState<"check" | "allow">("check");
+  const [gate, setGate] = useState<"check" | "allow">(
+    SKIP_ONBOARDING_GATE ? "allow" : "check",
+  );
   const redirectingRef = useRef(false);
 
   useEffect(() => {
+    if (SKIP_ONBOARDING_GATE) {
+      setGate("allow");
+      return;
+    }
+
     if (pathname?.startsWith("/onboarding")) {
       setGate("allow");
       return;

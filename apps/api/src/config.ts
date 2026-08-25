@@ -36,7 +36,12 @@ function findWorkspaceRoot(startDir: string): string {
 
 export const repoRoot = findWorkspaceRoot(moduleDir);
 export const apiRoot = resolve(repoRoot, "apps", "api");
-export const webRoot = resolve(repoRoot, "apps", "web");
+/** Default product UI = apps/os-ui (new shell). Override with HUSTRONIX_WEB_ROOT. */
+export const webRoot = process.env.HUSTRONIX_WEB_ROOT
+  ? resolve(process.env.HUSTRONIX_WEB_ROOT)
+  : resolve(repoRoot, "apps", "os-ui");
+/** Legacy dashboard (apps/web) — kept for marketing/auth reference. */
+export const legacyWebRoot = resolve(repoRoot, "apps", "web");
 const envPath = resolve(repoRoot, ".env");
 const envPathCwd = resolve(process.cwd(), ".env");
 
@@ -44,13 +49,15 @@ dotenv.config({ path: envPath });
 if (envPathCwd !== envPath) dotenv.config({ path: envPathCwd });
 
 /**
- * Dev-only: merge `apps/web/.env.local` so API OTP/contact SMTP matches Next without duplicating secrets in root `.env`.
+ * Dev-only: merge UI `.env.local` so API OTP/contact SMTP matches Next without duplicating secrets in root `.env`.
  * In production (`NODE_ENV=production`) this path is never read — use the host secret store + root `.env` (not committed) or injected env only.
  */
-const uiEnvLocal = resolve(webRoot, ".env.local");
-if (process.env.NODE_ENV !== "production" && existsSync(uiEnvLocal)) {
-  /** Do not override: root `.env` must win for API secrets (e.g. GOOGLE_*); UI file fills missing SMTP/contact keys only. */
-  dotenv.config({ path: uiEnvLocal, override: false });
+for (const uiRoot of [webRoot, legacyWebRoot]) {
+  const uiEnvLocal = resolve(uiRoot, ".env.local");
+  if (process.env.NODE_ENV !== "production" && existsSync(uiEnvLocal)) {
+    /** Do not override: root `.env` must win for API secrets (e.g. GOOGLE_*); UI file fills missing SMTP/contact keys only. */
+    dotenv.config({ path: uiEnvLocal, override: false });
+  }
 }
 
 /** Repo `.env` PORT wins over a stray shell PORT and over anything in UI `.env.local` (aligns Next rewrite default 3005). */

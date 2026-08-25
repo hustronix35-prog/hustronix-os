@@ -80,6 +80,7 @@ export function secureAuthorizeToolExecution(
 
   enforceHighRiskApproval({
     userId: ctx.userId,
+    authKind: ctx.authKind,
     tenantId: tenantCtx.orgId,
     workspaceId: tenantCtx.workspaceId,
     toolName: ctx.toolName,

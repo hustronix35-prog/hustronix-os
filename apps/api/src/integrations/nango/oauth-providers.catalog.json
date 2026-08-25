@@ -1,0 +1,4262 @@
+﻿[
+    {
+        "slug":  "1password-users",
+        "name":  "1Password (Users API)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/1password-users.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/1password-users"
+    },
+    {
+        "slug":  "8x8",
+        "name":  "8x8",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/8x8.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/8x8"
+    },
+    {
+        "slug":  "absorb-lms",
+        "name":  "Absorb LMS",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/absorb-lms.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/absorb-lms"
+    },
+    {
+        "slug":  "accelo",
+        "name":  "Accelo",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/accelo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/accelo"
+    },
+    {
+        "slug":  "acuity-scheduling",
+        "name":  "Acuity Scheduling",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/acuity-scheduling.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/acuity-scheduling"
+    },
+    {
+        "slug":  "addepar",
+        "name":  "Addepar (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/addepar.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/addepar"
+    },
+    {
+        "slug":  "adobe",
+        "name":  "Adobe",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adobe.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adobe"
+    },
+    {
+        "slug":  "adobe-umapi",
+        "name":  "UMAPI (Adobe User Management API)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adobe-umapi.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adobe-umapi"
+    },
+    {
+        "slug":  "adobe-workfront",
+        "name":  "Adobe Workfront",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adobe-workfront.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adobe-workfront"
+    },
+    {
+        "slug":  "adp",
+        "name":  "ADP",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adp"
+    },
+    {
+        "slug":  "adp-lyric",
+        "name":  "ADP Lyric",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adp-lyric.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adp-lyric"
+    },
+    {
+        "slug":  "adp-run",
+        "name":  "RUN Powered by ADP",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adp-run.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adp-run"
+    },
+    {
+        "slug":  "adp-workforce-now",
+        "name":  "ADP Workforce Now",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adp-workforce-now.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adp-workforce-now"
+    },
+    {
+        "slug":  "adp-workforce-now-next-gen",
+        "name":  "ADP Workforce Now Next Generation",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adp-workforce-now-next-gen.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adp-workforce-now-next-gen"
+    },
+    {
+        "slug":  "adyen",
+        "name":  "Adyen",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/adyen.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/adyen"
+    },
+    {
+        "slug":  "aimfox-oauth",
+        "name":  "Aimfox (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/aimfox-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/aimfox-oauth"
+    },
+    {
+        "slug":  "aircall",
+        "name":  "Aircall (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/aircall.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/aircall"
+    },
+    {
+        "slug":  "airtable",
+        "name":  "Airtable",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/airtable.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/airtable"
+    },
+    {
+        "slug":  "amazon",
+        "name":  "Amazon",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/amazon.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/amazon"
+    },
+    {
+        "slug":  "amazon-selling-partner",
+        "name":  "Amazon Selling Partner",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/amazon-selling-partner.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/amazon-selling-partner"
+    },
+    {
+        "slug":  "amazon-selling-partner-beta",
+        "name":  "Amazon Selling Partner (Beta)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/amazon-selling-partner-beta.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/amazon-selling-partner-beta"
+    },
+    {
+        "slug":  "amplitude-mcp",
+        "name":  "Amplitude (MCP US)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/amplitude-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/amplitude-mcp"
+    },
+    {
+        "slug":  "amplitude-mcp-eu",
+        "name":  "Amplitude (MCP EU)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/amplitude-mcp-eu.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/amplitude-mcp-eu"
+    },
+    {
+        "slug":  "apaleo",
+        "name":  "Apaleo",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/apaleo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/apaleo"
+    },
+    {
+        "slug":  "apollo-oauth",
+        "name":  "Apollo (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/apollo-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/apollo-oauth"
+    },
+    {
+        "slug":  "asana",
+        "name":  "Asana",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/asana.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/asana"
+    },
+    {
+        "slug":  "asana-mcp",
+        "name":  "Asana (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/asana-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/asana-mcp"
+    },
+    {
+        "slug":  "atlassian",
+        "name":  "Atlassian",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/atlassian.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/atlassian"
+    },
+    {
+        "slug":  "atlassian-government-cloud",
+        "name":  "Atlassian Government Cloud",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/atlassian-government-cloud.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/atlassian-government-cloud"
+    },
+    {
+        "slug":  "atlassian-service-account-oauth2",
+        "name":  "Atlassian Service Account (OAuth 2.0)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/atlassian-service-account-oauth2.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/atlassian-service-account-oauth2"
+    },
+    {
+        "slug":  "attio",
+        "name":  "Attio",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/attio.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/attio"
+    },
+    {
+        "slug":  "auth0",
+        "name":  "Auth0",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/auth0.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/auth0"
+    },
+    {
+        "slug":  "auth0-cc",
+        "name":  "Auth0 (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/auth0-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/auth0-cc"
+    },
+    {
+        "slug":  "autodesk",
+        "name":  "Autodesk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/autodesk.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/autodesk"
+    },
+    {
+        "slug":  "availity",
+        "name":  "Availity",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/availity.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/availity"
+    },
+    {
+        "slug":  "aws",
+        "name":  "AWS",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/aws.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/aws"
+    },
+    {
+        "slug":  "azure-blob-storage",
+        "name":  "Azure Blob Storage",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/azure-blob-storage.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/azure-blob-storage"
+    },
+    {
+        "slug":  "bamboohr",
+        "name":  "BambooHR (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bamboohr.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bamboohr"
+    },
+    {
+        "slug":  "basecamp",
+        "name":  "Basecamp",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/basecamp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/basecamp"
+    },
+    {
+        "slug":  "battlenet",
+        "name":  "Battle.net",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/battlenet.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/battlenet"
+    },
+    {
+        "slug":  "bigchange",
+        "name":  "BigChange",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bigchange.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bigchange"
+    },
+    {
+        "slug":  "bigcommerce",
+        "name":  "BigCommerce",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bigcommerce.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bigcommerce"
+    },
+    {
+        "slug":  "bing-webmasters",
+        "name":  "Bing Webmasters",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bing-webmasters.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bing-webmasters"
+    },
+    {
+        "slug":  "bitbucket",
+        "name":  "Bitbucket",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bitbucket.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bitbucket"
+    },
+    {
+        "slug":  "bitly",
+        "name":  "Bitly",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bitly.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bitly"
+    },
+    {
+        "slug":  "blackbaud",
+        "name":  "Blackbaud",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/blackbaud.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/blackbaud"
+    },
+    {
+        "slug":  "bliro",
+        "name":  "Bliro",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bliro.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bliro"
+    },
+    {
+        "slug":  "boldsign",
+        "name":  "BoldSign",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/boldsign.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/boldsign"
+    },
+    {
+        "slug":  "box",
+        "name":  "Box",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/box.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/box"
+    },
+    {
+        "slug":  "braintree",
+        "name":  "Braintree",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/braintree.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/braintree"
+    },
+    {
+        "slug":  "braintree-sandbox",
+        "name":  "Braintree (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/braintree-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/braintree-sandbox"
+    },
+    {
+        "slug":  "brex",
+        "name":  "Brex (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/brex.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/brex"
+    },
+    {
+        "slug":  "brex-staging",
+        "name":  "Brex (Staging OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/brex-staging.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/brex-staging"
+    },
+    {
+        "slug":  "brightcrowd",
+        "name":  "BrightCrowd",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/brightcrowd.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/brightcrowd"
+    },
+    {
+        "slug":  "buffer",
+        "name":  "Buffer",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/buffer.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/buffer"
+    },
+    {
+        "slug":  "bullhorn",
+        "name":  "Bullhorn",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/bullhorn.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/bullhorn"
+    },
+    {
+        "slug":  "cal-com-oauth",
+        "name":  "Cal.com (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/cal-com-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/cal-com-oauth"
+    },
+    {
+        "slug":  "calendly",
+        "name":  "Calendly",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/calendly.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/calendly"
+    },
+    {
+        "slug":  "candis",
+        "name":  "Candis",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/candis.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/candis"
+    },
+    {
+        "slug":  "canva",
+        "name":  "Canva",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/canva.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/canva"
+    },
+    {
+        "slug":  "canva-mcp",
+        "name":  "Canva (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/canva-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/canva-mcp"
+    },
+    {
+        "slug":  "canvas-lms",
+        "name":  "Canvas LMS",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/canvas-lms.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/canvas-lms"
+    },
+    {
+        "slug":  "certn-partner",
+        "name":  "Certn Partner",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/certn-partner.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/certn-partner"
+    },
+    {
+        "slug":  "checkout-com",
+        "name":  "Checkout.com",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/checkout-com.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/checkout-com"
+    },
+    {
+        "slug":  "checkout-com-sandbox",
+        "name":  "Checkout.com (Sandbox)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/checkout-com-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/checkout-com-sandbox"
+    },
+    {
+        "slug":  "checkr-partner",
+        "name":  "Checkr Partner",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/checkr-partner.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/checkr-partner"
+    },
+    {
+        "slug":  "checkr-partner-staging",
+        "name":  "Checkr Partner (Staging)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/checkr-partner-staging.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/checkr-partner-staging"
+    },
+    {
+        "slug":  "circleback-mcp",
+        "name":  "Circleback (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/circleback-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/circleback-mcp"
+    },
+    {
+        "slug":  "cleverreach",
+        "name":  "CleverReach",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/cleverreach.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/cleverreach"
+    },
+    {
+        "slug":  "clickup",
+        "name":  "ClickUp",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/clickup.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/clickup"
+    },
+    {
+        "slug":  "clio",
+        "name":  "Clio",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/clio.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/clio"
+    },
+    {
+        "slug":  "close",
+        "name":  "Close",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/close.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/close"
+    },
+    {
+        "slug":  "cloudbeds",
+        "name":  "Cloudbeds",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/cloudbeds.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/cloudbeds"
+    },
+    {
+        "slug":  "cloudentity",
+        "name":  "Cloudentity",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/cloudentity.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/cloudentity"
+    },
+    {
+        "slug":  "clover",
+        "name":  "Clover",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/clover.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/clover"
+    },
+    {
+        "slug":  "commercetools",
+        "name":  "Commercetools",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/commercetools.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/commercetools"
+    },
+    {
+        "slug":  "conductorone",
+        "name":  "ConductorOne",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/conductorone.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/conductorone"
+    },
+    {
+        "slug":  "confluence",
+        "name":  "Confluence",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/confluence.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/confluence"
+    },
+    {
+        "slug":  "confluence-data-center",
+        "name":  "Confluence Data Center",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/confluence-data-center.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/confluence-data-center"
+    },
+    {
+        "slug":  "connectwise-rmm",
+        "name":  "ConnectWise RMM",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/connectwise-rmm.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/connectwise-rmm"
+    },
+    {
+        "slug":  "constant-contact",
+        "name":  "Constant Contact",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/constant-contact.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/constant-contact"
+    },
+    {
+        "slug":  "conta-azul",
+        "name":  "Conta Azul",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/conta-azul.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/conta-azul"
+    },
+    {
+        "slug":  "contentful",
+        "name":  "Contentful",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/contentful.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/contentful"
+    },
+    {
+        "slug":  "contentstack",
+        "name":  "Contentstack",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/contentstack.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/contentstack"
+    },
+    {
+        "slug":  "copper",
+        "name":  "Copper (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/copper.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/copper"
+    },
+    {
+        "slug":  "coros",
+        "name":  "Coros",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/coros.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/coros"
+    },
+    {
+        "slug":  "coros-sandbox",
+        "name":  "Coros (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/coros-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/coros-sandbox"
+    },
+    {
+        "slug":  "coupa-compass",
+        "name":  "Coupa Compass",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/coupa-compass.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/coupa-compass"
+    },
+    {
+        "slug":  "crowdstrike",
+        "name":  "CrowdStrike",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/crowdstrike.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/crowdstrike"
+    },
+    {
+        "slug":  "databricks-account",
+        "name":  "Databricks (Account Level)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/databricks-account.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/databricks-account"
+    },
+    {
+        "slug":  "databricks-workspace",
+        "name":  "Databricks (Workspace Level)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/databricks-workspace.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/databricks-workspace"
+    },
+    {
+        "slug":  "datev",
+        "name":  "Datev",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/datev.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/datev"
+    },
+    {
+        "slug":  "datto-rmm",
+        "name":  "Datto RMM",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/datto-rmm.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/datto-rmm"
+    },
+    {
+        "slug":  "deel",
+        "name":  "Deel",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/deel.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/deel"
+    },
+    {
+        "slug":  "deel-sandbox",
+        "name":  "Deel (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/deel-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/deel-sandbox"
+    },
+    {
+        "slug":  "dialpad",
+        "name":  "Dialpad",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dialpad.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dialpad"
+    },
+    {
+        "slug":  "dialpad-sandbox",
+        "name":  "Dialpad (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dialpad-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dialpad-sandbox"
+    },
+    {
+        "slug":  "digitalocean",
+        "name":  "DigitalOcean",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/digitalocean.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/digitalocean"
+    },
+    {
+        "slug":  "digits",
+        "name":  "Digits",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/digits.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/digits"
+    },
+    {
+        "slug":  "digits-mcp",
+        "name":  "Digits (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/digits-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/digits-mcp"
+    },
+    {
+        "slug":  "discord",
+        "name":  "Discord",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/discord.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/discord"
+    },
+    {
+        "slug":  "docusign",
+        "name":  "DocuSign",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/docusign.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/docusign"
+    },
+    {
+        "slug":  "docusign-sandbox",
+        "name":  "DocuSign (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/docusign-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/docusign-sandbox"
+    },
+    {
+        "slug":  "domo",
+        "name":  "Domo",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/domo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/domo"
+    },
+    {
+        "slug":  "drchrono",
+        "name":  "DrChrono",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/drchrono.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/drchrono"
+    },
+    {
+        "slug":  "dropbox",
+        "name":  "Dropbox",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dropbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dropbox"
+    },
+    {
+        "slug":  "dropbox-sign",
+        "name":  "Dropbox Sign",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dropbox-sign.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dropbox-sign"
+    },
+    {
+        "slug":  "dynatrace-oauth",
+        "name":  "Dynatrace (OAuth)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/dynatrace-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/dynatrace-oauth"
+    },
+    {
+        "slug":  "ebay",
+        "name":  "eBay",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ebay.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ebay"
+    },
+    {
+        "slug":  "ebay-sandbox",
+        "name":  "eBay (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ebay-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ebay-sandbox"
+    },
+    {
+        "slug":  "egnyte",
+        "name":  "Egnyte",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/egnyte.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/egnyte"
+    },
+    {
+        "slug":  "emarsys-oauth",
+        "name":  "Emarsys (OAuth)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/emarsys-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/emarsys-oauth"
+    },
+    {
+        "slug":  "employment-hero",
+        "name":  "Employment Hero",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/employment-hero.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/employment-hero"
+    },
+    {
+        "slug":  "envoy",
+        "name":  "Envoy",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/envoy.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/envoy"
+    },
+    {
+        "slug":  "epic-games",
+        "name":  "Epic Games",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/epic-games.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/epic-games"
+    },
+    {
+        "slug":  "etsy",
+        "name":  "Etsy",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/etsy.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/etsy"
+    },
+    {
+        "slug":  "eventbrite",
+        "name":  "Eventbrite",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/eventbrite.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/eventbrite"
+    },
+    {
+        "slug":  "exact-online",
+        "name":  "Exact Online",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/exact-online.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/exact-online"
+    },
+    {
+        "slug":  "exist",
+        "name":  "Exist",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/exist.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/exist"
+    },
+    {
+        "slug":  "facebook",
+        "name":  "Facebook",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/facebook.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/facebook"
+    },
+    {
+        "slug":  "factorial",
+        "name":  "Factorial",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/factorial.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/factorial"
+    },
+    {
+        "slug":  "fanvue",
+        "name":  "Fanvue",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fanvue.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fanvue"
+    },
+    {
+        "slug":  "fathom-oauth",
+        "name":  "Fathom (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fathom-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fathom-oauth"
+    },
+    {
+        "slug":  "figjam",
+        "name":  "FigJam",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/figjam.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/figjam"
+    },
+    {
+        "slug":  "figma",
+        "name":  "Figma",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/figma.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/figma"
+    },
+    {
+        "slug":  "fillout",
+        "name":  "Fillout (Oauth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fillout.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fillout"
+    },
+    {
+        "slug":  "firefish",
+        "name":  "Firefish",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/firefish.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/firefish"
+    },
+    {
+        "slug":  "fiserv",
+        "name":  "Fiserv (OAuth)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fiserv.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fiserv"
+    },
+    {
+        "slug":  "fitbit",
+        "name":  "Fitbit",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fitbit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fitbit"
+    },
+    {
+        "slug":  "followupboss",
+        "name":  "Follow Up Boss",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/followupboss.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/followupboss"
+    },
+    {
+        "slug":  "fortnox",
+        "name":  "Fortnox",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/fortnox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/fortnox"
+    },
+    {
+        "slug":  "freeagent",
+        "name":  "FreeAgent",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/freeagent.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/freeagent"
+    },
+    {
+        "slug":  "freeagent-sandbox",
+        "name":  "FreeAgent (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/freeagent-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/freeagent-sandbox"
+    },
+    {
+        "slug":  "freshbooks",
+        "name":  "FreshBooks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/freshbooks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/freshbooks"
+    },
+    {
+        "slug":  "freshworks",
+        "name":  "Freshworks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/freshworks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/freshworks"
+    },
+    {
+        "slug":  "front",
+        "name":  "Front",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/front.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/front"
+    },
+    {
+        "slug":  "gainsight-cc",
+        "name":  "Gainsight CC",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gainsight-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gainsight-cc"
+    },
+    {
+        "slug":  "garmin",
+        "name":  "Garmin",
+        "authMode":  "OAUTH1",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/garmin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/garmin"
+    },
+    {
+        "slug":  "gebruder-weiss",
+        "name":  "GebrÃ¼der Weiss",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gebruder-weiss.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gebruder-weiss"
+    },
+    {
+        "slug":  "getty-images",
+        "name":  "Getty Images",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/getty-images.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/getty-images"
+    },
+    {
+        "slug":  "github",
+        "name":  "GitHub (User OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/github.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/github"
+    },
+    {
+        "slug":  "gitlab",
+        "name":  "GitLab",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gitlab.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gitlab"
+    },
+    {
+        "slug":  "gong-oauth",
+        "name":  "Gong (Oauth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gong-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gong-oauth"
+    },
+    {
+        "slug":  "google",
+        "name":  "Google",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google"
+    },
+    {
+        "slug":  "google-ads",
+        "name":  "Google Ads",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-ads.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-ads"
+    },
+    {
+        "slug":  "google-analytics",
+        "name":  "Google Analytics",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-analytics.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-analytics"
+    },
+    {
+        "slug":  "google-bigquery",
+        "name":  "Google BigQuery",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-bigquery.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-bigquery"
+    },
+    {
+        "slug":  "google-calendar",
+        "name":  "Google Calendar",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-calendar.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-calendar"
+    },
+    {
+        "slug":  "google-chat",
+        "name":  "Google Chat",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-chat.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-chat"
+    },
+    {
+        "slug":  "google-cloud-storage",
+        "name":  "Google Cloud Storage",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-cloud-storage.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-cloud-storage"
+    },
+    {
+        "slug":  "google-contacts",
+        "name":  "Google Contacts",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-contacts.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-contacts"
+    },
+    {
+        "slug":  "google-docs",
+        "name":  "Google Docs",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-docs.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-docs"
+    },
+    {
+        "slug":  "google-drive",
+        "name":  "Google Drive",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-drive.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-drive"
+    },
+    {
+        "slug":  "google-forms",
+        "name":  "Google Forms",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-forms.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-forms"
+    },
+    {
+        "slug":  "google-mail",
+        "name":  "Gmail",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-mail.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-mail"
+    },
+    {
+        "slug":  "google-meet",
+        "name":  "Google Meet",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-meet.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-meet"
+    },
+    {
+        "slug":  "google-play",
+        "name":  "Google Play",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-play.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-play"
+    },
+    {
+        "slug":  "google-search-console",
+        "name":  "Google Search Console",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-search-console.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-search-console"
+    },
+    {
+        "slug":  "google-sheet",
+        "name":  "Google Sheet",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-sheet.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-sheet"
+    },
+    {
+        "slug":  "google-slides",
+        "name":  "Google Slides",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-slides.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-slides"
+    },
+    {
+        "slug":  "google-tasks",
+        "name":  "Google Tasks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-tasks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-tasks"
+    },
+    {
+        "slug":  "google-workspace-admin",
+        "name":  "Google Workspace Admin",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/google-workspace-admin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/google-workspace-admin"
+    },
+    {
+        "slug":  "gorgias",
+        "name":  "Gorgias",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gorgias.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gorgias"
+    },
+    {
+        "slug":  "grain",
+        "name":  "Grain (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/grain.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/grain"
+    },
+    {
+        "slug":  "grammarly",
+        "name":  "Grammarly",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/grammarly.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/grammarly"
+    },
+    {
+        "slug":  "granola-mcp",
+        "name":  "Granola (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/granola-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/granola-mcp"
+    },
+    {
+        "slug":  "greenhouse",
+        "name":  "Greenhouse (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/greenhouse.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/greenhouse"
+    },
+    {
+        "slug":  "greenhouse-harvest-oauth2-cc",
+        "name":  "Greenhouse Harvest (Client Credentials V3)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/greenhouse-harvest-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/greenhouse-harvest-oauth2-cc"
+    },
+    {
+        "slug":  "greenhouse-harvest-partner",
+        "name":  "Greenhouse Harvest Partner (V3)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/greenhouse-harvest-partner.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/greenhouse-harvest-partner"
+    },
+    {
+        "slug":  "greenhouse-ingestion",
+        "name":  "Greenhouse (Ingestion API)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/greenhouse-ingestion.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/greenhouse-ingestion"
+    },
+    {
+        "slug":  "gumroad",
+        "name":  "Gumroad",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gumroad.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gumroad"
+    },
+    {
+        "slug":  "gusto",
+        "name":  "Gusto",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gusto.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gusto"
+    },
+    {
+        "slug":  "gusto-demo",
+        "name":  "Gusto (Demo)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/gusto-demo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/gusto-demo"
+    },
+    {
+        "slug":  "halo-psa",
+        "name":  "Halo PSA",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/halo-psa.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/halo-psa"
+    },
+    {
+        "slug":  "harvest",
+        "name":  "Harvest",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/harvest.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/harvest"
+    },
+    {
+        "slug":  "health-gorilla",
+        "name":  "Health Gorilla",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/health-gorilla.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/health-gorilla"
+    },
+    {
+        "slug":  "helpscout-mailbox",
+        "name":  "Help Scout Mailbox",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/helpscout-mailbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/helpscout-mailbox"
+    },
+    {
+        "slug":  "heygen",
+        "name":  "HeyGen",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/heygen.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/heygen"
+    },
+    {
+        "slug":  "highlevel",
+        "name":  "HighLevel",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/highlevel.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/highlevel"
+    },
+    {
+        "slug":  "highlevel-white-label",
+        "name":  "HighLevel (LeadConnector)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/highlevel-white-label.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/highlevel-white-label"
+    },
+    {
+        "slug":  "hover",
+        "name":  "Hover",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/hover.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/hover"
+    },
+    {
+        "slug":  "hubspot",
+        "name":  "HubSpot",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/hubspot.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/hubspot"
+    },
+    {
+        "slug":  "hubspot-mcp",
+        "name":  "HubSpot (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/hubspot-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/hubspot-mcp"
+    },
+    {
+        "slug":  "immybot",
+        "name":  "ImmyBot",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/immybot.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/immybot"
+    },
+    {
+        "slug":  "instagram",
+        "name":  "Instagram",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/instagram.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/instagram"
+    },
+    {
+        "slug":  "intercom",
+        "name":  "Intercom",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/intercom.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/intercom"
+    },
+    {
+        "slug":  "intuit",
+        "name":  "Intuit",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/intuit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/intuit"
+    },
+    {
+        "slug":  "ironclad",
+        "name":  "Ironclad",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ironclad.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ironclad"
+    },
+    {
+        "slug":  "jamf",
+        "name":  "Jamf Pro (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jamf.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jamf"
+    },
+    {
+        "slug":  "jira",
+        "name":  "Jira (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jira.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jira"
+    },
+    {
+        "slug":  "jira-data-center",
+        "name":  "Jira Data Center",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jira-data-center.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jira-data-center"
+    },
+    {
+        "slug":  "jobadder",
+        "name":  "Jobadder",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jobadder.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jobadder"
+    },
+    {
+        "slug":  "jobber",
+        "name":  "Jobber",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/jobber.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/jobber"
+    },
+    {
+        "slug":  "justworks",
+        "name":  "Justworks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/justworks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/justworks"
+    },
+    {
+        "slug":  "keap",
+        "name":  "Keap",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/keap.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/keap"
+    },
+    {
+        "slug":  "kintone",
+        "name":  "Kintone",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/kintone.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/kintone"
+    },
+    {
+        "slug":  "klaviyo-oauth",
+        "name":  "Klaviyo (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/klaviyo-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/klaviyo-oauth"
+    },
+    {
+        "slug":  "kno-commerce",
+        "name":  "Kno Commerce",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/kno-commerce.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/kno-commerce"
+    },
+    {
+        "slug":  "lever",
+        "name":  "Lever (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/lever.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/lever"
+    },
+    {
+        "slug":  "lever-sandbox",
+        "name":  "Lever (OAuth Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/lever-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/lever-sandbox"
+    },
+    {
+        "slug":  "lightspeed-retail",
+        "name":  "Lightspeed Retail (X-Series)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/lightspeed-retail.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/lightspeed-retail"
+    },
+    {
+        "slug":  "linear",
+        "name":  "Linear",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linear.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linear"
+    },
+    {
+        "slug":  "linear-mcp",
+        "name":  "Linear (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linear-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linear-mcp"
+    },
+    {
+        "slug":  "linkedin",
+        "name":  "LinkedIn",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linkedin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linkedin"
+    },
+    {
+        "slug":  "linkhut",
+        "name":  "LinkHut",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/linkhut.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/linkhut"
+    },
+    {
+        "slug":  "listrak",
+        "name":  "Listrak",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/listrak.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/listrak"
+    },
+    {
+        "slug":  "lokalise",
+        "name":  "Lokalise",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/lokalise.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/lokalise"
+    },
+    {
+        "slug":  "looker-oauth",
+        "name":  "Looker (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/looker-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/looker-oauth"
+    },
+    {
+        "slug":  "mailchimp",
+        "name":  "Mailchimp",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mailchimp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mailchimp"
+    },
+    {
+        "slug":  "malwarebytes",
+        "name":  "Malwarebytes",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/malwarebytes.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/malwarebytes"
+    },
+    {
+        "slug":  "marketo",
+        "name":  "Marketo",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/marketo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/marketo"
+    },
+    {
+        "slug":  "maximizer",
+        "name":  "Maximizer (Cloud)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/maximizer.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/maximizer"
+    },
+    {
+        "slug":  "maximizer-on-premise",
+        "name":  "Maximizer (On-Premise)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/maximizer-on-premise.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/maximizer-on-premise"
+    },
+    {
+        "slug":  "mcp-generic",
+        "name":  "MCP Server OAuth2 (Generic)",
+        "authMode":  "MCP_OAUTH2_GENERIC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mcp-generic.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mcp-generic"
+    },
+    {
+        "slug":  "medallia",
+        "name":  "Medallia",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/medallia.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/medallia"
+    },
+    {
+        "slug":  "mercury",
+        "name":  "Mercury",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mercury.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mercury"
+    },
+    {
+        "slug":  "meta-marketing-api",
+        "name":  "Meta Marketing API",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/meta-marketing-api.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/meta-marketing-api"
+    },
+    {
+        "slug":  "microsoft",
+        "name":  "Microsoft",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft"
+    },
+    {
+        "slug":  "microsoft-admin",
+        "name":  "Microsoft (Admin)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-admin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-admin"
+    },
+    {
+        "slug":  "microsoft-ads",
+        "name":  "Microsoft Ads",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-ads.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-ads"
+    },
+    {
+        "slug":  "microsoft-business-central",
+        "name":  "Microsoft Business Central",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-business-central.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-business-central"
+    },
+    {
+        "slug":  "microsoft-entra-id",
+        "name":  "Microsoft Entra ID",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-entra-id.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-entra-id"
+    },
+    {
+        "slug":  "microsoft-excel",
+        "name":  "Microsoft Excel",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-excel.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-excel"
+    },
+    {
+        "slug":  "microsoft-intune",
+        "name":  "Microsoft Intune",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-intune.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-intune"
+    },
+    {
+        "slug":  "microsoft-oauth2-cc",
+        "name":  "Microsoft (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-oauth2-cc"
+    },
+    {
+        "slug":  "microsoft-people",
+        "name":  "Microsoft People",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-people.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-people"
+    },
+    {
+        "slug":  "microsoft-planner",
+        "name":  "Microsoft Planner",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-planner.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-planner"
+    },
+    {
+        "slug":  "microsoft-power-bi",
+        "name":  "Microsoft Power BI",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-power-bi.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-power-bi"
+    },
+    {
+        "slug":  "microsoft-powerpoint",
+        "name":  "Microsoft PowerPoint",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-powerpoint.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-powerpoint"
+    },
+    {
+        "slug":  "microsoft-teams",
+        "name":  "Microsoft Teams",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-teams.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-teams"
+    },
+    {
+        "slug":  "microsoft-teams-bot",
+        "name":  "Microsoft Teams Bot",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-teams-bot.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-teams-bot"
+    },
+    {
+        "slug":  "microsoft-tenant-specific",
+        "name":  "Microsoft (Tenant)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-tenant-specific.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-tenant-specific"
+    },
+    {
+        "slug":  "microsoft-word",
+        "name":  "Microsoft Word",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/microsoft-word.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/microsoft-word"
+    },
+    {
+        "slug":  "mimecast",
+        "name":  "Mimecast",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mimecast.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mimecast"
+    },
+    {
+        "slug":  "miro",
+        "name":  "Miro",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/miro.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/miro"
+    },
+    {
+        "slug":  "mollie",
+        "name":  "Mollie",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mollie.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mollie"
+    },
+    {
+        "slug":  "monday",
+        "name":  "Monday",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/monday.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/monday"
+    },
+    {
+        "slug":  "mural",
+        "name":  "Mural",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/mural.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/mural"
+    },
+    {
+        "slug":  "namely",
+        "name":  "Namely",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/namely.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/namely"
+    },
+    {
+        "slug":  "nationbuilder",
+        "name":  "NationBuilder",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/nationbuilder.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/nationbuilder"
+    },
+    {
+        "slug":  "nerdio",
+        "name":  "Nerdio",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/nerdio.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/nerdio"
+    },
+    {
+        "slug":  "netsuite",
+        "name":  "NetSuite (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/netsuite.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/netsuite"
+    },
+    {
+        "slug":  "nexthink",
+        "name":  "Nexthink",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/nexthink.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/nexthink"
+    },
+    {
+        "slug":  "ninjaone-rmm",
+        "name":  "NinjaOne RMM",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ninjaone-rmm.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ninjaone-rmm"
+    },
+    {
+        "slug":  "ninjaone-rmm-oauth2",
+        "name":  "NinjaOne RMM (OAuth2)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ninjaone-rmm-oauth2.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ninjaone-rmm-oauth2"
+    },
+    {
+        "slug":  "notion",
+        "name":  "Notion",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/notion.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/notion"
+    },
+    {
+        "slug":  "notion-mcp",
+        "name":  "Notion (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/notion-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/notion-mcp"
+    },
+    {
+        "slug":  "odoo",
+        "name":  "Odoo (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/odoo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/odoo"
+    },
+    {
+        "slug":  "okta",
+        "name":  "Okta",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/okta.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/okta"
+    },
+    {
+        "slug":  "okta-cc",
+        "name":  "Okta (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/okta-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/okta-cc"
+    },
+    {
+        "slug":  "okta-preview",
+        "name":  "Okta (Preview)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/okta-preview.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/okta-preview"
+    },
+    {
+        "slug":  "one-drive",
+        "name":  "OneDrive for Business",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/one-drive.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/one-drive"
+    },
+    {
+        "slug":  "one-drive-personal",
+        "name":  "OneDrive Personal",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/one-drive-personal.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/one-drive-personal"
+    },
+    {
+        "slug":  "onelogin",
+        "name":  "OneLogin",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/onelogin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/onelogin"
+    },
+    {
+        "slug":  "one-note",
+        "name":  "One Note",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/one-note.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/one-note"
+    },
+    {
+        "slug":  "oracle-cloud-identity",
+        "name":  "Oracle Cloud Identity",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/oracle-cloud-identity.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/oracle-cloud-identity"
+    },
+    {
+        "slug":  "ory",
+        "name":  "Ory",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ory.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ory"
+    },
+    {
+        "slug":  "osu",
+        "name":  "Osu",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/osu.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/osu"
+    },
+    {
+        "slug":  "oura",
+        "name":  "Oura",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/oura.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/oura"
+    },
+    {
+        "slug":  "outlook",
+        "name":  "Outlook",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/outlook.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/outlook"
+    },
+    {
+        "slug":  "outreach",
+        "name":  "Outreach",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/outreach.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/outreach"
+    },
+    {
+        "slug":  "pagerduty",
+        "name":  "PagerDuty",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pagerduty.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pagerduty"
+    },
+    {
+        "slug":  "pandadoc",
+        "name":  "Pandadoc",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pandadoc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pandadoc"
+    },
+    {
+        "slug":  "pax8",
+        "name":  "Pax8",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pax8.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pax8"
+    },
+    {
+        "slug":  "paychex",
+        "name":  "Paychex",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paychex.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paychex"
+    },
+    {
+        "slug":  "paycor",
+        "name":  "Paycor",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paycor.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paycor"
+    },
+    {
+        "slug":  "paycor-sandbox",
+        "name":  "Paycor (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paycor-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paycor-sandbox"
+    },
+    {
+        "slug":  "payfit",
+        "name":  "Payfit",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/payfit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/payfit"
+    },
+    {
+        "slug":  "paylocity",
+        "name":  "Paylocity (Weblink)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paylocity.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paylocity"
+    },
+    {
+        "slug":  "paylocity-nextgen",
+        "name":  "Paylocity (NextGen)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paylocity-nextgen.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paylocity-nextgen"
+    },
+    {
+        "slug":  "paypal",
+        "name":  "Paypal",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paypal.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paypal"
+    },
+    {
+        "slug":  "paypal-sandbox",
+        "name":  "Paypal (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/paypal-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/paypal-sandbox"
+    },
+    {
+        "slug":  "pendo-oauth",
+        "name":  "Pendo (OAuth)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pendo-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pendo-oauth"
+    },
+    {
+        "slug":  "pennylane",
+        "name":  "Pennylane",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pennylane.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pennylane"
+    },
+    {
+        "slug":  "perk",
+        "name":  "Perk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/perk.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/perk"
+    },
+    {
+        "slug":  "personio",
+        "name":  "Personio (v1)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/personio.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/personio"
+    },
+    {
+        "slug":  "personio-v2",
+        "name":  "Personio (v2)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/personio-v2.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/personio-v2"
+    },
+    {
+        "slug":  "pingboard",
+        "name":  "Pingboard",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pingboard.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pingboard"
+    },
+    {
+        "slug":  "pingone",
+        "name":  "PingOne",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pingone.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pingone"
+    },
+    {
+        "slug":  "pingone-cc",
+        "name":  "PingOne (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pingone-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pingone-cc"
+    },
+    {
+        "slug":  "pinterest",
+        "name":  "Pinterest",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pinterest.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pinterest"
+    },
+    {
+        "slug":  "pipedream-oauth2-cc",
+        "name":  "Pipedream (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pipedream-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pipedream-oauth2-cc"
+    },
+    {
+        "slug":  "pipedrive",
+        "name":  "Pipedrive",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pipedrive.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pipedrive"
+    },
+    {
+        "slug":  "planning-center-online",
+        "name":  "Planning Center Online (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/planning-center-online.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/planning-center-online"
+    },
+    {
+        "slug":  "pleo",
+        "name":  "Pleo",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/pleo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/pleo"
+    },
+    {
+        "slug":  "podium",
+        "name":  "Podium",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/podium.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/podium"
+    },
+    {
+        "slug":  "posthog-oauth",
+        "name":  "PostHog (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/posthog-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/posthog-oauth"
+    },
+    {
+        "slug":  "practicefusion",
+        "name":  "PracticeFusion",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/practicefusion.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/practicefusion"
+    },
+    {
+        "slug":  "precisefp",
+        "name":  "PreciseFP",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/precisefp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/precisefp"
+    },
+    {
+        "slug":  "printful",
+        "name":  "Printful",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/printful.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/printful"
+    },
+    {
+        "slug":  "procore",
+        "name":  "Procore",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/procore.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/procore"
+    },
+    {
+        "slug":  "productboard",
+        "name":  "Productboard",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/productboard.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/productboard"
+    },
+    {
+        "slug":  "qualtrics",
+        "name":  "Qualtrics",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/qualtrics.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/qualtrics"
+    },
+    {
+        "slug":  "quickbooks",
+        "name":  "Quickbooks",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/quickbooks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/quickbooks"
+    },
+    {
+        "slug":  "quickbooks-sandbox",
+        "name":  "Quickbooks (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/quickbooks-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/quickbooks-sandbox"
+    },
+    {
+        "slug":  "ramp",
+        "name":  "Ramp",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ramp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ramp"
+    },
+    {
+        "slug":  "ramp-sandbox",
+        "name":  "Ramp (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ramp-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ramp-sandbox"
+    },
+    {
+        "slug":  "reapit",
+        "name":  "Reapit Connect",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/reapit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/reapit"
+    },
+    {
+        "slug":  "reddit",
+        "name":  "Reddit",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/reddit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/reddit"
+    },
+    {
+        "slug":  "revivn",
+        "name":  "Revivn",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/revivn.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/revivn"
+    },
+    {
+        "slug":  "ring-central",
+        "name":  "RingCentral",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ring-central.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ring-central"
+    },
+    {
+        "slug":  "ring-central-sandbox",
+        "name":  "RingCentral (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ring-central-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ring-central-sandbox"
+    },
+    {
+        "slug":  "rippling-shop-app",
+        "name":  "Rippling Shop App",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/rippling-shop-app.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/rippling-shop-app"
+    },
+    {
+        "slug":  "roller",
+        "name":  "Roller",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/roller.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/roller"
+    },
+    {
+        "slug":  "rydoo",
+        "name":  "Rydoo",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/rydoo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/rydoo"
+    },
+    {
+        "slug":  "sage",
+        "name":  "Sage",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sage.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sage"
+    },
+    {
+        "slug":  "sage-200",
+        "name":  "Sage 200",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sage-200.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sage-200"
+    },
+    {
+        "slug":  "sage-intacct-oauth",
+        "name":  "Sage Intacct (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sage-intacct-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sage-intacct-oauth"
+    },
+    {
+        "slug":  "sage-people",
+        "name":  "Sage People",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sage-people.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sage-people"
+    },
+    {
+        "slug":  "salesforce",
+        "name":  "Salesforce",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesforce.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesforce"
+    },
+    {
+        "slug":  "salesforce-cc",
+        "name":  "Salesforce (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesforce-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesforce-cc"
+    },
+    {
+        "slug":  "salesforce-experience-cloud",
+        "name":  "Salesforce Experience Cloud",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesforce-experience-cloud.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesforce-experience-cloud"
+    },
+    {
+        "slug":  "salesforce-sandbox",
+        "name":  "Salesforce (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesforce-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesforce-sandbox"
+    },
+    {
+        "slug":  "salesloft",
+        "name":  "Salesloft",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesloft.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesloft"
+    },
+    {
+        "slug":  "salesmsg-oauth2",
+        "name":  "Salesmsg (OAuth2)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/salesmsg-oauth2.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/salesmsg-oauth2"
+    },
+    {
+        "slug":  "sap-concur",
+        "name":  "SAP Concur",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sap-concur.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sap-concur"
+    },
+    {
+        "slug":  "sap-odata-oauth2-cc",
+        "name":  "SAP S/4HANA Cloud (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sap-odata-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sap-odata-oauth2-cc"
+    },
+    {
+        "slug":  "schwab",
+        "name":  "Schwab",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/schwab.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/schwab"
+    },
+    {
+        "slug":  "sedna",
+        "name":  "Sedna (OAuth)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sedna.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sedna"
+    },
+    {
+        "slug":  "segment",
+        "name":  "Segment",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/segment.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/segment"
+    },
+    {
+        "slug":  "sellsy",
+        "name":  "Sellsy",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sellsy.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sellsy"
+    },
+    {
+        "slug":  "sellsy-oauth2-cc",
+        "name":  "Sellsy (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sellsy-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sellsy-oauth2-cc"
+    },
+    {
+        "slug":  "sentry-oauth",
+        "name":  "Sentry (Public Integrations)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sentry-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sentry-oauth"
+    },
+    {
+        "slug":  "servicem8",
+        "name":  "ServiceM8",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/servicem8.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/servicem8"
+    },
+    {
+        "slug":  "servicenow",
+        "name":  "ServiceNow",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/servicenow.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/servicenow"
+    },
+    {
+        "slug":  "servicenow-oauth2-cc",
+        "name":  "ServiceNow (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/servicenow-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/servicenow-oauth2-cc"
+    },
+    {
+        "slug":  "sharepoint-online",
+        "name":  "SharePoint Online (v2)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sharepoint-online.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sharepoint-online"
+    },
+    {
+        "slug":  "sharepoint-online-oauth2-cc",
+        "name":  "SharePoint Online (Client Credentials V2)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sharepoint-online-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sharepoint-online-oauth2-cc"
+    },
+    {
+        "slug":  "shopify",
+        "name":  "Shopify (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/shopify.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/shopify"
+    },
+    {
+        "slug":  "shopify-cc",
+        "name":  "Shopify (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/shopify-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/shopify-cc"
+    },
+    {
+        "slug":  "shopware",
+        "name":  "Shopware (Admin API)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/shopware.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/shopware"
+    },
+    {
+        "slug":  "signnow",
+        "name":  "SignNow",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/signnow.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/signnow"
+    },
+    {
+        "slug":  "signnow-sandbox",
+        "name":  "SignNow (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/signnow-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/signnow-sandbox"
+    },
+    {
+        "slug":  "simpro",
+        "name":  "Simpro",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/simpro.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/simpro"
+    },
+    {
+        "slug":  "slack",
+        "name":  "Slack",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/slack.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/slack"
+    },
+    {
+        "slug":  "slack-mcp",
+        "name":  "Slack (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/slack-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/slack-mcp"
+    },
+    {
+        "slug":  "smartsheet",
+        "name":  "Smartsheet",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/smartsheet.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/smartsheet"
+    },
+    {
+        "slug":  "smugmug",
+        "name":  "Smugmug",
+        "authMode":  "OAUTH1",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/smugmug.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/smugmug"
+    },
+    {
+        "slug":  "snapchat",
+        "name":  "Snapchat (Ads API)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/snapchat.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/snapchat"
+    },
+    {
+        "slug":  "snowflake",
+        "name":  "Snowflake",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/snowflake.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/snowflake"
+    },
+    {
+        "slug":  "sophos-central",
+        "name":  "Sophos Central",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/sophos-central.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/sophos-central"
+    },
+    {
+        "slug":  "splitwise",
+        "name":  "Splitwise",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/splitwise.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/splitwise"
+    },
+    {
+        "slug":  "spotify",
+        "name":  "Spotify (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/spotify.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/spotify"
+    },
+    {
+        "slug":  "spotify-oauth2-cc",
+        "name":  "Spotify (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/spotify-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/spotify-oauth2-cc"
+    },
+    {
+        "slug":  "squarespace",
+        "name":  "Squarespace",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/squarespace.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/squarespace"
+    },
+    {
+        "slug":  "squareup",
+        "name":  "Squareup",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/squareup.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/squareup"
+    },
+    {
+        "slug":  "squareup-sandbox",
+        "name":  "Squareup (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/squareup-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/squareup-sandbox"
+    },
+    {
+        "slug":  "stackexchange",
+        "name":  "Stack Exchange",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stackexchange.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stackexchange"
+    },
+    {
+        "slug":  "stitch-mcp",
+        "name":  "Stitch (MCP)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stitch-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stitch-mcp"
+    },
+    {
+        "slug":  "strava",
+        "name":  "Strava (Mobile)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/strava.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/strava"
+    },
+    {
+        "slug":  "strava-web",
+        "name":  "Strava (Web)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/strava-web.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/strava-web"
+    },
+    {
+        "slug":  "stripe",
+        "name":  "Stripe Connect",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stripe.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stripe"
+    },
+    {
+        "slug":  "stripe-app",
+        "name":  "Stripe App",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stripe-app.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stripe-app"
+    },
+    {
+        "slug":  "stripe-app-sandbox",
+        "name":  "Stripe App (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stripe-app-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stripe-app-sandbox"
+    },
+    {
+        "slug":  "stripe-express",
+        "name":  "Stripe Express",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/stripe-express.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/stripe-express"
+    },
+    {
+        "slug":  "supabase-mcp-oauth",
+        "name":  "Supabase (MCP OAuth)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/supabase-mcp-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/supabase-mcp-oauth"
+    },
+    {
+        "slug":  "superhuman-mcp",
+        "name":  "Superhuman (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/superhuman-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/superhuman-mcp"
+    },
+    {
+        "slug":  "survey-monkey",
+        "name":  "SurveyMonkey",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/survey-monkey.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/survey-monkey"
+    },
+    {
+        "slug":  "tapclicks",
+        "name":  "TapClicks",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tapclicks.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tapclicks"
+    },
+    {
+        "slug":  "teamleader",
+        "name":  "Teamleader Focus",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/teamleader.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/teamleader"
+    },
+    {
+        "slug":  "teamwork",
+        "name":  "Teamwork",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/teamwork.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/teamwork"
+    },
+    {
+        "slug":  "thrivecart-oauth",
+        "name":  "ThriveCart (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/thrivecart-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/thrivecart-oauth"
+    },
+    {
+        "slug":  "ticktick",
+        "name":  "TickTick",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ticktick.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ticktick"
+    },
+    {
+        "slug":  "tiktok-accounts",
+        "name":  "TikTok Accounts",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tiktok-accounts.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tiktok-accounts"
+    },
+    {
+        "slug":  "tiktok-ads",
+        "name":  "TikTok Ads",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tiktok-ads.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tiktok-ads"
+    },
+    {
+        "slug":  "tiktok-personal",
+        "name":  "TikTok Personal",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tiktok-personal.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tiktok-personal"
+    },
+    {
+        "slug":  "timely",
+        "name":  "Timely",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/timely.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/timely"
+    },
+    {
+        "slug":  "todoist",
+        "name":  "Todoist",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/todoist.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/todoist"
+    },
+    {
+        "slug":  "trafft",
+        "name":  "Trafft",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/trafft.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/trafft"
+    },
+    {
+        "slug":  "trello",
+        "name":  "Trello",
+        "authMode":  "OAUTH1",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/trello.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/trello"
+    },
+    {
+        "slug":  "tremendous",
+        "name":  "Tremendous",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tremendous.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tremendous"
+    },
+    {
+        "slug":  "tremendous-sandbox",
+        "name":  "Tremendous (Sandbox)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tremendous-sandbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tremendous-sandbox"
+    },
+    {
+        "slug":  "trigify-io-mcp",
+        "name":  "Trigify IO (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/trigify-io-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/trigify-io-mcp"
+    },
+    {
+        "slug":  "tsheetsteam",
+        "name":  "TSheets",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tsheetsteam.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tsheetsteam"
+    },
+    {
+        "slug":  "tumblr",
+        "name":  "Tumblr",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/tumblr.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/tumblr"
+    },
+    {
+        "slug":  "twinfield",
+        "name":  "Twinfield",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twinfield.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twinfield"
+    },
+    {
+        "slug":  "twitch",
+        "name":  "Twitch",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twitch.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twitch"
+    },
+    {
+        "slug":  "twitter",
+        "name":  "Twitter (v1)",
+        "authMode":  "OAUTH1",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twitter.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twitter"
+    },
+    {
+        "slug":  "twitter-oauth2-cc",
+        "name":  "Twitter (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twitter-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twitter-oauth2-cc"
+    },
+    {
+        "slug":  "twitter-v2",
+        "name":  "Twitter (v2)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/twitter-v2.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/twitter-v2"
+    },
+    {
+        "slug":  "typeform",
+        "name":  "Typeform",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/typeform.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/typeform"
+    },
+    {
+        "slug":  "uber",
+        "name":  "Uber",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/uber.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/uber"
+    },
+    {
+        "slug":  "ukg-pro-cc",
+        "name":  "UKG Pro HCM (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ukg-pro-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ukg-pro-cc"
+    },
+    {
+        "slug":  "ukg-pro-wfm",
+        "name":  "UKG Pro (Workforce Management)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ukg-pro-wfm.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ukg-pro-wfm"
+    },
+    {
+        "slug":  "ukg-ready",
+        "name":  "UKG Ready",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/ukg-ready.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/ukg-ready"
+    },
+    {
+        "slug":  "vanta",
+        "name":  "Vanta",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/vanta.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/vanta"
+    },
+    {
+        "slug":  "vercel-mcp",
+        "name":  "Vercel (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/vercel-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/vercel-mcp"
+    },
+    {
+        "slug":  "videoask",
+        "name":  "VideoAsk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/videoask.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/videoask"
+    },
+    {
+        "slug":  "vimeo",
+        "name":  "Vimeo (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/vimeo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/vimeo"
+    },
+    {
+        "slug":  "wakatime",
+        "name":  "Wakatime",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wakatime.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wakatime"
+    },
+    {
+        "slug":  "wave-accounting",
+        "name":  "Wave Accounting",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wave-accounting.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wave-accounting"
+    },
+    {
+        "slug":  "wealthbox",
+        "name":  "Wealthbox",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wealthbox.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wealthbox"
+    },
+    {
+        "slug":  "webex",
+        "name":  "Webex",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/webex.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/webex"
+    },
+    {
+        "slug":  "webflow",
+        "name":  "Webflow",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/webflow.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/webflow"
+    },
+    {
+        "slug":  "whoop",
+        "name":  "Whoop",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/whoop.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/whoop"
+    },
+    {
+        "slug":  "wildix-pbx",
+        "name":  "Wildix PBX",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wildix-pbx.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wildix-pbx"
+    },
+    {
+        "slug":  "wiseagent",
+        "name":  "Wiseagent",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wiseagent.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wiseagent"
+    },
+    {
+        "slug":  "wordpress",
+        "name":  "WordPress",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wordpress.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wordpress"
+    },
+    {
+        "slug":  "wordpress-mcp",
+        "name":  "WordPress.com (MCP)",
+        "authMode":  "MCP_OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wordpress-mcp.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wordpress-mcp"
+    },
+    {
+        "slug":  "workable-oauth",
+        "name":  "Workable (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/workable-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/workable-oauth"
+    },
+    {
+        "slug":  "workday-oauth",
+        "name":  "Workday (OAuth)",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/workday-oauth.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/workday-oauth"
+    },
+    {
+        "slug":  "wrike",
+        "name":  "Wrike",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/wrike.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/wrike"
+    },
+    {
+        "slug":  "xero",
+        "name":  "Xero",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/xero.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/xero"
+    },
+    {
+        "slug":  "xero-oauth2-cc",
+        "name":  "Xero (Client Credentials)",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/xero-oauth2-cc.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/xero-oauth2-cc"
+    },
+    {
+        "slug":  "yahoo",
+        "name":  "Yahoo",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/yahoo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/yahoo"
+    },
+    {
+        "slug":  "yandex",
+        "name":  "Yandex",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/yandex.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/yandex"
+    },
+    {
+        "slug":  "youtube",
+        "name":  "YouTube",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/youtube.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/youtube"
+    },
+    {
+        "slug":  "zapier",
+        "name":  "Zapier",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zapier.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zapier"
+    },
+    {
+        "slug":  "zapier-nla",
+        "name":  "Zapier NLA",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zapier-nla.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zapier-nla"
+    },
+    {
+        "slug":  "zendesk",
+        "name":  "Zendesk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zendesk.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zendesk"
+    },
+    {
+        "slug":  "zendesk-sell",
+        "name":  "Zendesk Sell",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zendesk-sell.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zendesk-sell"
+    },
+    {
+        "slug":  "zenefits",
+        "name":  "Zenefits",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zenefits.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zenefits"
+    },
+    {
+        "slug":  "zoho",
+        "name":  "Zoho",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho"
+    },
+    {
+        "slug":  "zoho-bigin",
+        "name":  "Zoho Bigin",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-bigin.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-bigin"
+    },
+    {
+        "slug":  "zoho-books",
+        "name":  "Zoho Books",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-books.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-books"
+    },
+    {
+        "slug":  "zoho-calendar",
+        "name":  "Zoho Calendar",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-calendar.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-calendar"
+    },
+    {
+        "slug":  "zoho-crm",
+        "name":  "Zoho CRM",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-crm.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-crm"
+    },
+    {
+        "slug":  "zoho-desk",
+        "name":  "Zoho Desk",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-desk.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-desk"
+    },
+    {
+        "slug":  "zoho-inventory",
+        "name":  "Zoho Inventory",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-inventory.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-inventory"
+    },
+    {
+        "slug":  "zoho-invoice",
+        "name":  "Zoho Invoice",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-invoice.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-invoice"
+    },
+    {
+        "slug":  "zoho-mail",
+        "name":  "Zoho Mail",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-mail.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-mail"
+    },
+    {
+        "slug":  "zoho-people",
+        "name":  "Zoho People",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-people.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-people"
+    },
+    {
+        "slug":  "zoho-recruit",
+        "name":  "Zoho Recruit",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoho-recruit.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoho-recruit"
+    },
+    {
+        "slug":  "zoom",
+        "name":  "Zoom",
+        "authMode":  "OAUTH2",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoom.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoom"
+    },
+    {
+        "slug":  "zoominfo",
+        "name":  "ZoomInfo",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zoominfo.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zoominfo"
+    },
+    {
+        "slug":  "zuora",
+        "name":  "Zuora",
+        "authMode":  "OAUTH2_CC",
+        "categories":  [
+
+                       ],
+        "logoUrl":  "https://raw.githubusercontent.com/NangoHQ/nango/master/packages/webapp/public/images/template-logos/zuora.svg",
+        "docsUrl":  "https://nango.dev/docs/integrations/all/zuora"
+    }
+]

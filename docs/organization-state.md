@@ -11,6 +11,15 @@ Each section carries `confidence`, `freshness_at`, and typed `items`:
 - `teams[]` capacity slice
 - `meta.version` monotonic compile version
 
+**P1 compile sources (not raw signal dumps):**
+
+- `risks` = open HIGH/CRITICAL `conflicts` + `entity_state_snapshots` with `AT_RISK`/`BLOCKED` on `LAUNCH_READINESS` / `CUSTOMER_READINESS` / `DEADLINE`
+- `blockers` = execution `BLOCKED` tasks **plus** snapshots `BLOCKED` on `DEPENDENCY` / `CUSTOMER_READINESS` / `TASK_STATUS`
+- `commitments` = active claims with intent `COMMITMENT` (no longer always empty)
+- `externalContext` includes `feature` entities as well as competitor/customer/metric
+
+Causal simulator / digital-twin metrics are **not** folded into this compile yet.
+
 ## Incremental patches
 
 Ledger events debounce (500ms) into `patchOrganizationState()` — O(affected entities), not full-org recompile.

@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../database.js";
 
@@ -39,7 +40,12 @@ export type IngestSource =
   | "GMAIL"
   | "NOTION"
   | "LINEAR"
-  | "MANUAL";
+  | "MANUAL"
+  | "CRM"
+  | "MEETING"
+  | "INCIDENT"
+  | "HRIS"
+  | "FINANCE";
 
 /** Provider id -> source bucket. Anything not listed defaults to MANUAL. */
 const SOURCE_BUCKETS: Record<string, IngestSource> = {
@@ -51,14 +57,22 @@ const SOURCE_BUCKETS: Record<string, IngestSource> = {
   gmail: "GMAIL",
   notion: "NOTION",
   linear: "LINEAR",
-  meeting: "MANUAL",
-  zoom: "MANUAL",
-  meet: "MANUAL",
-  hubspot: "MANUAL",
-  salesforce: "MANUAL",
-  pipedrive: "MANUAL",
-  crm: "MANUAL",
-  email: "MANUAL",
+  meeting: "MEETING",
+  zoom: "MEETING",
+  meet: "MEETING",
+  hubspot: "CRM",
+  salesforce: "CRM",
+  pipedrive: "CRM",
+  crm: "CRM",
+  siem: "INCIDENT",
+  pagerduty: "INCIDENT",
+  incident: "INCIDENT",
+  hris: "HRIS",
+  finance: "FINANCE",
+  confluence: "MANUAL",
+  email: "GMAIL",
+  mail: "GMAIL",
+  outlook: "MICROSOFT",
   manual: "MANUAL",
 };
 
@@ -92,6 +106,31 @@ export interface IngestResult {
 
 function bucketFor(provider: string): IngestSource {
   return SOURCE_BUCKETS[provider.toLowerCase()] ?? "MANUAL";
+}
+
+function normalizeContent(content: string): string {
+  return String(content || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/** Tenant-scoped fingerprint when the provider has no external id. Never hash content globally. */
+export function contentFingerprint(input: {
+  userId: string;
+  provider: string;
+  timestamp?: string;
+  author: string;
+  content: string;
+}): string {
+  const raw = [
+    input.userId,
+    String(input.provider || "").toLowerCase(),
+    input.timestamp || "",
+    input.author || "",
+    normalizeContent(input.content),
+  ].join("|");
+  return `fp:${createHash("sha256").update(raw).digest("hex").slice(0, 32)}`;
 }
 
 /**
@@ -130,19 +169,26 @@ export function ingestExternal(
 
   const source = bucketFor(rec.provider);
   const subtype = rec.subtype ?? rec.provider.toLowerCase();
+  const externalId =
+    (rec.externalId && String(rec.externalId).trim()) ||
+    contentFingerprint({
+      userId,
+      provider: rec.provider,
+      timestamp: rec.detectedAt,
+      author: rec.owner,
+      content: rec.content,
+    });
 
   /** Generic per-source idempotency. Slack still uses its own slack_event_receipts table for legacy reasons. */
-  if (rec.externalId) {
-    const isDup = !db.tryInsertExternalEventId(source, rec.externalId, rec.tenantKey ?? "");
-    if (isDup) {
-      const existing = findExistingByExternalId(source, rec.externalId);
-      return {
-        signalId: existing?.id ?? "(unknown)",
-        duplicate: true,
-        source,
-        subtype,
-      };
-    }
+  const isDup = !db.tryInsertExternalEventId(source, externalId, rec.tenantKey ?? userId);
+  if (isDup) {
+    const existing = findExistingByExternalId(source, externalId, userId);
+    return {
+      signalId: existing?.id ?? "(unknown)",
+      duplicate: true,
+      source,
+      subtype,
+    };
   }
 
   const id = uuidv4();
@@ -156,7 +202,7 @@ export function ingestExternal(
     owner: rec.owner,
     detectedAt: rec.detectedAt,
     sourceSubtype: subtype,
-    externalId: rec.externalId,
+    externalId,
     ingestMeta,
   });
 
@@ -180,11 +226,20 @@ export function ingestExternalBatch(
   return { results, errors };
 }
 
-function findExistingByExternalId(source: IngestSource, externalId: string): { id: string } | null {
-  const r = db.rawGet(
-    `SELECT id FROM external_signals WHERE source = ? AND external_id = ? LIMIT 1`,
-    [source, externalId],
-  ) as { id: string }[];
+function findExistingByExternalId(
+  source: IngestSource,
+  externalId: string,
+  userId?: string,
+): { id: string } | null {
+  const r = userId
+    ? (db.rawGet(
+        `SELECT id FROM external_signals WHERE source = ? AND external_id = ? AND user_id = ? LIMIT 1`,
+        [source, externalId, userId],
+      ) as { id: string }[])
+    : (db.rawGet(`SELECT id FROM external_signals WHERE source = ? AND external_id = ? LIMIT 1`, [
+        source,
+        externalId,
+      ]) as { id: string }[]);
   return r[0] ?? null;
 }
 

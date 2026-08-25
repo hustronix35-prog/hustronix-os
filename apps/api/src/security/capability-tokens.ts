@@ -122,6 +122,8 @@ export function verifyCapabilityToken(
 export const HIGH_RISK_TOOLS = new Set([
   "log_strategic_decision",
   "commit_decision",
+  "complete_decision",
+  "reverse_decision",
   "transition_execution",
   "remember_fact",
 ]);

@@ -11,8 +11,14 @@ import { resolveTenantContext } from "./tenant-context.js";
 export const TOOL_PERMISSION_REGISTRY: Readonly<Record<string, Permission>> = {
   log_strategic_decision: "decision:write",
   commit_decision: "decision:commit",
+  complete_decision: "decision:commit",
+  reverse_decision: "decision:commit",
   transition_execution: "execution:write",
+  clarification_answer: "execution:write",
+  clarification_dismiss: "execution:write",
   link_execution_signal: "execution:write",
+  assign_execution_owner: "execution:write",
+  orchestration_authorize: "execution:write",
   kill_signal: "signal:write",
   remember_fact: "memory:write",
   recall_memory: "memory:read",
@@ -85,12 +91,18 @@ export function assertDecisionOwnership(userId: string, decisionId: string): voi
 export function authorizeToolExecution(ctx: ToolAuthorizationContext): Permission {
   const permission = assertToolPermitted(ctx);
 
-  if (ctx.toolName === "transition_execution" && ctx.toolArgs) {
+  if (ctx.toolName === "assign_execution_owner" && ctx.toolArgs) {
     const taskId = String(ctx.toolArgs.task_id ?? ctx.toolArgs.taskId ?? "").trim();
-    if (!taskId) {
-      throw new AuthorizationError("transition_execution requires task_id.");
-    }
+    if (!taskId) throw new AuthorizationError("assign_execution_owner requires task_id.");
     assertExecutionOwnership(ctx.userId, taskId);
+  }
+
+  if (
+    (ctx.toolName === "clarification_answer" || ctx.toolName === "clarification_dismiss") &&
+    ctx.toolArgs
+  ) {
+    const taskId = String(ctx.toolArgs.task_id ?? ctx.toolArgs.taskId ?? "").trim();
+    if (taskId) assertExecutionOwnership(ctx.userId, taskId);
   }
 
   return permission;

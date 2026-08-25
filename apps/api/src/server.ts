@@ -76,12 +76,22 @@ import { assertLedgerTenantAccess } from "./security/tenant-scope.js";
 import { authorizeAndExecuteMutation } from "./security/security-gateway.js";
 import {
   mutationCommitDecision,
+  mutationCompleteDecision,
+  mutationReverseDecision,
   mutationCreateDraftDecision,
   mutationKillSignal,
   mutationLinkSignal,
   mutationTransitionExecution,
   mutationUnlinkSignal,
 } from "./security/mutation-handlers.js";
+import {
+  answerClarification,
+  dismissClarification,
+  getClarification,
+  listClarifications,
+  toPublicClarification,
+  type ClarificationStatus,
+} from "./clarification/index.js";
 import { checkWsRateLimit } from "./middleware/ws-rate-limit.js";
 import {
   aiRouteLimiter,
@@ -100,6 +110,27 @@ import { recordSecurityEvent } from "./security/audit.js";
 import { requireHttpsMiddleware, securityHeadersMiddleware } from "./security/httpSecurity.js";
 import { getRequestId, logJson, requestContextMiddleware } from "./security/requestContext.js";
 import { sqliteDatetimeToIso } from "./utils/sqlite-datetime.js";
+import { buildBrainSummary } from "./brain/summary.js";
+import { buildDecisionDetail } from "./brain/decision-detail.js";
+import { buildExecutionPlan } from "./execution/execution-plan.js";
+import {
+  buildAnalyticsSummary,
+  type AnalyticsRange,
+} from "./analytics/buildAnalyticsSummary.js";
+import { buildOrgConsole } from "./execution/org-console.js";
+import {
+  buildOrgIntelligence,
+  createOrgDependency,
+  createOrgTeam,
+  deleteOrgDependency,
+} from "./org/intelligence.js";
+import {
+  authorizeOrchestrationAction,
+  getOrchestration,
+  runOrchestration,
+  scheduleOrchestration,
+} from "./execution/orchestrator/index.js";
+import { jiraCloudUrlForUser, resolveSignalOpenTargets } from "./brain/signal-open.js";
 import {
   canonicalJson,
   hashLedgerEvent,
@@ -143,8 +174,19 @@ import {
   formatWeeklyDriftMarkdown,
   formatHealthMarkdown,
   ingestMeeting,
+  runSituationDetection,
+  listSituationsForUser,
+  getSituationDetail,
+  talkToHustronix,
+  talkToHustronixAsync,
 } from "./intelligence/index.js";
+import { buildTeamsIntelligence } from "./intelligence/teams-intelligence.js";
+import { buildAttentionBrief } from "./intelligence/attention-brief.js";
+import { osHealthSnapshot } from "./intelligence/os-observability.js";
+import { recentTalkTraces, talkObservabilitySummary } from "./intelligence/talk/talk-observability.js";
+import { defaultTrustPolicy } from "./security/design-partner-trust.js";
 import { ingestExternal, ingestExternalBatch, IngestError } from "./integrations/ingestRouter.js";
+import { buildEvidenceAccuracy, publicSignalProvenance } from "./intelligence/evidenceAccuracy.js";
 import { notify, defaultAppLink } from "./notifications/dispatcher.js";
 import { startNotificationDigestScheduler } from "./notifications/digest.js";
 import {
@@ -183,6 +225,7 @@ import {
 import { mountGoogleWebhook } from "./integrations/googleWebhook.js";
 import { mountGoogleRoutes } from "./integrations/googleRoutes.js";
 import { mountConnectionsHealthRoute } from "./integrations/connectionsHealth.js";
+import { mountNangoRoutes } from "./integrations/nango/nangoRoutes.js";
 import { getGraphImpact } from "./security/evidence-graph.js";
 
 const LEGACY_UID_COOKIE = "hustronix_uid";
@@ -298,6 +341,7 @@ function buildTotpLoginResponse(userId: string) {
 
 /** After password (and optional email OTP when required): session, TOTP step, or 503 if server cannot verify 2FA. */
 function completePrimaryLogin(res: express.Response, req: express.Request, userId: string) {
+  stampOrgOwnerIfUnset(userId);
   if (!userTotpActive(userId)) {
     const sess = issueSession(res, userId, req);
     recordSecurityEvent(req, "auth.login_success", "info", { userId, sessionId: sess.sessionId });
@@ -334,6 +378,54 @@ function commitDecisionActive(
       emergencyReason: options?.emergencyReason,
     },
     () => mutationCommitDecision(userId, decisionId, justification, options),
+  );
+}
+
+function completeDecisionActive(
+  userId: string,
+  decisionId: string,
+  justification?: string,
+  options?: { approvalId?: string; emergencyOverride?: boolean; emergencyReason?: string },
+  authKind?: AuthKind | string,
+) {
+  return authorizeAndExecuteMutation(
+    {
+      userId,
+      authKind,
+      permission: "decision:commit",
+      actionType: "complete_decision",
+      toolName: "complete_decision",
+      toolArgs: { decisionId, justification: justification ?? "" },
+      resourceTenantId: db.getDecisionTenant(decisionId),
+      approvalId: options?.approvalId,
+      emergencyOverride: options?.emergencyOverride,
+      emergencyReason: options?.emergencyReason,
+    },
+    () => mutationCompleteDecision(userId, decisionId, justification),
+  );
+}
+
+function reverseDecisionActive(
+  userId: string,
+  decisionId: string,
+  justification?: string,
+  options?: { approvalId?: string; emergencyOverride?: boolean; emergencyReason?: string },
+  authKind?: AuthKind | string,
+) {
+  return authorizeAndExecuteMutation(
+    {
+      userId,
+      authKind,
+      permission: "decision:commit",
+      actionType: "reverse_decision",
+      toolName: "reverse_decision",
+      toolArgs: { decisionId, justification: justification ?? "" },
+      resourceTenantId: db.getDecisionTenant(decisionId),
+      approvalId: options?.approvalId,
+      emergencyOverride: options?.emergencyOverride,
+      emergencyReason: options?.emergencyReason,
+    },
+    () => mutationReverseDecision(userId, decisionId, justification),
   );
 }
 
@@ -814,6 +906,7 @@ app.post("/api/auth/register", authRouteLimiter, (req, res) => {
     if (disp) db.updateSetting(id, "profile.display_name", disp.slice(0, 400));
     db.updateSetting(id, "security.password_credential_set", "1");
     stampOrgOwnerIfUnset(id);
+    db.updateSetting(id, "org.onboarding.completed", "0");
     const sess = issueSession(res, id, req);
     recordSecurityEvent(req, "auth.register_success", "info", { userId: id });
     res.json({ success: true, userId: id, sessionId: sess.sessionId });
@@ -1839,13 +1932,15 @@ app.get("/api/execution/ledger", authMiddleware, (req, res) => {
       }));
     if (scope === "all") {
       const data = db.rawGet(
-        `SELECT e.*, d.vow as decision_vow ${baseJoin} ORDER BY e.last_update DESC`,
+        `SELECT e.*, d.vow as decision_vow, d.status as decision_status ${baseJoin} ORDER BY e.last_update DESC`,
         [userId],
       ) as Record<string, unknown>[];
       return res.json({ executions: normalizeExecutions(data) });
     }
+    /** Default Execute view: only work under non-DRAFT decisions (DRAFTs are proposals). */
     const data = db.rawGet(
-      `SELECT e.*, d.vow as decision_vow ${baseJoin}
+      `SELECT e.*, d.vow as decision_vow, d.status as decision_status ${baseJoin}
+       AND d.status != 'DRAFT'
        AND e.status IN ('PENDING', 'ACTIVE', 'BLOCKED')
        ORDER BY e.last_update DESC`,
       [userId],
@@ -1887,7 +1982,7 @@ app.get("/api/execution/signals/by-state", authMiddleware, (req, res) => {
       sql += tenantSql ? ` WHERE 1=1${tenantSql}` : "";
     }
     sql += ` ORDER BY detected_at DESC`;
-    const rows = db.rawGet(sql, params);
+    const rows = db.rawGet(sql, params) as Array<Record<string, unknown>>;
     const countSql = `SELECT
         SUM(CASE WHEN state IN ('UNVERIFIED','GRACE') THEN 1 ELSE 0 END) as unverified,
         SUM(CASE WHEN state = 'LINKED' THEN 1 ELSE 0 END) as linked,
@@ -1899,8 +1994,32 @@ app.get("/api/execution/signals/by-state", authMiddleware, (req, res) => {
       killed: number;
     }[];
     const c = counts[0] || { unverified: 0, linked: 0, killed: 0 };
+    const jiraCloud = jiraCloudUrlForUser(userId);
     res.json({
-      signals: rows,
+      signals: rows.map((row) => ({
+        id: row.id,
+        source: row.source,
+        source_subtype: row.source_subtype ?? null,
+        external_id: row.external_id ?? null,
+        owner: row.owner ?? null,
+        content: row.content,
+        state: row.state,
+        detected_at: row.detected_at ?? null,
+        received_at: row.received_at ?? null,
+        linked_execution_id: row.linked_execution_id ?? null,
+        grace_expires_at: row.grace_expires_at ?? null,
+        openTargets: resolveSignalOpenTargets(
+          {
+            source: String(row.source || ""),
+            source_subtype: row.source_subtype != null ? String(row.source_subtype) : null,
+            external_id: row.external_id != null ? String(row.external_id) : null,
+            content: row.content != null ? String(row.content) : null,
+            ingest_meta: row.ingest_meta != null ? String(row.ingest_meta) : null,
+            owner: row.owner != null ? String(row.owner) : null,
+          },
+          { jiraCloudUrl: jiraCloud },
+        ),
+      })),
       counts: {
         unverified: Number(c.unverified) || 0,
         linked: Number(c.linked) || 0,
@@ -1909,6 +2028,21 @@ app.get("/api/execution/signals/by-state", authMiddleware, (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch signals" });
+  }
+});
+
+app.get("/api/brain/summary", authMiddleware, (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const integrations = buildIntegrationsBlock(userId);
+    const sources = Object.values(integrations).map((s) => ({
+      name: s.label,
+      connected: Boolean(s.connected),
+    }));
+    res.json(buildBrainSummary(userId, sources));
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err?.message || "Failed to build brain summary" });
   }
 });
 
@@ -1958,8 +2092,9 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
     const totalExec = Object.values(byStatus).reduce((a, b) => a + b, 0);
     const activeExec = (byStatus["ACTIVE"] || 0) + (byStatus["PENDING"] || 0);
     const blockedExec = byStatus["BLOCKED"] || 0;
+    const doneExec = byStatus["DONE"] || 0;
 
-    const cap = db.getOwnerCapacity(owner);
+    const cap = db.getOwnerCapacity(owner, userId);
     const activeTasks = db.rawGet(
       `SELECT sum(e.weight) as total_weight FROM execution_ledger e
        INNER JOIN decision_ledger d ON e.decision_id = d.id
@@ -1982,7 +2117,8 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
 
     const { sql: sigSql, params: sigParams } = signalsTenant(userId);
     const sigPreview = db.rawGet(
-      `SELECT id, source, content, detected_at, grace_expires_at, state
+      `SELECT id, source, source_subtype, content, detected_at, received_at, grace_expires_at, state,
+              json_extract(ingest_meta, '$.integration_runtime') AS runtime
        FROM external_signals
        WHERE state IN ('UNVERIFIED','GRACE')${sigSql}
        ORDER BY detected_at DESC
@@ -2014,6 +2150,7 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
         active: byStatus["ACTIVE"] || 0,
         pending: byStatus["PENDING"] || 0,
         blocked: blockedExec,
+        done: doneExec,
         activeOrPending: activeExec,
       },
       capacity: {
@@ -2033,6 +2170,17 @@ app.get("/api/mission-control/summary", authMiddleware, (req, res) => {
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: "Failed to build mission control summary" });
+  }
+});
+
+app.get("/api/evidence/accuracy", authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const report = await buildEvidenceAccuracy(userId);
+    res.json(report);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err?.message || "Failed to build evidence accuracy" });
   }
 });
 
@@ -2081,6 +2229,14 @@ app.get("/api/chat/sidebar", authMiddleware, (req, res) => {
       if (u === "SLACK") return "Slack";
       if (u === "GITHUB") return "GitHub";
       if (u === "JIRA") return "Jira";
+      if (u === "GMAIL") return "Gmail";
+      if (u === "GOOGLE") return "Google";
+      if (u === "NOTION") return "Notion";
+      if (u === "CRM") return "CRM";
+      if (u === "MEETING") return "Meeting";
+      if (u === "INCIDENT") return "Incident";
+      if (u === "HRIS") return "HRIS";
+      if (u === "FINANCE") return "Finance";
       if (u === "MANUAL") return "Manual";
       return s || "Other";
     };
@@ -2226,8 +2382,8 @@ app.get("/api/execution/capacity", authMiddleware, (req, res) => {
   try {
     const userId = (req as any).userId as string;
     const owner = (req.query.owner as string) || "system";
-    const capacity = db.getOwnerCapacity(owner);
-    const activeTasks = db.rawGet("SELECT sum(weight) as total_weight FROM execution_ledger WHERE owner = ? AND status = 'ACTIVE'", [owner]);
+    const capacity = db.getOwnerCapacity(owner, userId);
+    const currentLoad = db.getOwnerActiveWeight(owner, userId);
     const beliefs = listBeliefsForEntity(userId, "person", owner);
     const derived = computeDerivedCapacity(beliefs);
     const explanation = derived.loadCurve
@@ -2239,7 +2395,7 @@ app.get("/api/execution/capacity", authMiddleware, (req, res) => {
       }));
     res.json({
       ...capacity,
-      currentLoad: activeTasks[0]?.total_weight || 0,
+      currentLoad,
       shadow: {
         derivedCapacity: derived.derivedCapacity,
         confidence: derived.confidence,
@@ -2310,7 +2466,7 @@ app.get("/api/owners/profiles", authMiddleware, (req, res) => {
     const entries = buildTeamEntries(userId).filter((e) => e.source === "ledger");
     const profiles = entries.map((e) => {
       const owner = e.id.replace(/^ledger:/, "");
-      const legacy = db.getOwnerCapacity(owner);
+      const legacy = db.getOwnerCapacity(owner, userId);
       return buildOwnerProfile(userId, owner, legacy.capacity);
     });
     res.json({ profiles });
@@ -2323,7 +2479,7 @@ app.get("/api/owners/:owner/profile", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
   const owner = req.params.owner;
   try {
-    const legacy = db.getOwnerCapacity(owner);
+    const legacy = db.getOwnerCapacity(owner, userId);
     const profile = buildOwnerProfile(userId, owner, legacy.capacity);
     const recentEvidence = listEvidenceForEntity(userId, "person", owner, 15);
     const neighbors = listGraphNeighbors(userId, "person", owner, 15);
@@ -2344,6 +2500,129 @@ app.get("/api/owners/:owner/calibration", authMiddleware, (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+app.get("/api/execution/clarifications", authMiddleware, requirePermission("execution:read"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const statusRaw = String(req.query.status || "").toUpperCase();
+  const status = (
+    ["OPEN", "ANSWERED", "COMMITTED", "DISMISSED", "EXPIRED"].includes(statusRaw)
+      ? statusRaw
+      : undefined
+  ) as ClarificationStatus | undefined;
+  try {
+    res.json({ clarifications: listClarifications(userId, status).map(toPublicClarification) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "clarifications_failed" });
+  }
+});
+
+app.get("/api/execution/clarifications/:id", authMiddleware, requirePermission("execution:read"), (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const row = getClarification(String(req.params.id), userId);
+    if (!row) return res.status(404).json({ error: "Clarification not found" });
+    res.json({ clarification: toPublicClarification(row) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "clarification_failed" });
+  }
+});
+
+app.post(
+  "/api/execution/clarifications/:id/answer",
+  authMiddleware,
+  requirePermission("execution:write"),
+  mutationRouteLimiter,
+  async (req, res) => {
+    const userId = (req as any).userId as string;
+    const authKind = (req as any).authKind as string | undefined;
+    const clarificationId = String(req.params.id || "");
+    const answer = String((req.body as { answer?: string })?.answer || "");
+    try {
+      const existing = getClarification(clarificationId, userId);
+      if (!existing) return res.status(404).json({ error: "Clarification not found" });
+      const tenant = db.getExecutionTenantForTask(existing.task_id);
+      if (!tenant) return res.status(404).json({ error: "Task not found" });
+      const result = await authorizeAndExecuteMutation(
+        {
+          userId,
+          authKind,
+          permission: "execution:write",
+          actionType: "clarification_answer",
+          toolName: "clarification_answer",
+          toolArgs: { clarificationId, taskId: existing.task_id, answer },
+          resourceTenantId: tenant,
+        },
+        () => answerClarification(userId, clarificationId, answer),
+      );
+      appendAuthorityLedgerEvent({
+        req,
+        orgId: tenant,
+        aggregateType: "execution",
+        aggregateId: existing.task_id,
+        eventType: "execution.clarification_answered",
+        payload: {
+          clarificationId,
+          extractSource: result.extractSource,
+          committed: result.committed,
+          rejected: result.rejected,
+        },
+      });
+      res.json({
+        clarification: toPublicClarification(result.clarification),
+        claims: result.claims,
+        extractSource: result.extractSource,
+        proposed: result.proposed,
+        committed: result.committed,
+        rejected: result.rejected,
+      });
+    } catch (err: any) {
+      const status = err?.message?.includes("Forbidden") ? 403 : err?.message?.includes("not found") ? 404 : 400;
+      res.status(status).json({ error: err.message });
+    }
+  },
+);
+
+app.post(
+  "/api/execution/clarifications/:id/dismiss",
+  authMiddleware,
+  requirePermission("execution:write"),
+  mutationRouteLimiter,
+  async (req, res) => {
+    const userId = (req as any).userId as string;
+    const authKind = (req as any).authKind as string | undefined;
+    const clarificationId = String(req.params.id || "");
+    try {
+      const existing = getClarification(clarificationId, userId);
+      if (!existing) return res.status(404).json({ error: "Clarification not found" });
+      const tenant = db.getExecutionTenantForTask(existing.task_id);
+      if (!tenant) return res.status(404).json({ error: "Task not found" });
+      const dismissed = await authorizeAndExecuteMutation(
+        {
+          userId,
+          authKind,
+          permission: "execution:write",
+          actionType: "clarification_dismiss",
+          toolName: "clarification_dismiss",
+          toolArgs: { clarificationId, taskId: existing.task_id },
+          resourceTenantId: tenant,
+        },
+        () => dismissClarification(userId, clarificationId),
+      );
+      appendAuthorityLedgerEvent({
+        req,
+        orgId: tenant,
+        aggregateType: "execution",
+        aggregateId: existing.task_id,
+        eventType: "execution.clarification_dismissed",
+        payload: { clarificationId },
+      });
+      res.json({ clarification: toPublicClarification(dismissed) });
+    } catch (err: any) {
+      const status = err?.message?.includes("Forbidden") ? 403 : err?.message?.includes("not found") ? 404 : 400;
+      res.status(status).json({ error: err.message });
+    }
+  },
+);
 
 app.post("/api/execution/transition", authMiddleware, requirePermission("execution:write"), mutationRouteLimiter, async (req, res) => {
   const { taskId, newState, reason, approvalId, emergencyOverride, emergencyReason } = req.body as {
@@ -2500,6 +2779,95 @@ app.get("/api/truth/snapshots", authMiddleware, requirePermission("decision:read
     res.json({ truths: getCurrentOrganizationalTruth(orgId) });
   } catch (e: any) {
     res.status(500).json({ error: e?.message || "failed to list truth snapshots" });
+  }
+});
+
+/** Phase 1 reconciliation — typed claims / conflicts / entity state (≠ organizational_truth). */
+app.get("/api/reconciliation/claims", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  const entityId = typeof req.query.entityId === "string" ? req.query.entityId : null;
+  const dimension = typeof req.query.dimension === "string" ? req.query.dimension : null;
+  const status = typeof req.query.status === "string" ? req.query.status : "ACTIVE";
+  try {
+    const clauses = ["tenant_id = ?", "status = ?"];
+    const params: unknown[] = [orgId, status];
+    if (entityId) {
+      clauses.push("entity_id = ?");
+      params.push(entityId);
+    }
+    if (dimension) {
+      clauses.push("dimension = ?");
+      params.push(dimension);
+    }
+    const rows = db.rawGet(
+      `SELECT * FROM claims WHERE ${clauses.join(" AND ")} ORDER BY last_seen_at DESC LIMIT 100`,
+      params,
+    );
+    res.json({ claims: rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list claims" });
+  }
+});
+
+app.get("/api/reconciliation/state", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  const entityId = typeof req.query.entityId === "string" ? req.query.entityId : null;
+  try {
+    const rows = entityId
+      ? db.rawGet(
+          `SELECT * FROM entity_state_snapshots WHERE tenant_id = ? AND entity_id = ? ORDER BY dimension`,
+          [orgId, entityId],
+        )
+      : db.rawGet(
+          `SELECT * FROM entity_state_snapshots WHERE tenant_id = ? ORDER BY last_updated_at DESC LIMIT 100`,
+          [orgId],
+        );
+    res.json({ snapshots: rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list entity state" });
+  }
+});
+
+app.get("/api/reconciliation/conflicts", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  const status = typeof req.query.status === "string" ? req.query.status : null;
+  try {
+    const rows = status
+      ? db.rawGet(
+          `SELECT * FROM conflicts WHERE tenant_id = ? AND status = ? ORDER BY detected_at DESC LIMIT 100`,
+          [orgId, status],
+        )
+      : db.rawGet(
+          `SELECT * FROM conflicts WHERE tenant_id = ? AND status IN ('OPEN','ESCALATED')
+           ORDER BY detected_at DESC LIMIT 100`,
+          [orgId],
+        );
+    res.json({ conflicts: rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list conflicts" });
+  }
+});
+
+app.get("/api/reconciliation/decision-required", authMiddleware, requirePermission("decision:read"), (req, res) => {
+  const orgId = String((req as any).orgId || (req as any).userId);
+  try {
+    const rows = db.rawGet(
+      `SELECT c.*, d.vow AS decision_vow, d.status AS decision_status,
+              r.explanation AS explanation
+       FROM conflicts c
+       LEFT JOIN decision_ledger d ON d.id = c.decision_id
+       LEFT JOIN conflict_resolutions r ON r.conflict_id = c.id
+       WHERE c.tenant_id = ?
+         AND (
+           c.status = 'ESCALATED'
+           OR (c.status = 'OPEN' AND c.severity IN ('HIGH','CRITICAL'))
+         )
+       ORDER BY c.updated_at DESC LIMIT 50`,
+      [orgId],
+    );
+    res.json({ items: rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed to list decision-required" });
   }
 });
 
@@ -3171,6 +3539,10 @@ app.post("/api/settings/bulk", authMiddleware, requirePermission("settings:write
     for (const [k, v] of entries) {
       db.updateSetting(userId, k, String(v));
     }
+    const digest = safe["org.agent_context_digest"];
+    if (typeof digest === "string" && digest.trim()) {
+      db.updateCoreMemory(userId, "organization", digest.trim().slice(0, 4000));
+    }
     if (
       userId !== "system" &&
       !orgRoleBefore &&
@@ -3709,6 +4081,534 @@ app.get("/api/decisions", authMiddleware, (req, res) => {
   }
 });
 
+function sendDecisionDetail(req: any, res: any) {
+  const userId = req.userId as string;
+  const key = String(req.params.id || req.params.slug || "").trim();
+  if (!key) return res.status(400).json({ error: "id required" });
+  try {
+    const detail = buildDecisionDetail(userId, key);
+    if (!detail) return res.status(404).json({ error: "Decision not found" });
+    res.json(detail);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
+app.get("/api/console", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const decisionId = typeof req.query.decisionId === "string" ? req.query.decisionId : "";
+  try {
+    res.json({ console: buildOrgConsole(userId, decisionId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/org/intelligence", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    res.json({ org: buildOrgIntelligence(userId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/intelligence/situations/detect", authMiddleware, requirePermission("decision:write"), (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const simDay = req.body?.simDay != null ? Number(req.body.simDay) : undefined;
+    res.json({ ok: true, result: runSituationDetection(userId, { simDay }) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "situation detect failed" });
+  }
+});
+
+app.get("/api/intelligence/situations", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const rows = listSituationsForUser(userId);
+    const situations = rows.map((r) => {
+      let facets: string[] = [];
+      let people: string[] = [];
+      let teams: string[] = [];
+      try {
+        facets = r.facets_json ? JSON.parse(r.facets_json) : [];
+        people = r.people_json ? JSON.parse(r.people_json) : [];
+        teams = r.teams_json ? JSON.parse(r.teams_json) : [];
+      } catch {
+        /* ignore */
+      }
+      return {
+        id: r.id,
+        pattern_id: r.pattern_id,
+        title: r.title,
+        stage: r.stage,
+        confidence: r.confidence,
+        trajectory: r.trajectory,
+        first_observed_day: r.first_observed_day,
+        awareness_day: r.awareness_day,
+        forming_day: r.forming_day,
+        elevated_day: r.elevated_day,
+        decision_ready_day: r.decision_ready_day,
+        decision_id: r.decision_id,
+        evidence_count: r.evidence_count,
+        explanation: r.explanation,
+        facets,
+        people,
+        teams,
+        potential_impact: r.potential_impact,
+      };
+    });
+    res.json({ situations });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+/** Ground Chat in Situation objects — must be registered before /:id */
+app.post("/api/intelligence/situations/ask", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const question = String(req.body?.question || req.body?.q || "").trim();
+    const focusId = req.body?.focus_id ? String(req.body.focus_id) : null;
+    const actionRaw = String(req.body?.action || "").trim();
+    const allowed = new Set([
+      "create_decision",
+      "execute",
+      "complete",
+      "reverse",
+      "validate",
+      "hypotheses",
+      "instrumentation",
+      "feasibility",
+      "outcome",
+      "learn",
+    ]);
+    const action = allowed.has(actionRaw)
+      ? (actionRaw as
+          | "create_decision"
+          | "execute"
+          | "complete"
+          | "reverse"
+          | "validate"
+          | "hypotheses"
+          | "instrumentation"
+          | "feasibility"
+          | "outcome"
+          | "learn")
+      : null;
+    if (!question && !action) return res.status(400).json({ error: "question required" });
+    const turn = await talkToHustronixAsync(userId, question || "What's going wrong in the company?", {
+      focusId,
+      action,
+      sessionId: req.body?.session_id ? String(req.body.session_id) : null,
+    });
+    res.json({
+      question: turn.question,
+      grounded: turn.grounded,
+      intent: turn.intent,
+      focus_id: turn.focus_id,
+      decision_id: turn.decision_id,
+      situations: turn.situations,
+      actions: turn.actions,
+      answer: turn.answer,
+      mode: (turn as { mode?: string }).mode,
+      followUps: (turn as { followUps?: string[] }).followUps,
+      context: (turn as { context?: unknown }).context,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/intelligence/talk", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const message = String(req.body?.message || req.body?.question || req.body?.q || "").trim();
+    const conversationId = req.body?.conversationId || req.body?.conversation_id || req.body?.session_id || null;
+    const focusId = req.body?.focus_id ? String(req.body.focus_id) : req.body?.focusId ? String(req.body.focusId) : null;
+    const actionRaw = String(req.body?.action || "").trim();
+    const allowed = new Set([
+      "create_decision",
+      "execute",
+      "complete",
+      "reverse",
+      "validate",
+      "hypotheses",
+      "instrumentation",
+      "feasibility",
+      "outcome",
+      "learn",
+    ]);
+    const action = allowed.has(actionRaw)
+      ? (actionRaw as
+          | "create_decision"
+          | "execute"
+          | "complete"
+          | "reverse"
+          | "validate"
+          | "hypotheses"
+          | "instrumentation"
+          | "feasibility"
+          | "outcome"
+          | "learn")
+      : null;
+    if (!message && !action) return res.status(400).json({ error: "message required" });
+    const turn = await talkToHustronixAsync(userId, message || "What's worrying me right now?", {
+      focusId,
+      action: action || null,
+      conversationId: conversationId ? String(conversationId) : null,
+      sessionId: conversationId ? String(conversationId) : null,
+    });
+    res.json({
+      answer: turn.answer,
+      mode: turn.mode,
+      contextMode: (turn as { contextMode?: string }).contextMode,
+      grounded: turn.grounded,
+      intent: turn.intent,
+      focus_id: turn.focus_id,
+      decision_id: turn.decision_id,
+      situations: turn.situations,
+      actions: turn.actions,
+      followUps: turn.followUps,
+      context: turn.context,
+      conversationId: conversationId ? String(conversationId) : "default",
+      trace: turn.trace,
+      question: turn.question,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/intelligence/attention", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    res.json(buildAttentionBrief(userId));
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/intelligence/situations/:id", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const detail = getSituationDetail(userId, String(req.params.id));
+    if (!detail) return res.status(404).json({ error: "not found" });
+    res.json(detail);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.get("/api/org/people", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    res.json({ people: buildOrgIntelligence(userId).people });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/org/teams", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    const org = buildOrgIntelligence(userId);
+    const intel = buildTeamsIntelligence(userId);
+    res.json({
+      teams: org.teams,
+      tree: org.tree,
+      intelligence: intel,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/org/teams/intelligence", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    res.json({ intelligence: buildTeamsIntelligence(userId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || "failed" });
+  }
+});
+
+app.post("/api/org/teams", authMiddleware, requirePermission("settings:write"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const body = req.body as { name?: string; parentId?: string | null };
+  try {
+    const team = createOrgTeam(userId, { name: String(body.name || ""), parentId: body.parentId ?? null });
+    res.json({ team, org: buildOrgIntelligence(userId) });
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || "Could not create team" });
+  }
+});
+
+app.get("/api/org/dependencies", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  try {
+    res.json({ dependencies: buildOrgIntelligence(userId).dependencies });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/org/dependencies", authMiddleware, requirePermission("settings:write"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const body = req.body as {
+    fromTeam?: string;
+    fromWork?: string;
+    toTeam?: string;
+    toWork?: string;
+    status?: "ON_TRACK" | "AT_RISK" | "DELAYED";
+  };
+  try {
+    if (!body.fromTeam || !body.toTeam) return res.status(400).json({ error: "fromTeam and toTeam required" });
+    const dependency = createOrgDependency(userId, {
+      fromTeam: body.fromTeam,
+      fromWork: body.fromWork,
+      toTeam: body.toTeam,
+      toWork: body.toWork,
+      status: body.status,
+    });
+    res.json({ dependency, org: buildOrgIntelligence(userId) });
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || "Could not create dependency" });
+  }
+});
+
+app.delete("/api/org/dependencies/:id", authMiddleware, requirePermission("settings:write"), (req, res) => {
+  const userId = (req as any).userId as string;
+  const id = String(req.params.id || "");
+  try {
+    const ok = deleteOrgDependency(userId, id);
+    if (!ok) return res.status(404).json({ error: "Dependency not found" });
+    res.json({ ok: true, org: buildOrgIntelligence(userId) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/console/execute", authMiddleware, mutationRouteLimiter, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
+  const actions = Array.isArray((req.body as { actions?: unknown })?.actions)
+    ? ((req.body as { actions: Array<{ id?: string; type?: string; taskId?: string; decisionId?: string }> }).actions)
+    : [];
+  if (!actions.length) return res.status(400).json({ error: "actions required" });
+  const results: Array<{ id: string; ok: boolean; detail: string }> = [];
+  try {
+    for (const action of actions.slice(0, 20)) {
+      const id = String(action.id || action.taskId || action.decisionId || "");
+      const type = String(action.type || "");
+      if (type === "open_clarification") {
+        results.push({ id, ok: true, detail: "Clarification stays on Execute — not auto-answered." });
+        continue;
+      }
+      if (type === "commit_decision") {
+        const decisionId = String(action.decisionId || "").trim();
+        if (!decisionId) {
+          results.push({ id, ok: false, detail: "decisionId required" });
+          continue;
+        }
+        try {
+          const orgId = await commitDecisionActive(userId, decisionId, "Approved from Chat console", undefined, authKind);
+          appendAuthorityLedgerEvent({
+            req,
+            orgId,
+            aggregateType: "decision",
+            aggregateId: decisionId,
+            eventType: "decision.commit",
+            payload: { decisionId, status: "ACTIVE", source: "console" },
+          });
+          results.push({ id, ok: true, detail: "Decision is now ACTIVE." });
+        } catch (err: any) {
+          results.push({ id, ok: false, detail: err?.message || String(err) });
+        }
+        continue;
+      }
+      if (type === "start_task") {
+        const taskId = String(action.taskId || "").trim();
+        if (!taskId) {
+          results.push({ id, ok: false, detail: "taskId required" });
+          continue;
+        }
+        try {
+          const tenant = db.getExecutionTenantForTask(taskId);
+          if (!tenant) {
+            results.push({ id, ok: false, detail: "Task not found." });
+            continue;
+          }
+          const result = await authorizeAndExecuteMutation(
+            {
+              userId,
+              authKind,
+              permission: "execution:write",
+              actionType: "transition_execution",
+              toolName: "transition_execution",
+              toolArgs: { task_id: taskId, newState: "ACTIVE", reason: "Approved from Chat console" },
+              resourceTenantId: tenant,
+            },
+            () =>
+              mutationTransitionExecution(userId, {
+                taskId,
+                newState: "ACTIVE",
+                reason: "Approved from Chat console",
+              }),
+          );
+          appendAuthorityLedgerEvent({
+            req,
+            orgId: tenant,
+            aggregateType: "execution",
+            aggregateId: taskId,
+            eventType: "execution.transition",
+            payload: { taskId, newState: "ACTIVE", source: "console", result },
+          });
+          const status = String((result as { status?: string }).status || "ACTIVE");
+          results.push({
+            id,
+            ok: true,
+            detail: status === "BLOCKED" ? "Start blocked by capacity or dependencies." : "Task is now ACTIVE.",
+          });
+        } catch (err: any) {
+          results.push({ id, ok: false, detail: err?.message || String(err) });
+        }
+        continue;
+      }
+      results.push({ id, ok: false, detail: "Unknown action — Jira/calendar creates are policy-gated." });
+    }
+    const consoleState = buildOrgConsole(userId, String(actions[0]?.decisionId || ""));
+    res.json({ results, console: consoleState });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/decisions/:id/execution-plan", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ error: "id required" });
+  try {
+    const plan = buildExecutionPlan(userId, id);
+    if (!plan) return res.status(404).json({ error: "Decision not found" });
+    res.json({ plan });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/decisions/:id/orchestration", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ error: "id required" });
+  try {
+    const orchestration = getOrchestration(userId, id);
+    if (!orchestration) return res.status(404).json({ error: "Decision not found" });
+    res.json({ orchestration });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post(
+  "/api/decisions/:id/orchestration/run",
+  authMiddleware,
+  requirePermission("execution:write"),
+  mutationRouteLimiter,
+  async (req, res) => {
+    const userId = (req as any).userId as string;
+    const authKind = (req as any).authKind as string | undefined;
+    const id = String(req.params.id || "").trim();
+    if (!id) return res.status(400).json({ error: "id required" });
+    try {
+      const orchestration = await runOrchestration(userId, id, authKind);
+      if (!orchestration) return res.status(404).json({ error: "Decision not found" });
+      res.json({ orchestration });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  },
+);
+
+app.post(
+  "/api/orchestration/actions/:id/authorize",
+  authMiddleware,
+  requirePermission("execution:write"),
+  mutationRouteLimiter,
+  async (req, res) => {
+    const userId = (req as any).userId as string;
+    const authKind = (req as any).authKind as string | undefined;
+    const id = String(req.params.id || "").trim();
+    if (!id) return res.status(400).json({ error: "id required" });
+    try {
+      const action = await authorizeAndExecuteMutation(
+        {
+          userId,
+          authKind,
+          permission: "execution:write",
+          actionType: "orchestration_authorize",
+          toolName: "orchestration_authorize",
+          toolArgs: { actionId: id },
+        },
+        () => authorizeOrchestrationAction({ userId, authKind }, id),
+      );
+      if (!action) return res.status(404).json({ error: "Action not found" });
+      res.json({ action, orchestration: getOrchestration(userId, action.decisionId) });
+    } catch (e: any) {
+      const msg = e.message || String(e);
+      const status = msg.includes("Forbidden") ? 403 : 400;
+      res.status(status).json({ error: msg });
+    }
+  },
+);
+
+app.get("/api/decisions/:id", authMiddleware, sendDecisionDetail);
+app.get("/api/projects/:slug", authMiddleware, sendDecisionDetail);
+
+app.get("/api/signals/:id", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ error: "id required" });
+  try {
+    const scope = tenantSqlScope(resolveTenantContext(userId));
+    const row = db.rawGet(
+      `SELECT id, source, source_subtype, external_id, owner, content, state, detected_at, received_at, ingest_meta,
+              related_decision_id, linked_execution_id
+       FROM external_signals WHERE id = ?${scope.sql} LIMIT 1`,
+      [id, ...scope.params],
+    )[0] as
+      | {
+          id: string;
+          source: string;
+          source_subtype: string | null;
+          external_id: string | null;
+          owner: string | null;
+          content: string;
+          state: string;
+          detected_at: string | null;
+          received_at: string | null;
+          ingest_meta: string | null;
+          related_decision_id: string | null;
+          linked_execution_id: string | null;
+        }
+      | undefined;
+    if (!row) return res.status(404).json({ error: "Signal not found" });
+    const { ingest_meta: _meta, ...publicRow } = row;
+    res.json({
+      signal: {
+        ...publicRow,
+        detected_at: sqliteDatetimeToIso(row.detected_at) || row.detected_at,
+        received_at: sqliteDatetimeToIso(row.received_at) || row.received_at,
+        provenance: publicSignalProvenance(row),
+        openTargets: resolveSignalOpenTargets(row, { jiraCloudUrl: jiraCloudUrlForUser(userId) }),
+      },
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post("/api/decisions/commit", authMiddleware, requirePermission("decision:commit"), mutationRouteLimiter, async (req, res) => {
   const userId = (req as any).userId as string;
   const authKind = (req as any).authKind as string | undefined;
@@ -3738,7 +4638,88 @@ app.post("/api/decisions/commit", authMiddleware, requirePermission("decision:co
         justification: justification || null,
       },
     });
-    res.json({ success: true, decisionId, status: "ACTIVE" });
+    let executionPlan = null;
+    try {
+      executionPlan = buildExecutionPlan(userId, decisionId);
+    } catch (err) {
+      console.error("[commit] execution plan:", err);
+    }
+    res.json({ success: true, decisionId, status: "ACTIVE", executionPlan });
+    scheduleOrchestration(userId, decisionId, authKind);
+  } catch (e: any) {
+    const msg = e.message || String(e);
+    const status = msg.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: msg });
+  }
+});
+
+app.post("/api/decisions/complete", authMiddleware, requirePermission("decision:commit"), mutationRouteLimiter, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
+  const { decisionId, justification, approvalId, emergencyOverride, emergencyReason } = req.body as {
+    decisionId?: string;
+    justification?: string;
+    approvalId?: string;
+    emergencyOverride?: boolean;
+    emergencyReason?: string;
+  };
+  if (!decisionId) return res.status(400).json({ error: "decisionId required" });
+  try {
+    const orgId = await completeDecisionActive(userId, decisionId, justification, {
+      approvalId,
+      emergencyOverride,
+      emergencyReason,
+    }, authKind);
+    appendAuthorityLedgerEvent({
+      req,
+      orgId,
+      aggregateType: "decision",
+      aggregateId: decisionId,
+      eventType: "decision.complete",
+      payload: {
+        decisionId,
+        status: "COMPLETED",
+        justification: justification || null,
+      },
+    });
+    res.json({ success: true, decisionId, status: "COMPLETED" });
+  } catch (e: any) {
+    const msg = e.message || String(e);
+    const status = msg.includes("Forbidden") ? 403 : 400;
+    res.status(status).json({ error: msg });
+  }
+});
+
+app.post("/api/decisions/reverse", authMiddleware, requirePermission("decision:commit"), mutationRouteLimiter, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const authKind = (req as any).authKind as string | undefined;
+  const { decisionId, justification, approvalId, emergencyOverride, emergencyReason } = req.body as {
+    decisionId?: string;
+    justification?: string;
+    approvalId?: string;
+    emergencyOverride?: boolean;
+    emergencyReason?: string;
+  };
+  if (!decisionId) return res.status(400).json({ error: "decisionId required" });
+  try {
+    const orgId = await reverseDecisionActive(userId, decisionId, justification, {
+      approvalId,
+      emergencyOverride,
+      emergencyReason,
+    }, authKind);
+    appendAuthorityLedgerEvent({
+      req,
+      orgId,
+      aggregateType: "decision",
+      aggregateId: decisionId,
+      eventType: "decision.reverse",
+      payload: {
+        decisionId,
+        status: "REVERSED",
+        justification: justification || null,
+      },
+    });
+    res.json({ success: true, decisionId, status: "REVERSED" });
   } catch (e: any) {
     const msg = e.message || String(e);
     const status = msg.includes("Forbidden") ? 403 : 400;
@@ -3816,6 +4797,18 @@ app.post("/api/execution/signals/kill", authMiddleware, requirePermission("signa
   } catch (e: any) {
     const status = e?.message?.includes("not found") ? 404 : e?.message?.includes("Forbidden") ? 403 : 400;
     res.status(status).json({ error: e.message || "Failed to kill signal" });
+  }
+});
+
+app.get("/api/analytics/summary", authMiddleware, (req, res) => {
+  const userId = (req as any).userId as string;
+  const raw = String(req.query.range || "7d").trim().toLowerCase();
+  const range: AnalyticsRange =
+    raw === "14d" || raw === "30d" || raw === "90d" || raw === "7d" ? raw : "7d";
+  try {
+    res.json(buildAnalyticsSummary(userId, range));
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -4014,7 +5007,7 @@ app.get("/api/metrics/teams", authMiddleware, (req, res) => {
     let totalCap = 0;
     let totalLoad = 0;
     for (const o of owners) {
-      const cap = db.getOwnerCapacity(o.owner).capacity;
+      const cap = db.getOwnerCapacity(o.owner, userId).capacity;
       totalCap += cap;
       totalLoad += Number(o.active_weight || 0);
     }
@@ -4037,7 +5030,7 @@ app.get("/api/metrics/teams", authMiddleware, (req, res) => {
     if (riskN) insights.push(`${riskN} owner(s) at risk — resolve blocked tasks.`);
 
     const deptBars = owners.map((o) => {
-      const cap = db.getOwnerCapacity(o.owner).capacity || 3;
+      const cap = db.getOwnerCapacity(o.owner, userId).capacity || 3;
       const load = Number(o.active_weight || 0);
       return {
         dept: o.owner,
@@ -4342,6 +5335,7 @@ registerNotionLifecycleHooks();
 registerGoogleLifecycleHooks();
 mountGoogleRoutes(app);
 mountConnectionsHealthRoute(app);
+mountNangoRoutes(app);
 
 // --- Logs & Stats ---
 app.get("/api/health", (_req, res) => {
@@ -4371,11 +5365,53 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+app.get("/api/os/metrics", authMiddleware, (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    res.json({
+      ...osHealthSnapshot(userId),
+      talk: talkObservabilitySummary(userId),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load OS metrics" });
+  }
+});
+
+/** Internal Talk diagnosis — not founder-facing. */
+app.get("/api/intelligence/talk/traces", authMiddleware, (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    res.json({
+      summary: talkObservabilitySummary(userId),
+      traces: recentTalkTraces(userId, limit),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load Talk traces" });
+  }
+});
+
+app.get("/api/trust/policy", authMiddleware, (req, res) => {
+  try {
+    const userId = (req as any).userId as string;
+    const rows = db.rawGet("SELECT key, value FROM settings WHERE user_id = ?", [userId]) as {
+      key: string;
+      value: string;
+    }[];
+    const settings: Record<string, string> = {};
+    for (const r of rows) settings[r.key] = r.value;
+    res.json(defaultTrustPolicy(settings));
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load trust policy" });
+  }
+});
+
 // --- WebSocket Orchestration ---
 export type AgentWsReply = (payload: Record<string, unknown>) => void;
 
 export type AgentMessageOptions = {
   planMode?: boolean;
+  consoleMode?: boolean;
   authKind?: AuthKind | string;
 };
 
@@ -4471,7 +5507,8 @@ function wireWebSocketHandlers(wss: WebSocketServer) {
           payload.planMode === true ||
           payload.mode === "plan" ||
           payload.chatMode === "plan";
-        await onMessage(userId, payload.text, sid, reply, { planMode, authKind });
+        const consoleMode = payload.consoleMode === true || payload.chatMode === "console";
+        await onMessage(userId, payload.text, sid, reply, { planMode, consoleMode, authKind });
       }
       else if (payload.type === "COMMIT_DECISION") {
         const commitLimit = checkWsRateLimit(userId, "commit_decision");

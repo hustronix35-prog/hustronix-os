@@ -15,7 +15,6 @@ import { runCompressionForAllTenants } from "./state/memory-compression.js";
 
 /** DB seed, agent WS handler, auditor cron, demo data — everything except HTTP listen. */
 export function initializeCore() {
-  console.clear();
   console.log("🚀 Initializing Hustronix OS (10/10 Decision Core)...");
   if (config.server.isProduction && config.storage.databaseType === "postgres") {
     throw new Error(
@@ -46,17 +45,21 @@ export function initializeCore() {
   }
 
   /**
-   * Backfill FTS5 mirror tables once on startup. Cheap (a few thousand rows for
-   * a typical tenant) and safe to re-run — `rebuildFtsFromLedger` truncates
-   * before re-populating. Required so hybrid retrieval works against historical
-   * rows that pre-date the intelligence schema migration.
+   * Backfill FTS5 after listen. Skips when the mirror is already populated so
+   * tsx watch restarts do not lock SQLite and block sign-in.
    */
-  try {
-    db.rebuildFtsFromLedger();
-    console.log("📚 [Intelligence] FTS5 mirror backfilled from ledger.");
-  } catch (e) {
-    console.warn("⚠️ [Intelligence] FTS backfill failed (search will be partial):", e);
-  }
+  setImmediate(() => {
+    try {
+      const result = db.rebuildFtsFromLedger() as { skipped?: boolean } | void;
+      if (result && result.skipped) {
+        console.log("📚 [Intelligence] FTS5 mirror already populated; skipped full rebuild.");
+      } else {
+        console.log("📚 [Intelligence] FTS5 mirror backfilled from ledger.");
+      }
+    } catch (e) {
+      console.warn("⚠️ [Intelligence] FTS backfill failed (search will be partial):", e);
+    }
+  });
 
   setAgentMessageHandler(async (userId, text, sessionId, reply, options) => {
     if (isAssistantSession(sessionId)) {
@@ -65,6 +68,7 @@ export function initializeCore() {
     }
     await runAgent(userId, text, undefined, sessionId, reply, {
       planMode: options?.planMode,
+      consoleMode: options?.consoleMode,
       authKind: options?.authKind,
     });
   });
