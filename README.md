@@ -241,7 +241,6 @@ Before any real deploy: rotate keys, set HTTPS origins, persist `SQLITE_PATH`, a
 - Many OAuth integrations are optional — unset env = disabled at boot
 - Some UI surfaces still fixture-backed
 - LLM quality depends on your keys and spend controls (`LLM_COST_SAVER` defaults on)
-- No open-source license file is committed yet — clarify terms before redistributing
 
 ---
 
@@ -266,4 +265,4 @@ Before any real deploy: rotate keys, set HTTPS origins, persist `SQLITE_PATH`, a
 
 ## License
 
-License terms are not yet attached to this repository. Contact the maintainers before redistributing.
+[MIT](LICENSE) © 2026 Hustronix
