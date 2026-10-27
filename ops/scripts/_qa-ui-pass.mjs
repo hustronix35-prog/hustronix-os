@@ -53,18 +53,20 @@ function axeImpactMeetsThreshold(impact, threshold) {
   return ti >= tt;
 }
 
-const PUBLIC_PATHS = ["/", "/contact", "/privacy", "/terms"];
+/** os-ui routes (legacy apps/web paths like /mission-control are not the product shell). */
+const PUBLIC_PATHS = ["/"];
 const AUTH_PATHS_ANON = ["/login", "/signup"];
 const PROTECTED_PATHS = [
-  "/mission-control",
+  "/",
+  "/decide",
   "/execute",
   "/signals",
   "/chat",
-  "/reports",
-  "/teams",
-  "/profile",
+  "/alerts",
+  "/team",
   "/settings",
 ];
+const HOME_PATH = "/";
 
 const results = [];
 const assertions = {
@@ -165,7 +167,7 @@ async function visit(page, p) {
 
 async function login(page) {
   await page.goto(`${BASE}/login`, { waitUntil: "networkidle2", timeout: 60000 });
-  await page.waitForSelector("#login-user", { timeout: 15000 });
+  await page.waitForSelector("#login-user, input[autocomplete='username']", { timeout: 20000 });
   /** Same-origin fetch sets `hustronix_session` without fighting React controlled inputs. */
   const loginErr = await page.evaluate(async ([u, pw]) => {
     const res = await fetch("/api/auth/login", {
@@ -197,7 +199,7 @@ async function login(page) {
     return null;
   }, [QA_LOGIN, QA_PASS]);
   if (loginErr) throw new Error(`Login API: ${loginErr}`);
-  await page.goto(`${BASE}/mission-control`, {
+  await page.goto(`${BASE}${HOME_PATH}`, {
     waitUntil: "networkidle2",
     timeout: 60000,
   });
@@ -208,18 +210,21 @@ async function login(page) {
 }
 
 async function assertMissionDashboard(page) {
-  await page.goto(`${BASE}/mission-control`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}${HOME_PATH}`, { waitUntil: "networkidle2", timeout: 60000 });
   const text = await page.evaluate(() => document.body.innerText);
-  const hasCard = await page.$("#login-user");
+  const onLogin = page.url().includes("/login") || (await page.$("#login-user"));
+  /** os-ui home: greeting / shell after auth — not the legacy MISSION CONTROL banner. */
   assertions.missionControlShowsDashboard =
-    !hasCard && /\bMISSION CONTROL\b/i.test(text);
+    !onLogin &&
+    (/Good (morning|afternoon|evening)/i.test(text) ||
+      /\b(Decide|Execute|Home|Talk|Updates)\b/i.test(text));
   if (!assertions.missionControlShowsDashboard) {
     results.push({
       kind: "assert_fail",
-      message: "Expected authenticated Mission Control (MISSION CONTROL, no #login-user)",
+      message: "Expected authenticated os-ui Home (greeting or nav), not login form",
     });
   }
-  await screenshot(page, "mission-control", "/mission-control");
+  await screenshot(page, "home-authed", HOME_PATH);
 }
 
 async function main() {
@@ -275,9 +280,9 @@ async function main() {
     await login(page);
     await assertMissionDashboard(page);
 
-    await runAxeScan(page, "mission-control-authed", "/mission-control");
+    await runAxeScan(page, "home-authed", HOME_PATH);
 
-    for (const p of PROTECTED_PATHS.filter((x) => x !== "/mission-control")) {
+    for (const p of PROTECTED_PATHS.filter((x) => x !== HOME_PATH)) {
       await visit(page, p);
     }
   } else {

@@ -1,4 +1,4 @@
-# Hustronix OS unified production image (API + WebSocket + Next.js on one PORT).
+# Hustronix OS unified production image (API + WebSocket + Next.js os-ui on one PORT).
 # Build from repo root:
 #   docker build -f infra/docker/Dockerfile -t hustronix .
 
@@ -11,6 +11,8 @@ RUN apt-get update \
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/os-ui/package.json ./apps/os-ui/package.json
+# Lockfile lists @hustronix/web; package.json is enough for workspace resolution (not built in image).
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 RUN npm ci
@@ -19,7 +21,7 @@ FROM deps AS build
 COPY tsconfig.json tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
-COPY apps/web ./apps/web
+COPY apps/os-ui ./apps/os-ui
 ENV UNIFIED_SERVER=1
 RUN npm run build:all
 
@@ -35,6 +37,7 @@ RUN mkdir -p /app/data
 
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/os-ui/package.json ./apps/os-ui/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 RUN npm ci --omit=dev
@@ -42,9 +45,10 @@ RUN npm ci --omit=dev
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/public ./apps/api/public
-COPY --from=build /app/apps/web/.next ./apps/web/.next
-COPY --from=build /app/apps/web/public ./apps/web/public
-COPY --from=build /app/apps/web/next.config.ts ./apps/web/next.config.ts
+COPY --from=build /app/apps/os-ui/.next ./apps/os-ui/.next
+COPY --from=build /app/apps/os-ui/public ./apps/os-ui/public
+COPY --from=build /app/apps/os-ui/next.config.ts ./apps/os-ui/next.config.ts
+COPY --from=build /app/apps/os-ui/package.json ./apps/os-ui/package.json
 
 EXPOSE 3000
 VOLUME ["/app/data"]

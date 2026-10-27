@@ -90,9 +90,10 @@ function LoginForm() {
         <h1 className={styles.title}>Sign in</h1>
         <p className={styles.subtitle}>Access your company brain, decisions, and execution ledger.</p>
         <form className={styles.form} onSubmit={onSubmit}>
-          <label className={styles.label}>
+          <label className={styles.label} htmlFor="login-user">
             Username or email
             <input
+              id="login-user"
               className={styles.input}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -100,9 +101,10 @@ function LoginForm() {
               required
             />
           </label>
-          <label className={styles.label}>
+          <label className={styles.label} htmlFor="login-pass">
             Password
             <input
+              id="login-pass"
               className={styles.input}
               type="password"
               value={password}
