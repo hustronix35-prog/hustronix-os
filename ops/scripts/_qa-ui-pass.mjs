@@ -211,17 +211,35 @@ async function login(page) {
 
 async function assertMissionDashboard(page) {
   await page.goto(`${BASE}${HOME_PATH}`, { waitUntil: "networkidle2", timeout: 60000 });
-  const text = await page.evaluate(() => document.body.innerText);
-  const onLogin = page.url().includes("/login") || (await page.$("#login-user"));
-  /** os-ui home: greeting / shell after auth — not the legacy MISSION CONTROL banner. */
-  assertions.missionControlShowsDashboard =
-    !onLogin &&
-    (/Good (morning|afternoon|evening)/i.test(text) ||
-      /\b(Decide|Execute|Home|Talk|Updates)\b/i.test(text));
-  if (!assertions.missionControlShowsDashboard) {
+  if (page.url().includes("/login") || (await page.$("#login-user"))) {
+    assertions.missionControlShowsDashboard = false;
     results.push({
       kind: "assert_fail",
-      message: "Expected authenticated os-ui Home (greeting or nav), not login form",
+      message: "Expected authenticated os-ui Home, still on login",
+    });
+    await screenshot(page, "home-authed", HOME_PATH);
+    return;
+  }
+  /** Wait past AuthGate "Preparing workspace…" for greeting or shell nav. */
+  try {
+    await page.waitForFunction(
+      () => {
+        const t = document.body?.innerText || "";
+        if (/Preparing workspace/i.test(t)) return false;
+        return (
+          /Good (morning|afternoon|evening)/i.test(t) ||
+          /\b(Decide|Execute|Home|Talk|Updates)\b/i.test(t)
+        );
+      },
+      { timeout: 45000 },
+    );
+    assertions.missionControlShowsDashboard = true;
+  } catch {
+    assertions.missionControlShowsDashboard = false;
+    const text = await page.evaluate(() => document.body?.innerText || "");
+    results.push({
+      kind: "assert_fail",
+      message: `Expected authenticated os-ui Home (greeting or nav); got: ${text.slice(0, 240)}`,
     });
   }
   await screenshot(page, "home-authed", HOME_PATH);
