@@ -35,7 +35,7 @@ jobs:
         run: npm ci
 
       - name: Lint UI
-        run: npm -w @hustronix/web run lint
+        run: npm -w @hustronix/os-ui run lint
 
       - name: Build API + UI
         run: npm run build:all
@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           node apps/api/dist/index.js &
           echo $! > /tmp/hx-api.pid
-          ( cd apps/web && PORT=3000 npm run start ) &
+          ( cd apps/os-ui && PORT=3000 npm run start ) &
           echo $! > /tmp/hx-ui.pid
           for i in $(seq 1 90); do
             if curl -sf "http://127.0.0.1:3005/api/health" >/dev/null \

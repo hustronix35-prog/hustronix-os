@@ -28,8 +28,8 @@ jobs:
         env:
           UNIFIED_SERVER: "1"
 
-      - name: Lint web
-        run: npm -w @hustronix/web run lint
+      - name: Lint os-ui
+        run: npm -w @hustronix/os-ui run lint
 
       - name: Security launch checks
         run: npm run security:launch
