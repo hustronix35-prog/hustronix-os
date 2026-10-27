@@ -43,6 +43,7 @@ function findSituationForScenario(
   evidence_count: number;
   entities_json: string | null;
   facets_json: string | null;
+  title: string;
 } | null {
   const rows = db.rawGet(
     `SELECT pattern_id, stage, trajectory, awareness_day, decision_ready_day, evidence_count,

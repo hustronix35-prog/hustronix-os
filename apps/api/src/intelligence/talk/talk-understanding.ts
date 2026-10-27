@@ -252,20 +252,16 @@ function withContext(
   const requiresCompany =
     extra?.requiresCompanyContext ?? (contextMode !== "GENERAL" && scope !== "NONE");
   return {
-    mode,
-    contextMode,
-    scope,
+    mode: extra?.mode ?? mode,
+    contextMode: extra?.contextMode ?? contextMode,
+    scope: extra?.scope ?? scope,
     entity: extra?.entity,
     topic: extra?.topic,
     requiresCompanyContext: requiresCompany,
-    requiresCurrentState: contextMode !== "GENERAL",
-    isCounterfactual: false,
-    turnIntoDecision: false,
-    governedAction: false,
-    ...extra,
-    contextMode: extra?.contextMode ?? contextMode,
-    mode: extra?.mode ?? mode,
-    scope: extra?.scope ?? scope,
+    requiresCurrentState: extra?.requiresCurrentState ?? contextMode !== "GENERAL",
+    isCounterfactual: extra?.isCounterfactual ?? false,
+    turnIntoDecision: extra?.turnIntoDecision ?? false,
+    governedAction: extra?.governedAction ?? false,
   };
 }
 

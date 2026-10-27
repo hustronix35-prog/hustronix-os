@@ -2413,10 +2413,15 @@ app.get("/api/execution/capacity", authMiddleware, (req, res) => {
   }
 });
 
+function routeParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return String(value[0] ?? "");
+  return String(value ?? "");
+}
+
 app.get("/api/intelligence/entities/:type/:id/beliefs", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
-  const entityType = req.params.type;
-  const entityId = req.params.id;
+  const entityType = routeParam(req.params.type);
+  const entityId = routeParam(req.params.id);
   try {
     const beliefs = listBeliefsForEntity(userId, entityType, entityId);
     res.json({ entityType, entityId, beliefs });
@@ -2427,8 +2432,8 @@ app.get("/api/intelligence/entities/:type/:id/beliefs", authMiddleware, (req, re
 
 app.get("/api/intelligence/entities/:type/:id/predictions", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
-  const entityType = req.params.type;
-  const entityId = req.params.id;
+  const entityType = routeParam(req.params.type);
+  const entityId = routeParam(req.params.id);
   const limit = Math.min(50, parseInt(String(req.query.limit ?? "20"), 10) || 20);
   try {
     const predictions = listPredictions(userId, entityType, entityId, limit);
@@ -2440,8 +2445,8 @@ app.get("/api/intelligence/entities/:type/:id/predictions", authMiddleware, (req
 
 app.get("/api/intelligence/entities/:type/:id/calibration", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
-  const entityType = req.params.type;
-  const entityId = req.params.id;
+  const entityType = routeParam(req.params.type);
+  const entityId = routeParam(req.params.id);
   try {
     const calibration = computeCalibration(userId, entityType, entityId);
     res.json({ entityType, entityId, calibration });
@@ -2477,7 +2482,7 @@ app.get("/api/owners/profiles", authMiddleware, (req, res) => {
 
 app.get("/api/owners/:owner/profile", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
-  const owner = req.params.owner;
+  const owner = routeParam(req.params.owner);
   try {
     const legacy = db.getOwnerCapacity(owner, userId);
     const profile = buildOwnerProfile(userId, owner, legacy.capacity);
@@ -2491,7 +2496,7 @@ app.get("/api/owners/:owner/profile", authMiddleware, (req, res) => {
 
 app.get("/api/owners/:owner/calibration", authMiddleware, (req, res) => {
   const userId = (req as any).userId as string;
-  const owner = req.params.owner;
+  const owner = routeParam(req.params.owner);
   try {
     const calibration = computeCalibration(userId, "person", owner);
     const predictions = listPredictions(userId, "person", owner, 30);

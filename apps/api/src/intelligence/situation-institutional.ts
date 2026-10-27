@@ -184,9 +184,11 @@ export function isCompleteableV3(memo: unknown): memo is InstitutionalReasoningV
 export function loadDecisionMemo(decisionId: string): InstitutionalReasoningV3 | null {
   const row = db.getDecisionLedgerRow(decisionId);
   const parsed = parseInstitutionalReasoning(row?.decision_reasoning);
-  return isCompleteableV3(parsed) ? parsed : parsed && Number((parsed as { institutional_version?: number }).institutional_version) === 3
-    ? (parsed as InstitutionalReasoningV3)
-    : null;
+  if (isCompleteableV3(parsed)) return parsed;
+  if (parsed && Number((parsed as { institutional_version?: number }).institutional_version) === 3) {
+    return parsed as unknown as InstitutionalReasoningV3;
+  }
+  return null;
 }
 
 export function pendingValidations(memo: InstitutionalReasoningV3): ValidationRequirement[] {

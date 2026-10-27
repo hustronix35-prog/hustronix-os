@@ -151,7 +151,7 @@ export function extractClaimsHeuristic(params: {
   }
 
   if (source === "jira" || source === "linear") {
-    const fromMeta = workItemState(ready.current || ready.event);
+    const fromMeta = workItemState(ready.current || ready.event || "");
     const fromText = workItemState(content);
     const st = fromMeta || fromText;
     if (st === "COMPLETE") {

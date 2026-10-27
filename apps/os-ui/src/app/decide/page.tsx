@@ -564,10 +564,10 @@ export default function DecidePage() {
                     onClick={() =>
                       openReview({
                         title: item.title,
-                        detail: "detail" in item ? item.detail : item.title,
-                        confidence: "confidence" in item ? item.confidence : item.progress,
+                        detail: item.detail,
+                        confidence: item.confidence ?? item.progress,
                         impact: item.stage,
-                        decisionId: "id" in item ? item.id : null,
+                        decisionId: item.id,
                       })
                     }
                   >
@@ -594,10 +594,10 @@ export default function DecidePage() {
                     onClick={() =>
                       openReview({
                         title: item.title,
-                        detail: "detail" in item ? item.detail : item.title,
-                        confidence: "confidence" in item ? item.confidence : item.progress,
+                        detail: item.detail,
+                        confidence: item.confidence ?? item.progress,
                         impact: item.stage,
-                        decisionId: "id" in item ? item.id : null,
+                        decisionId: item.id,
                       })
                     }
                   >
@@ -736,10 +736,10 @@ export default function DecidePage() {
                     onClick={() =>
                       openReview({
                         title: item.title,
-                        detail: "detail" in item ? item.detail : item.title,
-                        confidence: "confidence" in item ? item.confidence : undefined,
+                        detail: item.detail,
+                        confidence: item.confidence,
                         impact: item.result,
-                        decisionId: "id" in item ? item.id : null,
+                        decisionId: item.id,
                       })
                     }
                   >

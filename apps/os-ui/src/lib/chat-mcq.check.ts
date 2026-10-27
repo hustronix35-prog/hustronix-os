@@ -1,4 +1,4 @@
-import { splitChatContentSegments, stripIncompleteMcqFence } from "./chat-mcq.ts";
+import { splitChatContentSegments, stripIncompleteMcqFence } from "./chat-mcq.js";
 
 const sample = [
   "**Returning to your earlier question:**",

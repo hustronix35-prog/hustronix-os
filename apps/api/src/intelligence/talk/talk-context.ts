@@ -186,8 +186,8 @@ export function rememberTalkTurn(
     lastProvenance: extras?.provenance || prev.lastProvenance,
     recentMessages: [
       ...prev.recentMessages,
-      { role: "user", text: question },
-      { role: "assistant", text: answer },
+      { role: "user" as const, text: question },
+      { role: "assistant" as const, text: answer },
     ].slice(-12),
     referencedSituations: sits,
   };

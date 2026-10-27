@@ -11,7 +11,7 @@ import {
   scheduleFromSignals,
   signalHeadline,
   formatOrgDependencyLine,
-} from "./live-mappers.ts";
+} from "./live-mappers.js";
 
 const prose = readableLedgerText(
   '[{"metric":"SignalGrid ingestion outage","target":"Resolve with cited evidence"}]',

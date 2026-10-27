@@ -169,9 +169,15 @@ export async function evaluateCustomerPath(
   const expectedTeamEdges = SITUATION_PATTERNS.flatMap((p) =>
     p.teams.map((t) => `${t.from}|${t.to}`),
   );
+  const deps = (org.dependencies || []) as Array<{
+    fromTeam?: string;
+    toTeam?: string;
+    from_team?: string;
+    to_team?: string;
+  }>;
   const gotEdges = new Set(
-    (org.dependencies || []).map(
-      (d: { fromTeam?: string; toTeam?: string; from_team?: string; to_team?: string }) =>
+    deps.map(
+      (d) =>
         `${(d.fromTeam || d.from_team || "").toLowerCase()}|${(d.toTeam || d.to_team || "").toLowerCase()}`,
     ),
   );
