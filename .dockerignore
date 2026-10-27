@@ -1,6 +1,7 @@
 node_modules
 apps/*/node_modules
 apps/web/.next
+apps/os-ui/.next
 packages/*/node_modules
 packages/*/dist
 dist
@@ -20,12 +21,14 @@ data
 .env.*
 !.env.example
 apps/web/.env.local
+apps/os-ui/.env.local
 *.log
 apps/api/public/audits
 leads.csv
 *.md
 !apps/api/README.md
 !apps/web/README.md
+!apps/os-ui/README.md
 !infra/README.md
 !ops/README.md
 docs
