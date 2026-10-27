@@ -258,12 +258,14 @@ export default function HomePage() {
 
         <Panel>
           <PanelHeader
-            title={live ? "Unverified signals" : "Signals"}
-            action={<a className={styles.link} href="/signals">View signals</a>}
+            title={live ? "Updates to review" : "Updates"}
+            action={<a className={styles.link} href="/signals">View all</a>}
           />
           <div className={styles.schedule}>
             {schedule.length ? (
-              schedule.map((item, index) => (
+              schedule.map((item, index) => {
+                const pills = item.badges?.length ? item.badges : item.badge ? [item.badge] : [];
+                return (
                 <div
                   key={`${item.time}-${item.title}`}
                   className={styles.scheduleItem}
@@ -276,12 +278,19 @@ export default function HomePage() {
                   <time>{item.time}</time>
                   <div className={styles.scheduleBody}>
                     <strong>{item.title}</strong>
-                    {item.badge ? <StatusPill label={item.badge} tone="medium" /> : null}
+                    {pills.length ? (
+                      <div className={styles.scheduleBadges}>
+                        {pills.map((label) => (
+                          <StatusPill key={label} label={label} tone="medium" />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
-              ))
+                );
+              })
             ) : (
-              <p className={styles.emptyHint}>{live ? "No unverified signals." : "Loading live signals…"}</p>
+              <p className={styles.emptyHint}>{live ? "No updates waiting for review." : "Loading live updates…"}</p>
             )}
           </div>
         </Panel>

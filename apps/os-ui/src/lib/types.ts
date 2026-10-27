@@ -67,7 +67,9 @@ export type FocusItem = {
 export type ScheduleItem = {
   time: string;
   title: string;
+  /** Single badge (mock / legacy). Prefer `badges` for live signals. */
   badge?: string;
+  badges?: string[];
   highlight?: boolean;
 };
 

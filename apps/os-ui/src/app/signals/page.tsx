@@ -10,7 +10,7 @@ import {
   apiGet,
   type ReconConflict,
 } from "@/lib/api";
-import { formatWhen, parseSignalContent, signalHeadline } from "@/lib/live-mappers";
+import { formatWhen, humanizeSignalEvent, humanizeSignalSource, humanizeSignalState, parseSignalContent, signalHeadline } from "@/lib/live-mappers";
 import styles from "../pages.module.css";
 
 type OpenTarget = { label: string; url: string; section: string };
@@ -39,9 +39,11 @@ function SignalEvidence({ content }: { content: string }) {
     return <p className={styles.signalDetailBody}>{content}</p>;
   }
 
+  const eventLabel = humanizeSignalEvent(parsed.event);
+
   return (
     <div className={styles.signalEvidence}>
-      {parsed.event ? <span className={styles.signalEvent}>{parsed.event}</span> : null}
+      {eventLabel ? <span className={styles.signalEvent}>{eventLabel}</span> : null}
       {parsed.title ? <p className={styles.signalHeadline}>{parsed.title}</p> : null}
       {parsed.body ? <p className={styles.signalNote}>{parsed.body}</p> : null}
       {parsed.facts.length ? (
@@ -117,14 +119,14 @@ export default function SignalsPage() {
     <AppShell
       topBar={
         <TopBar
-          title="Signals"
-          subtitle="What Hustronix is hearing. A signal is evidence, not a conclusion."
+          title="Updates"
+          subtitle="What Hustronix is hearing from your tools. Each update is evidence—not a final answer."
         />
       }
     >
       {conflicts.length ? (
         <Panel className={styles.criticalCard}>
-          <PanelHeader title="Conflicting signals" subtitle="Two sources disagree. That is a decision, not noise." />
+          <PanelHeader title="Conflicting updates" subtitle="Two sources disagree. That is a decision, not noise." />
           <div className={styles.blockerList}>
             {conflicts.slice(0, 4).map((c) => (
               <div key={c.id} className={styles.blockerItem}>
@@ -150,7 +152,7 @@ export default function SignalsPage() {
       ) : null}
 
       <Panel>
-        <PanelHeader title="Inbound evidence" subtitle="Slack, meetings, email, Jira, GitHub, and manual notes." />
+        <PanelHeader title="From your tools" subtitle="Slack, meetings, email, Jira, GitHub, and notes you add." />
         <FilterPills
           items={FILTERS.map((label) => ({
             label,
@@ -181,18 +183,18 @@ export default function SignalsPage() {
                 <div>
                   <strong>{signalHeadline(s.content)}</strong>
                   <p>
-                    {s.source}
-                    {s.sourceSubtype ? ` · ${s.sourceSubtype}` : ""} · {s.owner} · {s.detected}
-                    {s.linked ? ` · linked to ${s.linked.slice(0, 8)}` : ""}
+                    {humanizeSignalSource(s.source)}
+                    {s.sourceSubtype ? ` · ${humanizeSignalEvent(s.sourceSubtype)}` : ""} · {s.owner} · {s.detected}
+                    {s.linked ? ` · linked to work` : ""}
                     {s.openTargets[0] ? ` · ${s.openTargets[0].label}` : ""}
                   </p>
                 </div>
-                <StatusPill label={s.state.replace(/_/g, " ")} />
+                <StatusPill label={humanizeSignalState(s.state)} />
               </button>
             ))
           ) : (
             <p className={styles.emptyHint}>
-              {rows === null ? "Loading signals…" : "No signals on the ledger yet."}
+              {rows === null ? "Loading updates…" : "No updates yet. Connect tools or add a note to get started."}
             </p>
           )}
         </div>
@@ -201,8 +203,8 @@ export default function SignalsPage() {
       <Modal
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
-        title={selected ? selected.source : "Signal"}
-        subtitle={selected ? selected.state.replace(/_/g, " ") : undefined}
+        title={selected ? humanizeSignalSource(selected.source) : "Update"}
+        subtitle={selected ? humanizeSignalState(selected.state) : undefined}
         size="lg"
         footer={
           selected ? (
@@ -263,7 +265,7 @@ export default function SignalsPage() {
               </div>
               {selected.graceExpires ? (
                 <div>
-                  <dt>Grace expires</dt>
+                  <dt>Review by</dt>
                   <dd>{selected.graceExpires}</dd>
                 </div>
               ) : null}

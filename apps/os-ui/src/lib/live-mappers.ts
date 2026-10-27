@@ -66,8 +66,8 @@ const SIGNAL_TITLE_KEYS = ["summary", "title", "subject", "message", "text"];
 const SIGNAL_BODY_KEYS = ["health_note", "body", "description", "note", "snippet"];
 const SIGNAL_SKIP_KEYS = new Set([...SIGNAL_TITLE_KEYS, ...SIGNAL_BODY_KEYS]);
 const SIGNAL_ATTR_LABELS: Record<string, string> = {
-  objectid: "Object",
-  object_id: "Object",
+  objectid: "Related to",
+  object_id: "Related to",
   status: "Status",
   assignee: "Assignee",
   scenario: "Scenario",
@@ -87,8 +87,183 @@ function humanizeSignalKey(key: string): string {
 }
 
 function humanizeSnake(value: string): string {
-  if (!/^[a-z0-9]+(_[a-z0-9]+)+$/.test(value)) return value;
+  if (!/^[a-z0-9]+(_[a-z0-9]+)+$/i.test(value)) return value;
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const SIGNAL_SOURCE_LABELS: Record<string, string> = {
+  crm: "CRM",
+  meeting: "Meeting",
+  meetings: "Meeting",
+  slack: "Slack",
+  email: "Email",
+  gmail: "Email",
+  jira: "Jira",
+  github: "GitHub",
+  notion: "Notion",
+  linear: "Linear",
+  hubspot: "HubSpot",
+  manual: "Note",
+  system: "System",
+};
+
+const SIGNAL_EVENT_LABELS: Record<string, string> = {
+  "hubspot:deal.propertychange": "HubSpot deal update",
+  "hubspot.deal.propertychange": "HubSpot deal update",
+  "deal.propertychange": "Deal update",
+  "meeting.transcript": "Meeting notes",
+  meeting: "Meeting",
+  "jira:issue_updated": "Jira issue update",
+  "jira:issue_created": "New Jira issue",
+  "slack:message": "Slack message",
+  "gmail:message": "Email",
+};
+
+const SIGNAL_STATE_LABELS: Record<string, string> = {
+  UNVERIFIED: "Needs review",
+  GRACE: "Under review",
+  LINKED: "Linked to work",
+  KILLED: "Dismissed",
+  VERIFIED: "Verified",
+};
+
+/** Plain label for CRM / Slack / meeting / etc. */
+export function humanizeSignalSource(source: string | null | undefined): string {
+  const raw = String(source || "").trim();
+  if (!raw) return "Update";
+  const key = raw.toLowerCase();
+  if (SIGNAL_SOURCE_LABELS[key]) return SIGNAL_SOURCE_LABELS[key];
+  return humanizeSnake(raw) || raw;
+}
+
+/** Plain label for ingest event / subtype codes. */
+export function humanizeSignalEvent(event: string | null | undefined): string | null {
+  const raw = String(event || "").trim();
+  if (!raw) return null;
+  const key = raw.toLowerCase();
+  if (SIGNAL_EVENT_LABELS[key]) return SIGNAL_EVENT_LABELS[key];
+  const afterColon = key.includes(":") ? key.split(":").slice(1).join(":") : key;
+  if (SIGNAL_EVENT_LABELS[afterColon]) return SIGNAL_EVENT_LABELS[afterColon];
+  return raw
+    .replace(/[_:.]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function humanizeSignalSubtype(subtype: string | null | undefined): string | null {
+  return humanizeSignalEvent(subtype);
+}
+
+/** Plain label for signal lifecycle states. */
+export function humanizeSignalState(state: string | null | undefined): string {
+  const raw = String(state || "").trim();
+  if (!raw) return "";
+  return SIGNAL_STATE_LABELS[raw.toUpperCase()] || humanizeSnake(raw) || raw.replace(/_/g, " ");
+}
+
+const ORG_TEAM_LABELS: Record<string, string> = {
+  "engineering backend": "Engineering (backend)",
+  engineering: "Engineering",
+  security: "Security",
+  "customer success": "Customer Success",
+  sales: "Sales",
+  product: "Product",
+  "qa support": "QA",
+  qa: "QA",
+  finance: "Finance",
+  executive: "Leadership",
+  "hr ops": "HR",
+  hr: "HR",
+  sre: "Ops / reliability",
+};
+
+/** Exact phrases from seeded HSOG deps → plain language. */
+const ORG_WORK_PHRASES: Array<[RegExp | string, string]> = [
+  ["SignalGrid partitioning / ingestion SLA", "Fix SignalGrid data delays"],
+  ["Acme renewal recovery plan", "Acme renewal recovery plan"],
+  ["SEV1 audit evidence register", "Urgent audit paperwork"],
+  ["Northstar / SentryLine commit gate", "Northstar / SentryLine deal approval"],
+  ["NexusAI evidence-trail coverage", "NexusAI proof trail"],
+  ["NexusAI 2.0 GA hold", "Hold NexusAI 2.0 launch"],
+  ["FlowOps nested-approval QA", "FlowOps approval testing"],
+  ["Feature flag off outside beta", "Keep new feature off outside beta"],
+  ["Q3 forecast restatement", "Redo Q3 forecast"],
+  ["Coverage gap briefing", "Brief on coverage gaps"],
+  ["Hiring freeze policy", "Hiring freeze policy"],
+  ["GRC analyst + SRE exceptions", "Compliance analyst and ops exceptions"],
+];
+
+const ORG_WORK_TOKEN_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bSEV1\b/gi, "urgent"],
+  [/\bSEV-?1\b/gi, "urgent"],
+  [/\bingestion SLA\b/gi, "data delivery promise"],
+  [/\bSLA\b/g, "service promise"],
+  [/\bcommit gate\b/gi, "deal approval"],
+  [/\bevidence[- ]?trail\b/gi, "proof trail"],
+  [/\bGA hold\b/gi, "launch hold"],
+  [/\bGA\b/g, "launch"],
+  [/\bnested[- ]?approval\b/gi, "multi-step approval"],
+  [/\bfeature flag\b/gi, "feature switch"],
+  [/\bGRC\b/g, "compliance"],
+  [/\bSRE\b/g, "ops / reliability"],
+  [/\bpartitioning\b/gi, "data split work"],
+];
+
+/** Title-case team names without leaving raw snake/lowercase ops labels. */
+export function humanizeOrgTeam(team: string | null | undefined): string {
+  const raw = String(team || "").trim();
+  if (!raw) return "";
+  const mapped = ORG_TEAM_LABELS[raw.toLowerCase()];
+  if (mapped) return mapped;
+  return raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Make dependency / ownership work labels readable for non-specialists. */
+export function humanizeOrgWork(work: string | null | undefined): string {
+  const raw = String(work || "").trim();
+  if (!raw) return "";
+  for (const [from, to] of ORG_WORK_PHRASES) {
+    if (typeof from === "string") {
+      if (raw === from || raw.toLowerCase() === from.toLowerCase()) return to;
+    } else if (from.test(raw)) {
+      return raw.replace(from, to);
+    }
+  }
+  let out = raw;
+  for (const [re, replacement] of ORG_WORK_TOKEN_REPLACEMENTS) {
+    out = out.replace(re, replacement);
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+
+export function humanizeOrgDependencySource(source: string | null | undefined): string {
+  const raw = String(source || "").trim();
+  if (!raw) return "";
+  if (/^manual$/i.test(raw)) return "Added by hand";
+  if (/^ledger$/i.test(raw)) return "From a decision";
+  if (/^inferred$/i.test(raw)) return "Detected automatically";
+  return humanizeSnake(raw) || raw;
+}
+
+/** One-line “Who waits on whom” copy. */
+export function formatOrgDependencyLine(d: {
+  fromTeam: string;
+  fromWork?: string | null;
+  toTeam: string;
+  toWork?: string | null;
+}): string {
+  const from = humanizeOrgTeam(d.fromTeam);
+  const to = humanizeOrgTeam(d.toTeam);
+  const fromWork = d.fromWork ? humanizeOrgWork(d.fromWork) : "";
+  const toWork = d.toWork ? humanizeOrgWork(d.toWork) : "";
+  const left = fromWork ? `${from}: ${fromWork}` : from;
+  const right = toWork ? `${to}: ${toWork}` : to;
+  return `${left} → ${right}`;
 }
 
 function unescapeJsonString(value: string): string {
@@ -126,7 +301,14 @@ function parseHeadAttrs(head: string): { leftover: string; attrs: SignalFact[] }
     /([A-Za-z_][\w]*)=(?:"([^"]*)"|'([^']*)'|(\S+(?:\s+(?![A-Za-z_][\w]*=)\S+)*))/g;
   const stripped = head.replace(re, (_all, key: string, dq?: string, sq?: string, bare?: string) => {
     const value = (dq ?? sq ?? bare ?? "").trim();
-    if (value && value !== "?") facts.push({ label: humanizeSignalKey(key), value });
+    if (value && value !== "?") {
+      const label = humanizeSignalKey(key);
+      const pretty =
+        label === "Related to" || label === "Object" || /^[a-z0-9]+(_[a-z0-9]+)+$/i.test(value)
+          ? humanizeSnake(value)
+          : value;
+      facts.push({ label, value: pretty });
+    }
     return " ";
   });
   return { leftover: stripped.replace(/\s+/g, " ").trim(), attrs: facts };
@@ -214,8 +396,8 @@ export function parseSignalContent(raw: string | null | undefined): ParsedSignal
   if (leftover) {
     if (/^[A-Z][A-Z0-9]+-\d+$/.test(leftover) || (leftover.length < 40 && !leftover.includes(" "))) {
       facts.unshift({
-        label: /^[A-Z][A-Z0-9]+-\d+$/.test(leftover) ? "Issue" : "Object",
-        value: leftover,
+        label: /^[A-Z][A-Z0-9]+-\d+$/.test(leftover) ? "Issue" : "Related to",
+        value: humanizeSnake(leftover),
       });
     } else if (!title) {
       title = leftover;
@@ -720,12 +902,22 @@ export function focusFromExecutions(rows: McExecution[]): FocusItem[] {
 }
 
 export function scheduleFromSignals(signals: SignalPreview[]): ScheduleItem[] {
-  return signals.slice(0, 4).map((s, i) => ({
-    time: formatWhen(s.detected_at),
-    title: (s.content || s.source).slice(0, 90),
-    badge: [s.source, s.source_subtype || s.runtime, s.state].filter(Boolean).join(" · "),
-    highlight: i === 0,
-  }));
+  return signals.slice(0, 4).map((s, i) => {
+    const title = signalHeadline(s.content) || humanizeSignalSource(s.source);
+    const badges = [
+      humanizeSignalSource(s.source),
+      humanizeSignalSubtype(s.source_subtype || s.runtime),
+      humanizeSignalState(s.state),
+    ].filter((x): x is string => Boolean(x));
+    // Drop duplicate source/event when they collapse to the same plain label.
+    const unique = [...new Set(badges)];
+    return {
+      time: formatWhen(s.detected_at),
+      title: title.length > 110 ? `${title.slice(0, 107)}…` : title,
+      badges: unique,
+      highlight: i === 0,
+    };
+  });
 }
 
 export function executeMetricsFromSummary(s: MissionSummary): Metric[] {

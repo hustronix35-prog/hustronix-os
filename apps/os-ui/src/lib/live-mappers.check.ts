@@ -1,10 +1,16 @@
 import {
   focusFromExecutions,
   founderDecisionBrief,
+  humanizeOrgWork,
+  humanizeSignalEvent,
+  humanizeSignalSource,
+  humanizeSignalState,
   parseSignalContent,
   readableLedgerText,
   recsFromLedgerDecisions,
+  scheduleFromSignals,
   signalHeadline,
+  formatOrgDependencyLine,
 } from "./live-mappers.ts";
 
 const prose = readableLedgerText(
@@ -29,8 +35,46 @@ const crm = parseSignalContent(
 if (crm.event !== "hubspot:deal.propertyChange") throw new Error(`event: ${crm.event}`);
 if (crm.title !== "Acme renewal decision due.") throw new Error(`title: ${crm.title}`);
 if (crm.body) throw new Error(`body should be folded into facts: ${crm.body}`);
-if (!crm.facts.some((f) => f.label === "Object" && f.value === "acme_industrials")) {
+if (!crm.facts.some((f) => f.label === "Related to" && f.value === "Acme Industrials")) {
   throw new Error(`missing object fact: ${JSON.stringify(crm.facts)}`);
+}
+if (humanizeSignalEvent(crm.event) !== "HubSpot deal update") {
+  throw new Error(`event label: ${humanizeSignalEvent(crm.event)}`);
+}
+if (humanizeSignalState("GRACE") !== "Under review") throw new Error("grace label");
+if (humanizeSignalSource("MEETING") !== "Meeting") throw new Error("meeting source");
+const homeRow = scheduleFromSignals([
+  {
+    id: "s1",
+    source: "CRM",
+    source_subtype: "hubspot.deal.propertyChange",
+    content:
+      '[hubspot:deal.propertyChange] objectId=acme_industrials {"summary":"Acme renewal decision due."}',
+    detected_at: "2026-06-13T19:30:00.000Z",
+    grace_expires_at: null,
+    state: "GRACE",
+  },
+])[0];
+if (!homeRow || homeRow.title !== "Acme renewal decision due.") {
+  throw new Error(`home title still raw: ${homeRow?.title}`);
+}
+if (homeRow.title.includes("{") || homeRow.title.includes("objectId")) {
+  throw new Error(`home title leaked ingest: ${homeRow.title}`);
+}
+if (!homeRow.badges?.includes("CRM") || !homeRow.badges?.includes("HubSpot deal update") || !homeRow.badges?.includes("Under review")) {
+  throw new Error(`home badges: ${JSON.stringify(homeRow.badges)}`);
+}
+const depLine = formatOrgDependencyLine({
+  fromTeam: "engineering backend",
+  fromWork: "SignalGrid partitioning / ingestion SLA",
+  toTeam: "customer success",
+  toWork: "Acme renewal recovery plan",
+});
+if (!depLine.includes("Fix SignalGrid data delays") || depLine.includes("ingestion SLA")) {
+  throw new Error(`dep line still jargon: ${depLine}`);
+}
+if (humanizeOrgWork("GRC analyst + SRE exceptions") !== "Compliance analyst and ops exceptions") {
+  throw new Error(`org work: ${humanizeOrgWork("GRC analyst + SRE exceptions")}`);
 }
 if (!crm.facts.some((f) => f.label === "Scenario" && f.value === "Customer Churn Risk")) {
   throw new Error(`missing scenario: ${JSON.stringify(crm.facts)}`);

@@ -14,7 +14,7 @@ import {
   type OrgIntelligence,
   type OrgPersonCard,
 } from "@/lib/api";
-import { formatWhen } from "@/lib/live-mappers";
+import { formatOrgDependencyLine, formatWhen, humanizeOrgDependencySource } from "@/lib/live-mappers";
 import styles from "../pages.module.css";
 
 const TABS = ["Overview", "People", "Teams", "Dependencies", "Workload", "Ownership", "Directory"] as const;
@@ -297,7 +297,7 @@ export default function TeamPage() {
             </Panel>
 
             <Panel>
-              <PanelHeader title="Org structure map" subtitle="Reporting lines, with execution dependencies overlaid" />
+              <PanelHeader title="Org structure" subtitle="Who reports to whom, and which handoffs are critical" />
               <OrgTree nodes={org?.tree ?? []} critical={criticalTeams} />
               <ul className={styles.orgLegend}>
                 <li>
@@ -347,23 +347,20 @@ export default function TeamPage() {
 
           <div className={styles.triple}>
             <Panel>
-              <PanelHeader title="Critical dependencies" subtitle="Who waits on whom" />
+              <PanelHeader title="Critical handoffs" subtitle="Who is waiting on whose work" />
               <ul className={styles.orgDepList}>
                 {(org?.dependencies ?? []).length ? (
                   (org?.dependencies ?? []).slice(0, 6).map((d) => (
                     <li key={d.id}>
-                      <strong>
-                        {d.fromTeam}
-                        {d.fromWork ? ` (${d.fromWork})` : ""} → {d.toTeam}
-                        {d.toWork ? ` (${d.toWork})` : ""}
-                      </strong>
+                      <strong>{formatOrgDependencyLine(d)}</strong>
                       <span>
-                        <StatusPill label={depLabel(d.status)} tone={depTone(d.status)} /> {d.source}
+                        <StatusPill label={depLabel(d.status)} tone={depTone(d.status)} />{" "}
+                        {humanizeOrgDependencySource(d.source)}
                       </span>
                     </li>
                   ))
                 ) : (
-                  <p className={styles.emptyHint}>No cross-team dependencies on the ledger yet.</p>
+                  <p className={styles.emptyHint}>No cross-team handoffs yet.</p>
                 )}
               </ul>
             </Panel>
@@ -492,13 +489,10 @@ export default function TeamPage() {
           <ul className={styles.orgDepList}>
             {(org?.dependencies ?? []).map((d) => (
               <li key={d.id}>
-                <strong>
-                  {d.fromTeam}
-                  {d.fromWork ? ` (${d.fromWork})` : ""} → {d.toTeam}
-                  {d.toWork ? ` (${d.toWork})` : ""}
-                </strong>
+                <strong>{formatOrgDependencyLine(d)}</strong>
                 <span>
-                  <StatusPill label={depLabel(d.status)} tone={depTone(d.status)} /> {d.source}
+                  <StatusPill label={depLabel(d.status)} tone={depTone(d.status)} />{" "}
+                  {humanizeOrgDependencySource(d.source)}
                 </span>
               </li>
             ))}

@@ -16,9 +16,12 @@ client_secret*.json
 # SQLite — runtime DB, journals, and backups
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 *.db.bak*
 *.db.backup*
 hustronix.db*
+graph_memory.db*
 /data/*
 !data/.gitkeep
 
@@ -27,8 +30,13 @@ hustronix-ui/
 # Nested duplicate of apps/os-ui (do not commit; product UI is apps/os-ui)
 /new ui/
 
-# Local dev data
+# Local dev data / outreach (never commit real leads)
 leads.csv
+apps/api/public/drafts/**
+!apps/api/public/drafts/README.md
+
+# Local media / scraped brag assets
+brag-output/
 
 # TypeScript incremental build info
 *.tsbuildinfo
