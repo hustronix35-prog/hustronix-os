@@ -39,17 +39,32 @@ A monorepo for the **Hustronix Decision OS**:
 | **os-ui** | Default product UI (Next.js App Router) |
 | **API** | Express + WebSocket agent / Talk interface |
 
-<p align="center">
-  <img src="docs/assets/product/landing.png" alt="Hustronix landing — know what will break before your business does" width="900" />
-</p>
+### Product UI
 
 <p align="center">
-  <img src="docs/assets/product/home.png" alt="Signal chain into execution risk and alerts UI" width="900" />
+  <img src="docs/assets/product/home.png" alt="Home — what matters today, critical decisions, and alerts" width="900" />
 </p>
+<p align="center"><em>Home</em> — what needs attention today</p>
 
 <p align="center">
-  <img src="docs/assets/product/decide-execute.png" alt="Decide and Execute product surfaces" width="900" />
+  <img src="docs/assets/product/brain.png" alt="Company Brain — knowledge graph of initiatives, signals, and decisions" width="900" />
 </p>
+<p align="center"><em>Company Brain</em> — how work, risk, and decisions connect</p>
+
+<p align="center">
+  <img src="docs/assets/product/decide.png" alt="Decide — AI recommendations, decision table, and impact summary" width="900" />
+</p>
+<p align="center"><em>Decide</em> — recommendations with confidence, impact, and owners</p>
+
+<p align="center">
+  <img src="docs/assets/product/execute.png" alt="Execute — execution map, blockers, and capacity" width="900" />
+</p>
+<p align="center"><em>Execute</em> — progress, blockers, and capacity</p>
+
+<p align="center">
+  <img src="docs/assets/product/alerts.png" alt="Alerts — critical and high risks that need attention" width="900" />
+</p>
+<p align="center"><em>Alerts</em> — risks ranked by severity and urgency</p>
 
 ### Product video
 
